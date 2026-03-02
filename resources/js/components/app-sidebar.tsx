@@ -1,5 +1,5 @@
-import { Link } from '@inertiajs/react';
-import { Banknote, BookOpen, CalendarRange, ChartPie, Columns3Cog, FileSliders, Folder, LayoutDashboard, LayoutGrid } from 'lucide-react';
+import { Link, usePage } from '@inertiajs/react';
+import { Banknote, BarChart3, BedDouble, BookOpen, CalendarRange, ChartPie, ChevronDown, Columns3Cog, FileSliders, Folder, History, Hotel, LayoutDashboard, LayoutGrid } from 'lucide-react';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
@@ -15,17 +15,28 @@ import {
 import { dashboard } from '@/routes';
 import type { NavItem } from '@/types';
 import AppLogo from './app-logo';
+import {
+    Collapsible,
+    CollapsibleTrigger,
+    CollapsibleContent,
+} from '@/components/ui/collapsible'
+import { useState } from 'react';
 
 const mainNavItems: NavItem[] = [
     {
         title: 'Dashboard',
-        href: dashboard(),
-        icon: LayoutDashboard,
+        href: "/dashboard",
+        icon: Hotel,
     },
     {
         title: 'Bookings',
         href: '/bookings',
         icon: CalendarRange,
+    },
+    {
+        title: 'Rooms',
+        href: '/rooms',
+        icon: BedDouble,
     },
     {
         title: 'Configurations',
@@ -53,6 +64,15 @@ const footerNavItems: NavItem[] = [
 ];
 
 export function AppSidebar() {
+
+    const { url } = usePage()
+
+    const isReportsActive =
+        url.startsWith('/reports')
+
+    const [open, setOpen] = useState(isReportsActive)
+
+
     return (
         <Sidebar collapsible="icon" variant="inset">
             <SidebarHeader>
@@ -69,6 +89,50 @@ export function AppSidebar() {
 
             <SidebarContent>
                 <NavMain items={mainNavItems} />
+                 {/* ==============================
+                   REPORTS COLLAPSIBLE MENU
+                ============================== */}
+                <SidebarMenu>
+                    <SidebarMenuItem>
+
+                        <Collapsible open={open} onOpenChange={setOpen}>
+
+                            {/* Parent */}
+                            <CollapsibleTrigger asChild>
+                                <SidebarMenuButton>
+                                    <BarChart3 className="mr-2 h-4 w-4" />
+                                    Reports
+                                    <ChevronDown
+                                        className={`ml-auto h-4 w-4 transition-transform ${
+                                            open ? 'rotate-180' : ''
+                                        }`}
+                                    />
+                                </SidebarMenuButton>
+                            </CollapsibleTrigger>
+
+                            {/* Children */}
+                            <CollapsibleContent className="ml-6 mt-1 space-y-1">
+
+                                <SidebarMenuButton asChild isActive={url === '/reports/charts'}>
+                                    <Link href="/reports/charts">
+                                        <ChartPie className="mr-2 h-4 w-4" />
+                                        Charts
+                                    </Link>
+                                </SidebarMenuButton>
+
+                                <SidebarMenuButton asChild isActive={url === '/reports/history'}>
+                                    <Link href="/reports/history">
+                                        <History className="mr-2 h-4 w-4" />
+                                        History
+                                    </Link>
+                                </SidebarMenuButton>
+
+                            </CollapsibleContent>
+
+                        </Collapsible>
+
+                    </SidebarMenuItem>
+                </SidebarMenu>
             </SidebarContent>
 
             <SidebarFooter>

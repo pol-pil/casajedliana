@@ -74,7 +74,7 @@ type Booking = {
 	guest_count: string;
 	check_in: string;
 	check_out: string;
-	status: 'confirmed' | 'pending' | 'checked-in' | 'checked-out' | 'cancelled';
+	status: 'pencil' | 'reserved' | 'checked_in' | 'checked_out' | 'cancelled';
 	total_amount: number;
 	remarks: string;
 	balance: number;
@@ -166,36 +166,36 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 const statusConfig = {
-	confirmed: {
-		label: 'Confirmed',
-		variant: 'default' as const,
-		icon: CheckCircleIcon,
-		color: 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-400',
-	},
-	pending: {
-		label: 'Pending Payment',
-		variant: 'secondary' as const,
-		icon: ClockIcon,
-		color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-950 dark:text-yellow-400',
-	},
-	'checked-in': {
-		label: 'Checked In',
-		variant: 'default' as const,
-		icon: CheckCircleIcon,
-		color: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300',
-	},
-	'checked-out': {
-		label: 'Checked Out',
-		variant: 'outline' as const,
-		icon: CheckCircleIcon,
-		color: 'bg-gray-100 text-gray-800 dark:bg-gray-950 dark:text-gray-300',
-	},
-	cancelled: {
-		label: 'Cancelled',
-		variant: 'destructive' as const,
-		icon: XCircleIcon,
-		color: 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300',
-	},
+  pencil: {
+    label: 'Pencil',
+    variant: 'secondary' as const,
+    icon: ClockIcon,
+    color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-950 dark:text-yellow-400',
+  },
+  reserved: {
+    label: 'Reserved',
+    variant: 'secondary' as const,
+    icon: CalendarIcon,
+    color: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300',
+  },
+  checked_in: {
+    label: 'Checked In',
+    variant: 'default' as const,
+    icon: CheckCircleIcon,
+    color: 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-400',
+  },
+  checked_out: {
+    label: 'Checked Out',
+    variant: 'outline' as const,
+    icon: CheckCircleIcon,
+    color: 'bg-gray-100 text-gray-800 dark:bg-gray-950 dark:text-gray-300',
+  },
+  cancelled: {
+    label: 'Cancelled',
+    variant: 'destructive' as const,
+    icon: XCircleIcon,
+    color: 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300',
+  },
 };
 
 const AddChargeDialog = ({
@@ -463,8 +463,14 @@ export default function Index() {
 	};
 
 	const StatusBadge = ({ status }: { status: keyof typeof statusConfig }) => {
-		const config = statusConfig[status];
-		const Icon = config.icon;
+		const config = statusConfig[status] ?? {
+			label: status,
+			variant: 'secondary' as const,
+			icon: AlertCircle,
+			color: 'bg-gray-100 text-gray-800',
+			};
+
+			const Icon = config.icon;
 
 		return (
 			<Badge variant={config.variant} className={cn('flex items-center gap-1', config.color)}>
@@ -1183,7 +1189,7 @@ export default function Index() {
 							<div>
 								<DialogHeader className='flex flex-row justify-between font-semibold'>
 									<span>Booking Info</span>
-									<StatusBadge status={selectedBooking?.status || 'pending'} />
+									<StatusBadge status={selectedBooking?.status || 'pencil'} />
 								</DialogHeader>
 								<DialogDescription className='space-y-1 py-2'>
 									<div className='flex justify-between'>

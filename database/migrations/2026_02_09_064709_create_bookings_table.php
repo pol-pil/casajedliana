@@ -17,19 +17,30 @@ return new class extends Migration
             $table->foreignId('client_id')->constrained()->cascadeOnDelete();
             $table->foreignId('room_id')->constrained('rooms')->cascadeOnDelete();
             $table->foreignId('receptionist_id')->constrained('users')->cascadeOnDelete();
-            $table->foreignId('rate_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('rate_id')
+            ->nullable()
+            ->constrained()
+            ->nullOnDelete();
         
             $table->dateTime('check_in');
             $table->dateTime('check_out');
         
             $table->text('remarks')->nullable();
             $table->string('purpose')->nullable();
-            $table->string('booking_type')->nullable();
+           $table->foreignId('booking_type_id')
+            ->constrained()
+            ->cascadeOnDelete();
         
             $table->integer('guest_count');
             $table->decimal('total_amount', 10, 2);
         
-            $table->string('status');
+            $table->enum('status', [
+                'pencil',
+                'reserved',
+                'checked_in',
+                'checked_out',
+                'cancelled'
+            ]);
         
             $table->timestamps();
         });        

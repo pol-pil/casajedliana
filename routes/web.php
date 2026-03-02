@@ -1,9 +1,11 @@
 <?php
 
+use App\Http\Controllers\AccommodationController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
 use App\Http\Controllers\BookingsController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\RatesController;
 
 Route::get('/', function () {
@@ -13,9 +15,74 @@ Route::get('/', function () {
 })->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('dashboard', function () {
-        return Inertia::render('dashboard');
-    })->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])
+        ->name('dashboard');
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Rooms Monitoring Page
+    |--------------------------------------------------------------------------
+    */
+    Route::get('/rooms', [AccommodationController::class, 'index'])
+        ->name('rooms.index');
+    /*
+    |--------------------------------------------------------------------------
+    | Room Operational Status (available / cleaning / maintenance)
+    |--------------------------------------------------------------------------
+    */
+    Route::patch(
+        '/rooms/{room}/status',
+        [AccommodationController::class, 'updateStatus']
+    )->name('rooms.updateStatus');
+    /*
+    |--------------------------------------------------------------------------
+    | Booking Transitions (Triggered from Room Page)
+    |--------------------------------------------------------------------------
+    */
+    Route::post(
+        '/rooms/{room}/check-in',
+        [AccommodationController::class, 'checkIn']
+    )->name('rooms.checkIn');
+
+    Route::post(
+        '/rooms/{room}/check-out',
+        [AccommodationController::class, 'checkOut']
+    )->name('rooms.checkOut');
+
+    Route::post(
+        '/rooms/{room}/cancel-booking',
+        [AccommodationController::class, 'cancelBooking']
+    )->name('rooms.cancelBooking');
+
+    Route::post(
+        '/rooms/{room}/mark-paid',
+        [AccommodationController::class, 'markPaid']
+    )->name('rooms.markPaid');
+
+    Route::post(
+        '/rooms/{room}/confirm-cleaning',
+        [AccommodationController::class, 'confirmCleaning']
+    )->name('rooms.confirmCleaning');
+
+    /*
+|--------------------------------------------------------------------------
+| REPORT ROUTES
+|--------------------------------------------------------------------------
+*/
+    Route::prefix('reports')->group(function () {
+
+        Route::get('/charts', function () {
+            return Inertia::render('reports/charts');
+        })->name('reports.charts');
+
+        Route::get('/history', function () {
+            return Inertia::render('reports/history');
+        })->name('reports.history');
+    });
+
+
+
     Route::get('/bookings', [BookingsController::class, 'index'])->name('bookings.index');
     Route::post('/bookings', [BookingsController::class, 'store'])->name('bookings.store');
 
@@ -34,4 +101,4 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/booking-types/{bookingType}', [RatesController::class, 'destroyBookingType'])->name('booking-types.destroy');
 });
 
-require __DIR__.'/settings.php';
+require __DIR__ . '/settings.php';
