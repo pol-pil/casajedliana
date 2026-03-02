@@ -511,7 +511,7 @@ export default function Index() {
 									{client.first_name} {client.last_name}
 								</span>
 								<span className='text-primary-foreground'>
-									{client.email}ghgh
+									{client.email}
 								</span>
 							</Button>
 						))}
