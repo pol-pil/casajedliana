@@ -511,7 +511,7 @@ export default function Index() {
 									{client.first_name} {client.last_name}
 								</span>
 								<span className='text-primary-foreground'>
-									{client.email}
+									{client.email}ghgh
 								</span>
 							</Button>
 						))}
@@ -521,7 +521,7 @@ export default function Index() {
 		);
 	};
 
-	
+
 
 	return (
 		<AppLayout breadcrumbs={breadcrumbs}>
