@@ -508,7 +508,7 @@ export default function Index() {
 								}}
 							>
 								<span>
-									{client.first_name} {client.last_name} Added Charge
+									{client.first_name} {client.last_name} Added 
 								</span>
 								<span className='text-primary-foreground'>
 									{client.email}
