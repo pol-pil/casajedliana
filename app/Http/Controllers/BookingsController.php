@@ -8,6 +8,7 @@ use App\Models\Room;
 use App\Models\Rate;
 use App\Models\Charge;
 use App\Models\BookingType;
+use App\Models\Payment;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -30,6 +31,7 @@ class BookingsController extends Controller
         $rates = Rate::all();
         $charges = Charge::all();
         $clients = Client::all();
+        $payments = Payment::all();
         $bookingTypes = BookingType::where('is_active', true)->get();
 
         return Inertia::render('Bookings/Index', [

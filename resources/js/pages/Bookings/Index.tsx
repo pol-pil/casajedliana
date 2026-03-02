@@ -79,7 +79,10 @@ type Booking = {
 	remarks: string;
 	balance: number;
 	payments: Array<{
+		id: number;
 		amount: number;
+		payment_type: string;
+		payment_method: string;
 	}>;
 	booking_charges?: Array<{
 		id: number;
@@ -118,6 +121,14 @@ type Rate = {
 	type: 'exact' | 'percentage';
 };
 
+type Payment = {
+	id: number;
+	booking_id: number;
+	amount: number;
+	payment_method: string;
+	payment_type: string;
+};
+
 type BookingType = {
 	id: number;
 	name: string;
@@ -152,6 +163,7 @@ type PageProps = {
 	bookingTypes: BookingType[];
 	charges: Charge[];
 	clients: Client[];
+	payments: Payment[];
 	auth?: {
 		user: any;
 	};
@@ -269,6 +281,69 @@ const AddChargeDialog = ({
 	);
 };
 
+const AddPaymentDialog = ({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) => {
+	return (
+		<Dialog open={open} onOpenChange={onOpenChange}>
+			<DialogContent className='max-h-[90vh] min-w-[90vw] overflow-y-auto lg:min-w-md'>
+				<form>
+					<FieldGroup>
+						<FieldSet>
+							<FieldLegend>Add Payment</FieldLegend>
+							<FieldSeparator />
+							<Field>
+								<FieldLabel htmlFor='payment-type'>Payment Type</FieldLabel>
+								<Select>
+									<SelectTrigger>
+										<SelectValue placeholder='Select type' />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectGroup>
+											<SelectItem value='downpayment'>Downpayment</SelectItem>
+											<SelectItem value='partial'>Partial Payment</SelectItem>
+											<SelectItem value='full'>Full Payment</SelectItem>
+										</SelectGroup>
+									</SelectContent>
+								</Select>
+							</Field>
+							<FieldGroup className='grid grid-cols-2 gap-4'>
+								<Field>
+									<FieldLabel htmlFor='charge-value'>Value</FieldLabel>
+									<Input id='charge-value' type='number' step='0.01' min='0' required />
+								</Field>
+								<Field>
+									<FieldLabel htmlFor='charge-type'>Payment Method</FieldLabel>
+									<Select>
+										<SelectTrigger>
+											<SelectValue placeholder='Select method' />
+										</SelectTrigger>
+										<SelectContent>
+											<SelectGroup>
+												<SelectItem value='cash'>Cash</SelectItem>
+												<SelectItem value='gcash'>GCash</SelectItem>
+												<SelectItem value='credit_card'>Credit Card</SelectItem>
+												<SelectItem value='bank_transfer'>Bank Transfer</SelectItem>
+											</SelectGroup>
+										</SelectContent>
+									</Select>
+								</Field>
+							</FieldGroup>
+						</FieldSet>
+					</FieldGroup>
+					<FieldSeparator className='py-8' />
+					<DialogFooter>
+						<DialogClose asChild>
+							<Button type='button' variant='outline'>
+								Cancel
+							</Button>
+						</DialogClose>
+						<Button type='submit'>Add Payment</Button>
+					</DialogFooter>
+				</form>
+			</DialogContent>
+		</Dialog>
+	);
+};
+
 export default function Index() {
 	const [isDialogOpen, setIsDialogOpen] = useState(false);
 	const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({ from: undefined, to: undefined });
@@ -284,6 +359,7 @@ export default function Index() {
 	const [isAddChargeDialogOpen, setIsAddChargeDialogOpen] = useState(false);
 	const [chargeType, setChargeType] = useState<'amenity' | 'damage'>('amenity');
 	const [isFindClientsDialogOpen, setIsFindClientsDialogOpen] = useState(false);
+	const [isAddPaymentDialogOpen, setIsAddPaymentDialogOpen] = useState(false);
 
 	const [checkInTime, setCheckInTime] = useState('8:00');
 	const [checkOutTime, setCheckOutTime] = useState('17:00');
@@ -313,7 +389,7 @@ export default function Index() {
 	const { data, setData, post, processing, errors } = useForm(emptyForm);
 
 	// Use the PageProps type
-	const { bookings, stats, rooms, rates, bookingTypes, charges } = usePage<PageProps>().props;
+	const { bookings, stats, rooms, rates, bookingTypes, charges, payments } = usePage<PageProps>().props;
 
 	// Calculate duration when dates change
 	useEffect(() => {
@@ -484,18 +560,16 @@ export default function Index() {
 		onSelect: (client: Client) => void;
 	}) => {
 		const { clients } = usePage<PageProps>().props;
-	
-		const sortedClients = [...clients].sort((a, b) =>
-			a.first_name.localeCompare(b.first_name)
-		);
-	
+
+		const sortedClients = [...clients].sort((a, b) => a.first_name.localeCompare(b.first_name));
+
 		return (
 			<Dialog open={open} onOpenChange={onOpenChange}>
 				<DialogContent>
 					<DialogHeader>
 						<DialogTitle>Find Client</DialogTitle>
 					</DialogHeader>
-	
+
 					<ScrollArea className='h-90'>
 						{sortedClients.map((client: any) => (
 							<Button
@@ -508,11 +582,9 @@ export default function Index() {
 								}}
 							>
 								<span>
-									{client.first_name} {client.last_name} Added 
+									{client.first_name} {client.last_name}
 								</span>
-								<span className='text-primary-foreground'>
-									{client.email}
-								</span>
+								<span className='text-primary-foreground'>{client.email}</span>
 							</Button>
 						))}
 					</ScrollArea>
@@ -520,8 +592,6 @@ export default function Index() {
 			</Dialog>
 		);
 	};
-
-
 
 	return (
 		<AppLayout breadcrumbs={breadcrumbs}>
@@ -1215,10 +1285,6 @@ export default function Index() {
 										<span>Number of Guests</span>
 										<span>{selectedBooking?.guest_count}</span>
 									</div>
-									<div className='flex justify-between'>
-										<span>Sub Total</span>
-										<span>7000.00</span>
-									</div>
 								</DialogDescription>
 							</div>
 							<div>
@@ -1352,7 +1418,7 @@ export default function Index() {
 											className='flex h-6 h-7 items-center text-xs'
 											size='sm'
 											onClick={() => {
-												setIsAddChargeDialogOpen(true);
+												setIsAddPaymentDialogOpen(true);
 											}}
 										>
 											<Plus className='size-3' />
@@ -1361,18 +1427,31 @@ export default function Index() {
 									</div>
 								</div>
 								<DialogDescription className='space-y-1 py-2'>
-									<div className='flex justify-between'>
-										<span>Downpayment</span>
-										<span>-4000.00</span>
-									</div>
-									<div className='flex justify-between'>
-										<span>Employee Rate</span>
-										<span>-790.00</span>
+									<div className='flex justify-between font-bold text-primary-foreground'>
+										<span>Sub Total</span>
+										<span>{selectedBooking?.total_amount}</span>
 									</div>
 									<Separator />
-									<div className='flex justify-between'>
-										<span className='font-bold text-primary-foreground'>Balance</span>
-										<span className='font-bold text-primary-foreground'>{selectedBooking?.total_amount}</span>
+									{selectedBooking?.payments?.length ? (
+										selectedBooking.payments.map((payment) => (
+											<div key={payment.id} className='flex justify-between'>
+												<span> {payment.payment_type.charAt(0).toUpperCase() + payment.payment_type.slice(1)}</span>
+												<span>-{payment.amount}</span>
+											</div>
+										))
+									) : (
+										<DialogDescription className='text-sm text-muted-foreground'>No payments added</DialogDescription>
+									)}
+									<Separator />
+									<div className='flex justify-between font-bold text-primary-foreground'>
+										<span>Balance</span>
+										<span>
+											₱{' '}
+											{(
+												(selectedBooking?.total_amount || 0) -
+												(selectedBooking?.payments?.reduce((sum, payment) => sum + payment.amount, 0) || 0)
+											).toFixed(2)}
+										</span>
 									</div>
 								</DialogDescription>
 							</div>
@@ -1386,6 +1465,8 @@ export default function Index() {
 						</DialogClose>
 						<Button type='submit'>Print SOA</Button>
 					</DialogFooter>
+
+					<AddPaymentDialog open={isAddPaymentDialogOpen} onOpenChange={setIsAddPaymentDialogOpen} />
 				</DialogContent>
 			</Dialog>
 		</AppLayout>
