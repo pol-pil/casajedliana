@@ -21,8 +21,8 @@ class BookingsController extends Controller
 
         $stats = [
             'totalBookings' => Booking::count(),
-            'activeGuests' => Booking::where('status', 'checked-in')->count(),
-            'pendingBookings' => Booking::where('status', 'pending')->count(),
+            'activeGuests' => Booking::where('status', 'checked_in')->count(),
+            'pendingBookings' => Booking::where('status', 'pencil')->count(),
             'totalRevenue' => Booking::sum('total_amount'),
         ];
 
@@ -53,7 +53,7 @@ class BookingsController extends Controller
             'client.contact_number' => 'required|string|max:20',
             'client.address' => 'nullable|string',
             'client.company' => 'nullable|string',
-    
+
             'room_id' => 'required|exists:rooms,id',
             'rate_id' => 'required|exists:rates,id',
             'check_in' => 'required|date',
@@ -66,14 +66,14 @@ class BookingsController extends Controller
             'payment_method' => 'nullable|string',
             'remarks' => 'nullable|string',
         ]);
-    
+
         // Create or find client
         $client = Client::firstOrCreate(
             ['email' => $validated['client']['email']],
             $validated['client']
         );
-    
-        // Create booking — use total_amount directly from frontend
+
+        // Create booking
         $booking = Booking::create([
             'client_id' => $client->id,
             'room_id' => $validated['room_id'],
@@ -86,9 +86,9 @@ class BookingsController extends Controller
             'booking_type_id' => $validated['booking_type_id'],
             'total_amount' => $validated['total_amount'],
             'remarks' => $validated['remarks'] ?? '',
-            'status' => 'confirmed',
+            'status' => 'pencil', // ✅ matches ENUM
         ]);
-    
+
         // Record downpayment if provided
         if (!empty($validated['downpayment'])) {
             $booking->payments()->create([
@@ -97,28 +97,29 @@ class BookingsController extends Controller
                 'payment_type' => 'downpayment',
             ]);
         }
-    
+
         return redirect()->route('bookings.index')
             ->with('success', 'Booking created successfully.');
     }
-    
 
     public function updateStatus(Request $request, Booking $booking)
     {
         $request->validate([
-            'status' => 'required|in:confirmed,pending,checked-in,checked-out,cancelled',
+            'status' => 'required|in:pencil,reserved,checked_in,checked_out,cancelled',
         ]);
 
-        $booking->update(['status' => $request->status]);
+        $booking->update([
+            'status' => $request->status,
+        ]);
 
         return back()->with('success', 'Booking status updated.');
     }
 
     public function find(Request $request)
-{
-    return Client::where('first_name', $request->first_name)
-        ->where('last_name', $request->last_name)
-        ->orWhere('contact_number', $request->contact_number)
-        ->first();
-}
+    {
+        return Client::where('first_name', $request->first_name)
+            ->where('last_name', $request->last_name)
+            ->orWhere('contact_number', $request->contact_number)
+            ->first();
+    }
 }
