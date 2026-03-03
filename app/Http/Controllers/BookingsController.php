@@ -88,7 +88,7 @@ class BookingsController extends Controller
             'booking_type_id' => $validated['booking_type_id'],
             'total_amount' => $validated['total_amount'],
             'remarks' => $validated['remarks'] ?? '',
-            'status' => 'confirmed',
+            'status' => 'pending',
         ]);
     
         // Record downpayment if provided
@@ -98,6 +98,14 @@ class BookingsController extends Controller
                 'payment_method' => $validated['payment_method'],
                 'payment_type' => 'downpayment',
             ]);
+
+            $totalPaid = $booking->payments()->sum('amount');
+            $requiredDownpayment = $booking->total_amount * 0.30;
+    
+            if ($totalPaid >= $requiredDownpayment) {
+                $booking->status = 'confirmed';
+                $booking->save();
+            }
         }
     
         return redirect()->route('bookings.index')

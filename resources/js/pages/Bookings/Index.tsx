@@ -281,62 +281,106 @@ const AddChargeDialog = ({
 	);
 };
 
-const AddPaymentDialog = ({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) => {
+const AddPaymentDialog = ({
+	open,
+	onOpenChange,
+	booking,
+}: {
+	open: boolean;
+	onOpenChange: (open: boolean) => void;
+	booking: Booking | null;
+}) => {
+	const { data, setData, post, processing, reset } = useForm({
+		booking_id: booking?.id || '',
+		amount: '',
+		payment_type: '',
+		payment_method: '',
+	});
+
+	useEffect(() => {
+		if (booking) {
+			setData('booking_id', booking.id);
+		}
+	}, [booking]);
+
+	const handleSubmit = (e: React.FormEvent) => {
+		e.preventDefault();
+
+		post('/payments', {
+			onSuccess: () => {
+				toast.success('Payment added successfully!');
+				reset();
+				onOpenChange(false);
+			},
+			onError: () => {
+				toast.error('Failed to add payment.');
+			},
+		});
+	};
+
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className='max-h-[90vh] min-w-[90vw] overflow-y-auto lg:min-w-md'>
-				<form>
+				<form onSubmit={handleSubmit}>
 					<FieldGroup>
 						<FieldSet>
 							<FieldLegend>Add Payment</FieldLegend>
 							<FieldSeparator />
+
 							<Field>
-								<FieldLabel htmlFor='payment-type'>Payment Type</FieldLabel>
-								<Select>
+								<FieldLabel>Payment Type</FieldLabel>
+								<Select value={data.payment_type} onValueChange={(value) => setData('payment_type', value)}>
 									<SelectTrigger>
 										<SelectValue placeholder='Select type' />
 									</SelectTrigger>
 									<SelectContent>
-										<SelectGroup>
-											<SelectItem value='downpayment'>Downpayment</SelectItem>
-											<SelectItem value='partial'>Partial Payment</SelectItem>
-											<SelectItem value='full'>Full Payment</SelectItem>
-										</SelectGroup>
+										<SelectItem value='downpayment'>Downpayment</SelectItem>
+										<SelectItem value='partial'>Partial Payment</SelectItem>
+										<SelectItem value='full'>Full Payment</SelectItem>
 									</SelectContent>
 								</Select>
 							</Field>
+
 							<FieldGroup className='grid grid-cols-2 gap-4'>
 								<Field>
-									<FieldLabel htmlFor='charge-value'>Value</FieldLabel>
-									<Input id='charge-value' type='number' step='0.01' min='0' required />
+									<FieldLabel>Amount</FieldLabel>
+									<Input
+										type='number'
+										step='0.01'
+										min='0'
+										required
+										value={data.amount}
+										onChange={(e) => setData('amount', e.target.value)}
+									/>
 								</Field>
+
 								<Field>
-									<FieldLabel htmlFor='charge-type'>Payment Method</FieldLabel>
-									<Select>
+									<FieldLabel>Payment Method</FieldLabel>
+									<Select value={data.payment_method} onValueChange={(value) => setData('payment_method', value)}>
 										<SelectTrigger>
 											<SelectValue placeholder='Select method' />
 										</SelectTrigger>
 										<SelectContent>
-											<SelectGroup>
-												<SelectItem value='cash'>Cash</SelectItem>
-												<SelectItem value='gcash'>GCash</SelectItem>
-												<SelectItem value='credit_card'>Credit Card</SelectItem>
-												<SelectItem value='bank_transfer'>Bank Transfer</SelectItem>
-											</SelectGroup>
+											<SelectItem value='cash'>Cash</SelectItem>
+											<SelectItem value='gcash'>GCash</SelectItem>
+											<SelectItem value='credit_card'>Credit Card</SelectItem>
+											<SelectItem value='bank_transfer'>Bank Transfer</SelectItem>
 										</SelectContent>
 									</Select>
 								</Field>
 							</FieldGroup>
 						</FieldSet>
 					</FieldGroup>
-					<FieldSeparator className='py-8' />
+
+					<FieldSeparator className='py-6' />
+
 					<DialogFooter>
-						<DialogClose asChild>
-							<Button type='button' variant='outline'>
-								Cancel
-							</Button>
-						</DialogClose>
-						<Button type='submit'>Add Payment</Button>
+						<Button type='button' variant='outline' onClick={() => onOpenChange(false)}>
+							Cancel
+						</Button>
+						<Button type='submit' disabled={processing}>
+							{processing ? 'Adding...' : 'Add Payment'}
+						</Button>
 					</DialogFooter>
 				</form>
 			</DialogContent>
@@ -1448,8 +1492,8 @@ export default function Index() {
 										<span>
 											₱{' '}
 											{(
-												(selectedBooking?.total_amount || 0) -
-												(selectedBooking?.payments?.reduce((sum, payment) => sum + payment.amount, 0) || 0)
+												(selectedBooking?.total_amount ?? 0) -
+												(selectedBooking?.payments ?? []).reduce((sum, payment) => sum + Number(payment.amount), 0)
 											).toFixed(2)}
 										</span>
 									</div>
@@ -1466,7 +1510,7 @@ export default function Index() {
 						<Button type='submit'>Print SOA</Button>
 					</DialogFooter>
 
-					<AddPaymentDialog open={isAddPaymentDialogOpen} onOpenChange={setIsAddPaymentDialogOpen} />
+					<AddPaymentDialog open={isAddPaymentDialogOpen} onOpenChange={setIsAddPaymentDialogOpen} booking={selectedBooking} />
 				</DialogContent>
 			</Dialog>
 		</AppLayout>
