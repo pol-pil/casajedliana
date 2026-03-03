@@ -93,7 +93,7 @@ export function AppSidebar() {
                    REPORTS COLLAPSIBLE MENU
                 ============================== */}
                 <SidebarMenu>
-                    <SidebarMenuItem>
+                    <SidebarMenuItem className='mx-2 -mt-1'>
 
                         <Collapsible open={open} onOpenChange={setOpen}>
 
