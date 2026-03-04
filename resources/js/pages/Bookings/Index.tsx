@@ -1175,7 +1175,6 @@ export default function Index() {
 							<TableBody>
 								{bookings.data.map((booking) => {
 									const totalPaid = booking.payments.reduce((sum, payment) => sum + payment.amount, 0);
-									const balance = booking.total_amount - totalPaid;
 
 									return (
 										<TableRow
@@ -1218,7 +1217,13 @@ export default function Index() {
 											</TableCell>
 											<TableCell className='text-right'>
 												<div className='font-medium'>₱{Number(booking.total_amount).toFixed(2)}</div>
-												<div className='text-sm text-muted-foreground'>Balance: ₱{balance.toFixed(2)}</div>
+												<div className='text-sm text-muted-foreground'>
+													Balance: ₱{' '}
+													{(
+														(booking.total_amount ?? 0) -
+														(booking.payments ?? []).reduce((sum, payment) => sum + Number(payment.amount), 0)
+													).toFixed(2)}
+												</div>
 											</TableCell>
 											<TableCell className='text-right'>
 												<DropdownMenu>
