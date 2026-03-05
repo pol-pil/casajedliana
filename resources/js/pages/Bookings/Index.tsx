@@ -1528,7 +1528,7 @@ export default function Index() {
 								</DialogDescription>
 							</div>
 							<Separator className='my-2' />
-							
+
 							<AddChargeDialog
 								open={isAddBookingChargeDialogOpen}
 								onOpenChange={setIsAddBookingChargeDialogOpen}
@@ -1570,11 +1570,10 @@ export default function Index() {
 									</div>
 								</div>
 								<DialogDescription className='space-y-1 py-2'>
-									<div className='flex justify-between font-bold text-primary-foreground'>
-										<span>Sub Total</span>
+									<div className='flex justify-between text-primary-foreground'>
+										<span>Room ({selectedBooking?.rate?.name || 'N/A'})</span>
 										<span>{selectedBooking?.total_amount}</span>
 									</div>
-									<Separator />
 									{(selectedBooking?.booking_charges ?? [])
 										.filter((bc) => bc.charge?.type === 'amenity')
 										.map((amenity) => (
@@ -1595,6 +1594,20 @@ export default function Index() {
 												<span>{damage.total}</span>
 											</div>
 										))}
+									<Separator />
+									<div className='flex justify-between font-bold text-primary-foreground'>
+										<span>Sub Total</span>
+										<span>
+											{' '}
+											{(
+												Number(selectedBooking?.total_amount ?? 0) +
+												(selectedBooking?.booking_charges ?? []).reduce(
+													(sum, charge) => sum + Number(charge.total ?? 0),
+													0,
+												)
+											).toFixed(2)}
+										</span>
+									</div>
 									{selectedBooking?.payments?.map((payment) => (
 										<div key={payment.id} className='flex justify-between'>
 											<span>{payment.payment_type.charAt(0).toUpperCase() + payment.payment_type.slice(1)}</span>
