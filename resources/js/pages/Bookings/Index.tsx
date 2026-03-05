@@ -411,8 +411,7 @@ const AddChargeDialog = ({
 						<Button type='button' variant='outline' onClick={() => onOpenChange(false)}>
 							Cancel
 						</Button>
-						<Button type='submit' disabled={processing} onClick={() => 
-		setData('total', total_amount.toString())}>
+						<Button type='submit' disabled={processing} onClick={() => setData('total', total_amount.toString())}>
 							{processing ? 'Adding...' : 'Add Charge'}
 						</Button>
 					</DialogFooter>
@@ -1503,7 +1502,7 @@ export default function Index() {
 							</div>
 						</div>
 						<Separator orientation='vertical' className='mx-4' />
-						<div className='flex-1 px-4'>
+						<div className='flex flex-1 flex-col px-4'>
 							<DialogHeader className='font-semibold'>Guest Profile</DialogHeader>
 							<div className='flex items-center p-2'>
 								<CircleUserRound className='mr-3 size-12 text-primary-foreground' />
@@ -1529,76 +1528,45 @@ export default function Index() {
 								</DialogDescription>
 							</div>
 							<Separator className='my-2' />
-							<div>
-								<div className='flex items-center justify-between'>
-									<DialogHeader className='font-semibold'>Additional</DialogHeader>
-									<div className='flex gap-2'>
-										<Button
-											className='flex h-6 h-7 items-center text-xs'
-											size='sm'
-											onClick={() => {
-												setIsAddBookingChargeDialogOpen(true);
-											}}
-										>
-											<Plus className='size-3' />
-											Add
-										</Button>
-									</div>
-								</div>
-
-								{/* Amenities Section */}
-								<DialogDescription className='py-2 font-medium'>Amenities</DialogDescription>
-								<div className='mb-4 flex flex-wrap gap-2'>
-									{selectedBooking?.booking_charges?.filter((bc) => bc.charge?.type === 'amenity').length ? (
-										selectedBooking.booking_charges
-											.filter((bc) => bc.charge?.type === 'amenity')
-											.map((amenity) => (
-												<Badge key={amenity.id} className='flex items-center'>
-													{amenity.charge?.name} {amenity.quantity > 1 ? `x${amenity.quantity}` : ''}
-												</Badge>
-											))
-									) : (
-										<DialogDescription className='text-sm text-muted-foreground'>No amenities added</DialogDescription>
-									)}
-								</div>
-
-								{/* Damages Section */}
-								<DialogDescription className='py-2 font-medium'>Damages</DialogDescription>
-								<div className='mb-4 flex flex-wrap gap-2'>
-									{selectedBooking?.booking_charges?.filter((bc) => bc.charge?.type === 'damage').length ? (
-										selectedBooking.booking_charges
-											.filter((bc) => bc.charge?.type === 'damage')
-											.map((damage) => (
-												<Badge key={damage.id} className='flex items-center'>
-													{damage.charge?.name} {damage.quantity > 1 ? `x${damage.quantity}` : ''}
-												</Badge>
-											))
-									) : (
-										<DialogDescription className='text-sm text-muted-foreground'>No damages added</DialogDescription>
-									)}
-								</div>
-							</div>
-
+							
 							<AddChargeDialog
 								open={isAddBookingChargeDialogOpen}
 								onOpenChange={setIsAddBookingChargeDialogOpen}
 								booking={selectedBooking}
 							/>
 
-							<div className='py-8'>
+							<AddPaymentDialog
+								open={isAddPaymentDialogOpen}
+								onOpenChange={setIsAddPaymentDialogOpen}
+								booking={selectedBooking}
+							/>
+
+							<div className='mt-auto pt-4 pb-8'>
 								<div className='flex items-center justify-between'>
 									<DialogHeader className='font-semibold'>Bill</DialogHeader>
-									<div className='flex gap-2'>
-										<Button
-											className='flex h-6 h-7 items-center text-xs'
-											size='sm'
-											onClick={() => {
-												setIsAddPaymentDialogOpen(true);
-											}}
-										>
-											<Plus className='size-3' />
-											Add Payment
-										</Button>
+									<div>
+										<div className='flex flex-row gap-2'>
+											<Button
+												className='h-6 items-center text-xs'
+												size='sm'
+												onClick={() => {
+													setIsAddBookingChargeDialogOpen(true);
+												}}
+											>
+												<Plus className='size-3' />
+												Charge
+											</Button>
+											<Button
+												className='h-6 items-center text-xs'
+												size='sm'
+												onClick={() => {
+													setIsAddPaymentDialogOpen(true);
+												}}
+											>
+												<Plus className='size-3' />
+												Payment
+											</Button>
+										</div>
 									</div>
 								</div>
 								<DialogDescription className='space-y-1 py-2'>
@@ -1607,16 +1575,32 @@ export default function Index() {
 										<span>{selectedBooking?.total_amount}</span>
 									</div>
 									<Separator />
-									{selectedBooking?.payments?.length ? (
-										selectedBooking.payments.map((payment) => (
-											<div key={payment.id} className='flex justify-between'>
-												<span> {payment.payment_type.charAt(0).toUpperCase() + payment.payment_type.slice(1)}</span>
-												<span>-{payment.amount}</span>
+									{(selectedBooking?.booking_charges ?? [])
+										.filter((bc) => bc.charge?.type === 'amenity')
+										.map((amenity) => (
+											<div key={amenity.id} className='flex justify-between'>
+												<span>
+													{amenity.charge?.name} {amenity.quantity > 1 ? `x${amenity.quantity}` : ''}
+												</span>
+												<span>{amenity.total}</span>
 											</div>
-										))
-									) : (
-										<DialogDescription className='text-sm text-muted-foreground'>No payments added</DialogDescription>
-									)}
+										))}
+									{(selectedBooking?.booking_charges ?? [])
+										.filter((bc) => bc.charge?.type === 'damage')
+										.map((damage) => (
+											<div key={damage.id} className='flex justify-between'>
+												<span>
+													{damage.charge?.name} {damage.quantity > 1 ? `x${damage.quantity}` : ''}
+												</span>
+												<span>{damage.total}</span>
+											</div>
+										))}
+									{selectedBooking?.payments?.map((payment) => (
+										<div key={payment.id} className='flex justify-between'>
+											<span>{payment.payment_type.charAt(0).toUpperCase() + payment.payment_type.slice(1)}</span>
+											<span>-{payment.amount}</span>
+										</div>
+									))}
 									<Separator />
 									<div className='flex justify-between font-bold text-primary-foreground'>
 										<span>Balance</span>
@@ -1647,8 +1631,6 @@ export default function Index() {
 						</DialogClose>
 						<Button type='submit'>Print SOA</Button>
 					</DialogFooter>
-
-					<AddPaymentDialog open={isAddPaymentDialogOpen} onOpenChange={setIsAddPaymentDialogOpen} booking={selectedBooking} />
 				</DialogContent>
 			</Dialog>
 		</AppLayout>
