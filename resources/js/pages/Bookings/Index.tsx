@@ -71,6 +71,9 @@ type Booking = {
 		room_number: string;
 		room_type: string;
 	};
+	rate: {
+		name: string;
+	}
 	guest_count: string;
 	check_in: string;
 	check_out: string;
@@ -1359,9 +1362,16 @@ export default function Index() {
 												<div className='text-sm text-muted-foreground'>
 													Balance: ₱{' '}
 													{(
-														(booking.total_amount ?? 0) -
-														(booking.payments ?? []).reduce((sum, payment) => sum + Number(payment.amount), 0)
-													).toFixed(2)}
+												Number(booking.total_amount ?? 0) +
+												(booking.booking_charges ?? []).reduce(
+													(sum, bookingCharge) => sum + Number(bookingCharge.total ?? 0),
+													0,
+												) -
+												(booking.payments ?? []).reduce(
+													(sum, payment) => sum + Number(payment.amount ?? 0),
+													0,
+												)
+											).toFixed(2)}
 												</div>
 											</TableCell>
 											<TableCell className='text-right'>
