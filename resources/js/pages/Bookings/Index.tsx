@@ -17,7 +17,7 @@ import {
 	DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
@@ -134,6 +134,15 @@ type BookingType = {
 	name: string;
 };
 
+type BookingCharge = {
+	id: number;
+	booking_id: number;
+	charge_id: number;
+	quantity: number;
+	value: number;
+	total: number;
+};
+
 type Client = {
 	id: number;
 	first_name: string;
@@ -164,6 +173,7 @@ type PageProps = {
 	charges: Charge[];
 	clients: Client[];
 	payments: Payment[];
+	bookingCharges: BookingCharge[];
 	auth?: {
 		user: any;
 	};
@@ -210,72 +220,203 @@ const statusConfig = {
 	},
 };
 
+// const AddChargeDialog = ({
+// 	open,
+// 	onOpenChange,
+// 	onSelect,
+// }: {
+// 	open: boolean;
+// 	onOpenChange: (open: boolean) => void;
+// 	onSelect: (charge: Charge) => void;
+// }) => {
+// 	const { charges } = usePage<PageProps>().props;
+
+// 	return (
+// 		<Dialog open={open} onOpenChange={onOpenChange}>
+// 			<DialogContent className='min-w-200'>
+// 				<DialogHeader>
+// 					<DialogTitle>Add Charge</DialogTitle>
+// 				</DialogHeader>
+// 				<div className='flex flex-row gap-6'>
+// 					<div className='flex-1 space-y-2'>
+// 						<DialogDescription>Amenities</DialogDescription>
+// 						<ScrollArea className='h-90'>
+// 							{charges
+// 								.filter((charge: any) => charge.type === 'amenity')
+// 								.map((charge: any) => (
+// 									<Button
+// 										key={charge.id}
+// 										variant='outline'
+// 										className='mb-2 w-full justify-between'
+// 										onClick={() => {
+// 											onSelect(charge);
+// 											onOpenChange(false);
+// 										}}
+// 									>
+// 										<span>{charge.name}</span>
+// 										<span className='text-muted-foreground'>₱{charge.value}</span>
+// 									</Button>
+// 								))}
+// 						</ScrollArea>
+// 					</div>
+// 					<div className='flex-1 space-y-2'>
+// 						<DialogDescription>Damages</DialogDescription>
+// 						<ScrollArea className='h-90'>
+// 							{charges
+// 								.filter((charge: any) => charge.type === 'damage')
+// 								.map((charge: any) => (
+// 									<Button
+// 										key={charge.id}
+// 										variant='outline'
+// 										className='mb-2 w-full justify-between'
+// 										onClick={() => {
+// 											onSelect(charge);
+// 											onOpenChange(false);
+// 										}}
+// 									>
+// 										<span>{charge.name}</span>
+// 										<span className='text-muted-foreground'>₱{charge.value}</span>
+// 									</Button>
+// 								))}
+// 						</ScrollArea>
+// 					</div>
+// 				</div>
+// 				<DialogFooter>
+// 					<DialogClose asChild>
+// 						<Button variant='outline'>Cancel</Button>
+// 					</DialogClose>
+// 				</DialogFooter>
+// 			</DialogContent>
+// 		</Dialog>
+// 	);
+// };
+
 const AddChargeDialog = ({
 	open,
 	onOpenChange,
-	onSelect,
+	booking,
 }: {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
-	onSelect: (charge: Charge) => void;
+	booking: Booking | null;
 }) => {
+	const { data, setData, post, processing, reset } = useForm({
+		booking_id: booking?.id || '',
+		charge_id: '',
+		quantity: '1',
+		value: '',
+		total: '',
+	});
+
+	useEffect(() => {
+		if (booking) {
+			setData('booking_id', booking.id);
+		}
+	}, [booking]);
+
+	const handleSubmit = (e: React.FormEvent) => {
+		e.preventDefault();
+
+		post('/booking-charges', {
+			onSuccess: () => {
+				toast.success('Booking charge added successfully!');
+				reset();
+				onOpenChange(false);
+			},
+			onError: () => {
+				toast.error('Failed to add booking charge.');
+			},
+		});
+	};
+
 	const { charges } = usePage<PageProps>().props;
+	const total_amount = (parseFloat(data.value) || 0) * parseInt(data.quantity);
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className='min-w-200'>
-				<DialogHeader>
-					<DialogTitle>Add Charge</DialogTitle>
-				</DialogHeader>
-				<div className='flex flex-row gap-6'>
-					<div className='flex-1 space-y-2'>
-						<DialogDescription>Amenities</DialogDescription>
-						<ScrollArea className='h-90'>
-							{charges
-								.filter((charge: any) => charge.type === 'amenity')
-								.map((charge: any) => (
-									<Button
-										key={charge.id}
-										variant='outline'
-										className='mb-2 w-full justify-between'
-										onClick={() => {
-											onSelect(charge);
-											onOpenChange(false);
-										}}
-									>
-										<span>{charge.name}</span>
-										<span className='text-muted-foreground'>₱{charge.value}</span>
-									</Button>
-								))}
-						</ScrollArea>
-					</div>
-					<div className='flex-1 space-y-2'>
-						<DialogDescription>Damages</DialogDescription>
-						<ScrollArea className='h-90'>
-							{charges
-								.filter((charge: any) => charge.type === 'damage')
-								.map((charge: any) => (
-									<Button
-										key={charge.id}
-										variant='outline'
-										className='mb-2 w-full justify-between'
-										onClick={() => {
-											onSelect(charge);
-											onOpenChange(false);
-										}}
-									>
-										<span>{charge.name}</span>
-										<span className='text-muted-foreground'>₱{charge.value}</span>
-									</Button>
-								))}
-						</ScrollArea>
-					</div>
-				</div>
-				<DialogFooter>
-					<DialogClose asChild>
-						<Button variant='outline'>Cancel</Button>
-					</DialogClose>
-				</DialogFooter>
+			<DialogContent className='max-h-[90vh] min-w-[90vw] overflow-y-auto lg:min-w-md'>
+				<form onSubmit={handleSubmit}>
+					<FieldGroup>
+						<FieldSet>
+							<FieldLegend>Add Booking Charge</FieldLegend>
+							<FieldSeparator />
+
+							<Field>
+								<FieldLabel>Charge Item</FieldLabel>
+								<Select
+									value={data.charge_id}
+									onValueChange={(value) => {
+										setData('charge_id', value);
+
+										const selectedCharge = charges.find((c: any) => c.id.toString() === value);
+
+										if (selectedCharge) {
+											setData('value', selectedCharge.value.toString());
+										}
+									}}
+								>
+									<SelectTrigger>
+										<SelectValue placeholder='Select Charge' />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectGroup>
+											<SelectLabel className='text-xs text-gray-400'>Amenity</SelectLabel>
+											{charges
+												.filter((charge: any) => charge.type === 'amenity')
+												.map((charge: any) => (
+													<SelectItem key={charge.id} value={charge.id.toString()}>
+														<span>{charge.name}</span>
+														<span className='text-muted-foreground'>₱{charge.value}</span>
+													</SelectItem>
+												))}
+										</SelectGroup>
+										<SelectGroup>
+											<SelectLabel className='pt-4 text-xs text-gray-400'>Damage</SelectLabel>
+											{charges
+												.filter((charge: any) => charge.type === 'damage')
+												.map((charge: any) => (
+													<SelectItem key={charge.id} value={charge.id.toString()}>
+														<span>{charge.name}</span>
+														<span className='text-muted-foreground'>₱{charge.value}</span>
+													</SelectItem>
+												))}
+										</SelectGroup>
+									</SelectContent>
+								</Select>
+							</Field>
+							<FieldGroup className='grid grid-cols-2 gap-4'>
+								<Field>
+									<FieldLabel>Quantity</FieldLabel>
+									<Input
+										type='number'
+										step='1'
+										min='1'
+										required
+										value={data.quantity}
+										onChange={(e) => setData('quantity', e.target.value)}
+									/>
+								</Field>
+
+								<Field>
+									<FieldLabel>Total</FieldLabel>
+									<Input type='number' value={total_amount.toFixed(2)} readOnly />
+								</Field>
+							</FieldGroup>
+						</FieldSet>
+					</FieldGroup>
+
+					<FieldSeparator className='py-6' />
+
+					<DialogFooter>
+						<Button type='button' variant='outline' onClick={() => onOpenChange(false)}>
+							Cancel
+						</Button>
+						<Button type='submit' disabled={processing} onClick={() => 
+		setData('total', total_amount.toString())}>
+							{processing ? 'Adding...' : 'Add Charge'}
+						</Button>
+					</DialogFooter>
+				</form>
 			</DialogContent>
 		</Dialog>
 	);
@@ -400,7 +541,7 @@ export default function Index() {
 
 	const [selectedAmenities, setSelectedAmenities] = useState<Charge[]>([]);
 	const [selectedDamages, setSelectedDamages] = useState<Charge[]>([]);
-	const [isAddChargeDialogOpen, setIsAddChargeDialogOpen] = useState(false);
+	const [isAddBookingChargeDialogOpen, setIsAddBookingChargeDialogOpen] = useState(false);
 	const [chargeType, setChargeType] = useState<'amenity' | 'damage'>('amenity');
 	const [isFindClientsDialogOpen, setIsFindClientsDialogOpen] = useState(false);
 	const [isAddPaymentDialogOpen, setIsAddPaymentDialogOpen] = useState(false);
@@ -637,6 +778,7 @@ export default function Index() {
 		);
 	};
 
+	console.log(selectedBooking?.booking_charges);
 	return (
 		<AppLayout breadcrumbs={breadcrumbs}>
 			<div className='p-6'>
@@ -1174,8 +1316,6 @@ export default function Index() {
 							</TableHeader>
 							<TableBody>
 								{bookings.data.map((booking) => {
-									const totalPaid = booking.payments.reduce((sum, payment) => sum + payment.amount, 0);
-
 									return (
 										<TableRow
 											key={booking.id}
@@ -1397,7 +1537,7 @@ export default function Index() {
 											className='flex h-6 h-7 items-center text-xs'
 											size='sm'
 											onClick={() => {
-												setIsAddChargeDialogOpen(true);
+												setIsAddBookingChargeDialogOpen(true);
 											}}
 										>
 											<Plus className='size-3' />
@@ -1409,18 +1549,14 @@ export default function Index() {
 								{/* Amenities Section */}
 								<DialogDescription className='py-2 font-medium'>Amenities</DialogDescription>
 								<div className='mb-4 flex flex-wrap gap-2'>
-									{selectedAmenities.length > 0 ? (
-										selectedAmenities.map((amenity) => (
-											<Badge key={amenity.id} className='flex items-center gap-1 pr-1'>
-												{amenity.name}
-												<button
-													onClick={() => setSelectedAmenities((prev) => prev.filter((a) => a.id !== amenity.id))}
-													className='ml-1 hover:text-destructive'
-												>
-													×
-												</button>
-											</Badge>
-										))
+									{selectedBooking?.booking_charges?.filter((bc) => bc.charge?.type === 'amenity').length ? (
+										selectedBooking.booking_charges
+											.filter((bc) => bc.charge?.type === 'amenity')
+											.map((amenity) => (
+												<Badge key={amenity.id} className='flex items-center'>
+													{amenity.charge?.name} {amenity.quantity > 1 ? `x${amenity.quantity}` : ''}
+												</Badge>
+											))
 									) : (
 										<DialogDescription className='text-sm text-muted-foreground'>No amenities added</DialogDescription>
 									)}
@@ -1428,19 +1564,15 @@ export default function Index() {
 
 								{/* Damages Section */}
 								<DialogDescription className='py-2 font-medium'>Damages</DialogDescription>
-								<div className='flex flex-wrap gap-2'>
-									{selectedDamages.length > 0 ? (
-										selectedDamages.map((damage) => (
-											<Badge key={damage.id} className='flex items-center gap-1 pr-1'>
-												{damage.name}
-												<button
-													onClick={() => setSelectedDamages((prev) => prev.filter((d) => d.id !== damage.id))}
-													className='ml-1 hover:text-destructive'
-												>
-													×
-												</button>
-											</Badge>
-										))
+								<div className='mb-4 flex flex-wrap gap-2'>
+									{selectedBooking?.booking_charges?.filter((bc) => bc.charge?.type === 'damage').length ? (
+										selectedBooking.booking_charges
+											.filter((bc) => bc.charge?.type === 'damage')
+											.map((damage) => (
+												<Badge key={damage.id} className='flex items-center'>
+													{damage.charge?.name} {damage.quantity > 1 ? `x${damage.quantity}` : ''}
+												</Badge>
+											))
 									) : (
 										<DialogDescription className='text-sm text-muted-foreground'>No damages added</DialogDescription>
 									)}
@@ -1448,15 +1580,9 @@ export default function Index() {
 							</div>
 
 							<AddChargeDialog
-								open={isAddChargeDialogOpen}
-								onOpenChange={setIsAddChargeDialogOpen}
-								onSelect={(charge) => {
-									if (charge.type === 'amenity') {
-										setSelectedAmenities((prev) => [...prev, charge]);
-									} else {
-										setSelectedDamages((prev) => [...prev, charge]);
-									}
-								}}
+								open={isAddBookingChargeDialogOpen}
+								onOpenChange={setIsAddBookingChargeDialogOpen}
+								booking={selectedBooking}
 							/>
 
 							<div className='py-8'>
@@ -1497,8 +1623,15 @@ export default function Index() {
 										<span>
 											₱{' '}
 											{(
-												(selectedBooking?.total_amount ?? 0) -
-												(selectedBooking?.payments ?? []).reduce((sum, payment) => sum + Number(payment.amount), 0)
+												Number(selectedBooking?.total_amount ?? 0) +
+												(selectedBooking?.booking_charges ?? []).reduce(
+													(sum, bookingCharge) => sum + Number(bookingCharge.total ?? 0),
+													0,
+												) -
+												(selectedBooking?.payments ?? []).reduce(
+													(sum, payment) => sum + Number(payment.amount ?? 0),
+													0,
+												)
 											).toFixed(2)}
 										</span>
 									</div>

@@ -6,6 +6,7 @@ use Laravel\Fortify\Features;
 use App\Http\Controllers\BookingsController;
 use App\Http\Controllers\RatesController;
 use App\Http\Controllers\PaymentsController;
+use App\Http\Controllers\BookingChargesController;
 
 Route::get('/', function () {
     return Inertia::render('welcome', [
@@ -35,6 +36,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/booking-types/{bookingType}', [RatesController::class, 'destroyBookingType'])->name('booking-types.destroy');
     // Payment routes
     Route::post('/payments', [PaymentsController::class, 'storePayment'])->name('payments.store');
+    // Booking Charge routes
+    Route::post('/booking-charges', [BookingChargesController::class, 'storeBookingCharge'])->name('booking-charges.store');
 });
 
 require __DIR__.'/settings.php';
