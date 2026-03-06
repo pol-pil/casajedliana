@@ -224,77 +224,6 @@ const statusConfig = {
 	},
 };
 
-// const AddChargeDialog = ({
-// 	open,
-// 	onOpenChange,
-// 	onSelect,
-// }: {
-// 	open: boolean;
-// 	onOpenChange: (open: boolean) => void;
-// 	onSelect: (charge: Charge) => void;
-// }) => {
-// 	const { charges } = usePage<PageProps>().props;
-
-// 	return (
-// 		<Dialog open={open} onOpenChange={onOpenChange}>
-// 			<DialogContent className='min-w-200'>
-// 				<DialogHeader>
-// 					<DialogTitle>Add Charge</DialogTitle>
-// 				</DialogHeader>
-// 				<div className='flex flex-row gap-6'>
-// 					<div className='flex-1 space-y-2'>
-// 						<DialogDescription>Amenities</DialogDescription>
-// 						<ScrollArea className='h-90'>
-// 							{charges
-// 								.filter((charge: any) => charge.type === 'amenity')
-// 								.map((charge: any) => (
-// 									<Button
-// 										key={charge.id}
-// 										variant='outline'
-// 										className='mb-2 w-full justify-between'
-// 										onClick={() => {
-// 											onSelect(charge);
-// 											onOpenChange(false);
-// 										}}
-// 									>
-// 										<span>{charge.name}</span>
-// 										<span className='text-muted-foreground'>₱{charge.value}</span>
-// 									</Button>
-// 								))}
-// 						</ScrollArea>
-// 					</div>
-// 					<div className='flex-1 space-y-2'>
-// 						<DialogDescription>Damages</DialogDescription>
-// 						<ScrollArea className='h-90'>
-// 							{charges
-// 								.filter((charge: any) => charge.type === 'damage')
-// 								.map((charge: any) => (
-// 									<Button
-// 										key={charge.id}
-// 										variant='outline'
-// 										className='mb-2 w-full justify-between'
-// 										onClick={() => {
-// 											onSelect(charge);
-// 											onOpenChange(false);
-// 										}}
-// 									>
-// 										<span>{charge.name}</span>
-// 										<span className='text-muted-foreground'>₱{charge.value}</span>
-// 									</Button>
-// 								))}
-// 						</ScrollArea>
-// 					</div>
-// 				</div>
-// 				<DialogFooter>
-// 					<DialogClose asChild>
-// 						<Button variant='outline'>Cancel</Button>
-// 					</DialogClose>
-// 				</DialogFooter>
-// 			</DialogContent>
-// 		</Dialog>
-// 	);
-// };
-
 const AddChargeDialog = ({
 	open,
 	onOpenChange,
@@ -1605,7 +1534,7 @@ export default function Index() {
 											</div>
 										))}
 									<Separator />
-									<div className='flex justify-between font-bold text-primary-foreground'>
+									<div className='flex justify-between font-bold text-primary-foreground dark:text-primary'>
 										<span>Sub Total</span>
 										<span>
 											{' '}
@@ -1625,7 +1554,7 @@ export default function Index() {
 										</div>
 									))}
 									<Separator />
-									<div className='flex justify-between font-bold text-primary-foreground'>
+									<div className='flex justify-between font-bold text-primary-foreground dark:text-primary'>
 										<span>Balance</span>
 										<span>
 											₱{' '}
