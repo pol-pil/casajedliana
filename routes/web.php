@@ -87,6 +87,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/bookings', [BookingsController::class, 'index'])->name('bookings.index');
     Route::post('/bookings', [BookingsController::class, 'store'])->name('bookings.store');
+    Route::put('/bookings/{booking}', [BookingsController::class, 'update'])->name('bookings.update');
 
     Route::get('/rates', [RatesController::class, 'index'])->name('rates.index');
     // Rate routes

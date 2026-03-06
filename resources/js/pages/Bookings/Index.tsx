@@ -67,15 +67,23 @@ type Booking = {
 		email?: string;
 		contact_number: string;
 		address: string;
+		company: string;
 	};
 	room: {
+		id: number;
 		room_number: string;
 		room_type: string;
 	};
 	rate: {
+		id: number;
 		name: string;
-	}
+	};
 	guest_count: string;
+	booking_type: {
+		id: number;
+		name: string;
+	};
+	purpose: string;
 	check_in: string;
 	check_out: string;
 	status: string;
@@ -204,13 +212,13 @@ const statusConfig = {
 		icon: ClockIcon,
 		color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-950 dark:text-yellow-400',
 	},
-	'checked_in': {
+	checked_in: {
 		label: 'Checked In',
 		variant: 'default' as const,
 		icon: CheckCircleIcon,
 		color: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300',
 	},
-	'checked_out': {
+	checked_out: {
 		label: 'Checked Out',
 		variant: 'outline' as const,
 		icon: CheckCircleIcon,
@@ -478,8 +486,11 @@ export default function Index() {
 	const [isFindClientsDialogOpen, setIsFindClientsDialogOpen] = useState(false);
 	const [isAddPaymentDialogOpen, setIsAddPaymentDialogOpen] = useState(false);
 
-	const [checkInTime, setCheckInTime] = useState('8:00');
+	const [checkInTime, setCheckInTime] = useState('08:00');
 	const [checkOutTime, setCheckOutTime] = useState('17:00');
+
+	const [isEditMode, setIsEditMode] = useState(false);
+	const [editingBookingId, setEditingBookingId] = useState<number | null>(null);
 
 	const emptyForm = {
 		client: {
@@ -503,10 +514,22 @@ export default function Index() {
 		remarks: '',
 	};
 
-	const { data, setData, post, processing, errors } = useForm(emptyForm);
+	const { data, setData, post, put, processing, errors } = useForm(emptyForm);
 
 	// Use the PageProps type
 	const { bookings, stats, rooms, rates, bookingTypes, charges, payments } = usePage<PageProps>().props;
+
+	const resetForm = () => {
+		setIsDialogOpen(false);
+		setIsEditMode(false);
+		setEditingBookingId(null);
+		setDateRange({ from: undefined, to: undefined });
+		setSelectedRoomId('');
+		setSelectedRateId('');
+		setSelectedBookingType('');
+		setGuestCount('1');
+		setData(emptyForm);
+	};
 
 	// Calculate duration when dates change
 	useEffect(() => {
@@ -570,51 +593,25 @@ export default function Index() {
 		setData('guest_count', parseInt(guestCount) || 1);
 	}, [guestCount, setData]);
 
-	const handleSubmit = (e: React.SubmitEvent) => {
+	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
 
-		// Use Inertia's post method directly
-		post('/bookings', {
-			onSuccess: () => {
-				// Show success toast
-				toast.success('Booking created successfully!', {
-					description: 'The booking has been added to the system.',
-					duration: 5000,
-					action: {
-						label: 'View',
-						onClick: () => router.get('/bookings'),
-					},
-				});
-
-				setIsDialogOpen(false);
-				setDateRange({ from: undefined, to: undefined });
-				setSelectedRoomId('');
-				setSelectedRateId('');
-				setSelectedBookingType('');
-				setGuestCount('1');
-				setData(emptyForm);
-				setCheckInTime('08:00');
-				setCheckOutTime('17:00');
-			},
-			onError: (errors) => {
-				// Show error toast
-				toast.error('Failed to create booking', {
-					description: 'Please check the form for errors and try again.',
-					duration: 5000,
-				});
-
-				// You can also show specific error messages
-				if (
-					(errors.client as { first_name?: string; last_name?: string })?.first_name ||
-					(errors.client as { first_name?: string; last_name?: string })?.last_name
-				) {
-					toast.error('Please fill in guest information correctly');
-				}
-				if (errors.room_id) {
-					toast.error('Please select a valid room');
-				}
-			},
-		});
+		if (isEditMode && editingBookingId) {
+			put(`/bookings/${editingBookingId}`, {
+				...data,
+				onSuccess: () => {
+					toast.success('Booking updated successfully!');
+					resetForm();
+				},
+			});
+		} else {
+			post('/bookings', {
+				onSuccess: () => {
+					toast.success('Booking created successfully!');
+					resetForm();
+				},
+			});
+		}
 	};
 
 	const handleClose = () => {
@@ -661,9 +658,9 @@ export default function Index() {
 			variant: 'secondary' as const,
 			icon: AlertCircle,
 			color: 'bg-gray-100 text-gray-800',
-			};
+		};
 
-			const Icon = config.icon;
+		const Icon = config.icon;
 
 		return (
 			<Badge variant={config.variant} className={cn('flex items-center gap-1', config.color)}>
@@ -786,7 +783,7 @@ export default function Index() {
 								<form onSubmit={handleSubmit}>
 									<FieldGroup>
 										<FieldSet>
-											<FieldLegend>New Booking</FieldLegend>
+											<FieldLegend>{isEditMode ? 'Edit Booking' : 'New Booking'}</FieldLegend>
 											<FieldSeparator />
 
 											<div className='grid grid-cols-1 gap-12 md:grid-cols-2'>
@@ -928,36 +925,40 @@ export default function Index() {
 																	</SelectContent>
 																</Select>
 															</Field>
-															<FieldGroup className='grid grid-cols-2 gap-4'>
-																<Field>
-																	<FieldLabel htmlFor='downpayment'>Downpayment</FieldLabel>
-																	<Input
-																		id='downpayment'
-																		type='number'
-																		value={data.downpayment}
-																		onChange={(e) => setData('downpayment', e.target.value)}
-																	/>
-																</Field>
-																<Field>
-																	<FieldLabel htmlFor='payment_method'>Payment Method</FieldLabel>
-																	<Select
-																		value={data.payment_method}
-																		onValueChange={(value) => setData('payment_method', value)}
-																	>
-																		<SelectTrigger>
-																			<SelectValue placeholder='Select payment method' />
-																		</SelectTrigger>
-																		<SelectContent>
-																			<SelectGroup>
-																				<SelectItem value='cash'>Cash</SelectItem>
-																				<SelectItem value='gcash'>GCash</SelectItem>
-																				<SelectItem value='credit_card'>Credit Card</SelectItem>
-																				<SelectItem value='bank_transfer'>Bank Transfer</SelectItem>
-																			</SelectGroup>
-																		</SelectContent>
-																	</Select>
-																</Field>
-															</FieldGroup>
+															{!isEditMode && (
+																<FieldGroup className='grid grid-cols-2 gap-4'>
+																	<Field>
+																		<FieldLabel htmlFor='downpayment'>Downpayment</FieldLabel>
+																		<Input
+																			id='downpayment'
+																			type='number'
+																			value={data.downpayment}
+																			onChange={(e) => setData('downpayment', e.target.value)}
+																		/>
+																	</Field>
+																	<Field>
+																		<FieldLabel htmlFor='payment_method'>Payment Method</FieldLabel>
+																		<Select
+																			value={data.payment_method}
+																			onValueChange={(value) => setData('payment_method', value)}
+																		>
+																			<SelectTrigger>
+																				<SelectValue placeholder='Select payment method' />
+																			</SelectTrigger>
+																			<SelectContent>
+																				<SelectGroup>
+																					<SelectItem value='cash'>Cash</SelectItem>
+																					<SelectItem value='gcash'>GCash</SelectItem>
+																					<SelectItem value='credit_card'>Credit Card</SelectItem>
+																					<SelectItem value='bank_transfer'>
+																						Bank Transfer
+																					</SelectItem>
+																				</SelectGroup>
+																			</SelectContent>
+																		</Select>
+																	</Field>
+																</FieldGroup>
+															)}
 														</FieldGroup>
 													</div>
 												</div>
@@ -1225,8 +1226,14 @@ export default function Index() {
 													>
 														Cancel
 													</Button>
-													<Button type='submit' className='flex-1 sm:flex-none' disabled={processing}>
-														{processing ? 'Creating...' : 'Create Booking'}
+													<Button type='submit' disabled={processing}>
+														{processing
+															? isEditMode
+																? 'Updating...'
+																: 'Creating...'
+															: isEditMode
+																? 'Update Booking'
+																: 'Create Booking'}
 													</Button>
 												</div>
 											</div>
@@ -1290,23 +1297,32 @@ export default function Index() {
 											<TableCell>{formatDateTime(booking.check_in)}</TableCell>
 											<TableCell>{formatDateTime(booking.check_out)}</TableCell>
 											<TableCell>
-												<StatusBadge status={booking.status as "confirmed" | "pending" | "checked_in" | "checked_out" | "cancelled"} />
+												<StatusBadge
+													status={
+														booking.status as
+															| 'confirmed'
+															| 'pending'
+															| 'checked_in'
+															| 'checked_out'
+															| 'cancelled'
+													}
+												/>
 											</TableCell>
 											<TableCell className='text-right'>
 												<div className='font-medium'>₱{Number(booking.total_amount).toFixed(2)}</div>
 												<div className='text-sm text-muted-foreground'>
 													Balance: ₱{' '}
 													{(
-												Number(booking.total_amount ?? 0) +
-												(booking.booking_charges ?? []).reduce(
-													(sum, bookingCharge) => sum + Number(bookingCharge.total ?? 0),
-													0,
-												) -
-												(booking.payments ?? []).reduce(
-													(sum, payment) => sum + Number(payment.amount ?? 0),
-													0,
-												)
-											).toFixed(2)}
+														Number(booking.total_amount ?? 0) +
+														(booking.booking_charges ?? []).reduce(
+															(sum, bookingCharge) => sum + Number(bookingCharge.total ?? 0),
+															0,
+														) -
+														(booking.payments ?? []).reduce(
+															(sum, payment) => sum + Number(payment.amount ?? 0),
+															0,
+														)
+													).toFixed(2)}
 												</div>
 											</TableCell>
 											<TableCell className='text-right'>
@@ -1320,10 +1336,6 @@ export default function Index() {
 														<DropdownMenuItem>
 															<EyeIcon className='mr-2 h-4 w-4' />
 															View Details
-														</DropdownMenuItem>
-														<DropdownMenuItem>
-															<EditIcon className='mr-2 h-4 w-4' />
-															Edit
 														</DropdownMenuItem>
 														<DropdownMenuSeparator />
 														<DropdownMenuItem className='text-destructive'>
@@ -1386,7 +1398,16 @@ export default function Index() {
 							<div>
 								<DialogHeader className='flex flex-row justify-between font-semibold'>
 									<span>Booking Info</span>
-									<StatusBadge status={selectedBooking?.status as "confirmed" | "pending" | "checked_in" | "checked_out" | "cancelled" || 'pending'} />
+									<StatusBadge
+										status={
+											(selectedBooking?.status as
+												| 'confirmed'
+												| 'pending'
+												| 'checked_in'
+												| 'checked_out'
+												| 'cancelled') || 'pending'
+										}
+									/>
 								</DialogHeader>
 								<DialogDescription className='space-y-1 py-2'>
 									<div className='flex justify-between'>
@@ -1400,6 +1421,14 @@ export default function Index() {
 									<div className='flex justify-between'>
 										<span>Booking Time</span>
 										<span>{selectedBooking && formatTime(selectedBooking.created_at)}</span>
+									</div>
+									<div className='flex justify-between'>
+										<span>Booking Type</span>
+										<span>{selectedBooking?.booking_type.name}</span>
+									</div>
+									<div className='flex justify-between'>
+										<span>Purpose of Booking</span>
+										<span>{selectedBooking?.purpose}</span>
 									</div>
 								</DialogDescription>
 							</div>
@@ -1514,7 +1543,7 @@ export default function Index() {
 										</div>
 									</div>
 								</div>
-								<DialogDescription className='space-y-1 py-2'>
+								<DialogDescription className='space-y-1 pt-4 pb-2'>
 									<div className='flex justify-between text-primary-foreground'>
 										<span>Room ({selectedBooking?.rate?.name || 'N/A'})</span>
 										<span>{selectedBooking?.total_amount}</span>
@@ -1539,7 +1568,7 @@ export default function Index() {
 												<span>{damage.total}</span>
 											</div>
 										))}
-									<Separator />
+									<Separator className='my-2' />
 									<div className='flex justify-between font-bold text-primary-foreground dark:text-primary'>
 										<span>Sub Total</span>
 										<span>
@@ -1559,7 +1588,7 @@ export default function Index() {
 											<span>-{payment.amount}</span>
 										</div>
 									))}
-									<Separator />
+									<Separator className='my-2' />
 									<div className='flex justify-between font-bold text-primary-foreground dark:text-primary'>
 										<span>Balance</span>
 										<span>
@@ -1583,7 +1612,50 @@ export default function Index() {
 					</div>
 					<DialogFooter className='-mt-8'>
 						<DialogClose asChild>
-							<Button type='button' variant='outline'>
+							<Button
+								type='button'
+								variant='outline'
+								onClick={() => {
+									if (!selectedBooking) return;
+
+									setIsBookingInfoDialogOpen(false);
+									setIsDialogOpen(true);
+									setIsEditMode(true);
+									setEditingBookingId(selectedBooking.id);
+
+									setSelectedRoomId(selectedBooking.room.id.toString());
+									setSelectedRateId(selectedBooking.rate?.id?.toString() || '');
+									setSelectedBookingType(selectedBooking.booking_type?.id?.toString() || '');
+									setGuestCount(selectedBooking.guest_count.toString());
+
+									setDateRange({
+										from: new Date(selectedBooking.check_in),
+										to: new Date(selectedBooking.check_out),
+									});
+
+									setData({
+										client: {
+											first_name: selectedBooking.client.first_name,
+											last_name: selectedBooking.client.last_name,
+											email: selectedBooking.client.email || '',
+											contact_number: selectedBooking.client.contact_number,
+											address: selectedBooking.client.address || '',
+											company: selectedBooking.client.company || '',
+										},
+										room_id: selectedBooking.room.id.toString(),
+										rate_id: selectedBooking.rate?.id?.toString() || '',
+										check_in: selectedBooking.check_in,
+										check_out: selectedBooking.check_out,
+										guest_count: Number(selectedBooking.guest_count),
+										purpose: selectedBooking.purpose || '',
+										booking_type_id: selectedBooking.booking_type?.id?.toString() || '',
+										total_amount: Number(selectedBooking.total_amount),
+										downpayment: '',
+										payment_method: '',
+										remarks: selectedBooking.remarks || '',
+									});
+								}}
+							>
 								Edit
 							</Button>
 						</DialogClose>

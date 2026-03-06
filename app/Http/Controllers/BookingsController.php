@@ -160,7 +160,6 @@ class BookingsController extends Controller
             'purpose' => 'nullable|string',
             'booking_type_id' => 'required|exists:booking_types,id',
             'total_amount' => 'required|numeric|min:0',
-            'additional_payment' => 'nullable|numeric|min:0',
             'payment_method' => 'nullable|string',
             'remarks' => 'nullable|string',
         ]);
@@ -181,25 +180,14 @@ class BookingsController extends Controller
             'remarks' => $validated['remarks'] ?? '',
         ]);
 
-        // Add additional payment if provided
-        if (!empty($validated['additional_payment'])) {
-            $booking->payments()->create([
-                'amount' => $validated['additional_payment'],
-                'payment_method' => $validated['payment_method'],
-                'payment_type' => 'additional',
-            ]);
-        }
-
         // Recompute payment totals
         $totalPaid = $booking->payments()->sum('amount');
         $requiredDownpayment = $booking->total_amount * 0.30;
 
-        if ($totalPaid >= $booking->total_amount) {
-            $booking->status = 'fully_paid';
-        } elseif ($totalPaid >= $requiredDownpayment) {
+        if ($totalPaid >= $requiredDownpayment) {
             $booking->status = 'confirmed';
         } else {
-            $booking->status = 'pencil';
+            $booking->status = 'pending';
         }
 
         $booking->save();
