@@ -117,7 +117,7 @@ class BookingsController extends Controller
             'booking_type_id' => $validated['booking_type_id'],
             'total_amount' => $validated['total_amount'],
             'remarks' => $validated['remarks'] ?? '',
-            'status' => 'pencil',
+            'status' => 'pending',
         ]);
 
         // Record downpayment if provided

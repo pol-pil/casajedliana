@@ -609,6 +609,14 @@ export default function Index() {
 		setData('guest_count', parseInt(guestCount) || 1);
 	}, [guestCount, setData]);
 
+	const handleErrors = (errors: Record<string, string>, action: 'create' | 'update') => {
+		toast.error(`Failed to ${action} booking`);
+	
+		Object.values(errors).forEach((message) => {
+			toast.error(message);
+		});
+	};
+
 	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
 
@@ -619,6 +627,7 @@ export default function Index() {
 					toast.success('Booking updated successfully!');
 					resetForm();
 				},
+				onError: (errors) => handleErrors(errors, 'update'),
 			});
 		} else {
 			post('/bookings', {
@@ -626,6 +635,7 @@ export default function Index() {
 					toast.success('Booking created successfully!');
 					resetForm();
 				},
+				onError: (errors) => handleErrors(errors, 'create'),
 			});
 		}
 	};
@@ -841,7 +851,6 @@ export default function Index() {
 																		maxLength={100}
 																		value={data.client.first_name}
 																		onChange={(e) => setData('client.first_name', e.target.value)}
-																		required
 																	/>
 																</Field>
 																<Field>
@@ -853,7 +862,6 @@ export default function Index() {
 																		maxLength={100}
 																		value={data.client.last_name}
 																		onChange={(e) => setData('client.last_name', e.target.value)}
-																		required
 																	/>
 																</Field>
 															</FieldGroup>
@@ -879,7 +887,6 @@ export default function Index() {
 																		placeholder='09171234567'
 																		value={data.client.contact_number}
 																		onChange={(e) => setData('client.contact_number', e.target.value)}
-																		required
 																	/>
 																</Field>
 															</FieldGroup>
@@ -911,8 +918,6 @@ export default function Index() {
 																<Textarea
 																	id='remarks'
 																	placeholder='Any special requests or requirements...'
-																	className='flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50'
-																	rows={3}
 																	value={data.remarks}
 																	onChange={(e) => setData('remarks', e.target.value)}
 																/>
@@ -1083,7 +1088,6 @@ export default function Index() {
 																		setSelectedRoomId(value);
 																		setData('room_id', value);
 																	}}
-																	required
 																>
 																	<SelectTrigger>
 																		<SelectValue placeholder='Select Room' />
