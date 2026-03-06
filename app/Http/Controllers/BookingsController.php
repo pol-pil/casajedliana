@@ -141,6 +141,73 @@ class BookingsController extends Controller
             ->with('success', 'Booking created successfully.');
     }
 
+        public function update(Request $request, Booking $booking)
+    {
+        $validated = $request->validate([
+            'client' => 'required|array',
+            'client.first_name' => 'required|string|max:100',
+            'client.last_name' => 'required|string|max:100',
+            'client.email' => 'nullable|email|max:60',
+            'client.contact_number' => 'required|string|max:20',
+            'client.address' => 'nullable|string',
+            'client.company' => 'nullable|string',
+
+            'room_id' => 'required|exists:rooms,id',
+            'rate_id' => 'required|exists:rates,id',
+            'check_in' => 'required|date',
+            'check_out' => 'required|date|after:check_in',
+            'guest_count' => 'required|integer|min:1',
+            'purpose' => 'nullable|string',
+            'booking_type_id' => 'required|exists:booking_types,id',
+            'total_amount' => 'required|numeric|min:0',
+            'additional_payment' => 'nullable|numeric|min:0',
+            'payment_method' => 'nullable|string',
+            'remarks' => 'nullable|string',
+        ]);
+
+        // Update client
+        $booking->client->update($validated['client']);
+
+        // Update booking details
+        $booking->update([
+            'room_id' => $validated['room_id'],
+            'rate_id' => $validated['rate_id'],
+            'check_in' => $validated['check_in'],
+            'check_out' => $validated['check_out'],
+            'guest_count' => $validated['guest_count'],
+            'purpose' => $validated['purpose'],
+            'booking_type_id' => $validated['booking_type_id'],
+            'total_amount' => $validated['total_amount'],
+            'remarks' => $validated['remarks'] ?? '',
+        ]);
+
+        // Add additional payment if provided
+        if (!empty($validated['additional_payment'])) {
+            $booking->payments()->create([
+                'amount' => $validated['additional_payment'],
+                'payment_method' => $validated['payment_method'],
+                'payment_type' => 'additional',
+            ]);
+        }
+
+        // Recompute payment totals
+        $totalPaid = $booking->payments()->sum('amount');
+        $requiredDownpayment = $booking->total_amount * 0.30;
+
+        if ($totalPaid >= $booking->total_amount) {
+            $booking->status = 'fully_paid';
+        } elseif ($totalPaid >= $requiredDownpayment) {
+            $booking->status = 'confirmed';
+        } else {
+            $booking->status = 'pencil';
+        }
+
+        $booking->save();
+
+        return redirect()->route('bookings.index')
+            ->with('success', 'Booking updated successfully.');
+    }
+
     public function updateStatus(Request $request, Booking $booking)
     {
         $request->validate([
