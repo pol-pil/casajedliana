@@ -17,7 +17,7 @@ import {
 	DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
@@ -55,6 +55,7 @@ import { toast } from 'sonner';
 import { set } from 'date-fns';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Textarea } from '@/components/ui/textarea';
 
 type Booking = {
 	id: number;
@@ -71,6 +72,9 @@ type Booking = {
 		room_number: string;
 		room_type: string;
 	};
+	rate: {
+		name: string;
+	}
 	guest_count: string;
 	check_in: string;
 	check_out: string;
@@ -79,7 +83,10 @@ type Booking = {
 	remarks: string;
 	balance: number;
 	payments: Array<{
+		id: number;
 		amount: number;
+		payment_type: string;
+		payment_method: string;
 	}>;
 	booking_charges?: Array<{
 		id: number;
@@ -118,9 +125,26 @@ type Rate = {
 	type: 'exact' | 'percentage';
 };
 
+type Payment = {
+	id: number;
+	booking_id: number;
+	amount: number;
+	payment_method: string;
+	payment_type: string;
+};
+
 type BookingType = {
 	id: number;
 	name: string;
+};
+
+type BookingCharge = {
+	id: number;
+	booking_id: number;
+	charge_id: number;
+	quantity: number;
+	value: number;
+	total: number;
 };
 
 type Client = {
@@ -152,6 +176,8 @@ type PageProps = {
 	bookingTypes: BookingType[];
 	charges: Charge[];
 	clients: Client[];
+	payments: Payment[];
+	bookingCharges: BookingCharge[];
 	auth?: {
 		user: any;
 	};
@@ -201,69 +227,235 @@ const statusConfig = {
 const AddChargeDialog = ({
 	open,
 	onOpenChange,
-	onSelect,
+	booking,
 }: {
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
-	onSelect: (charge: Charge) => void;
+	booking: Booking | null;
 }) => {
+	const { data, setData, post, processing, reset } = useForm({
+		booking_id: booking?.id || '',
+		charge_id: '',
+		quantity: '1',
+		value: '',
+		total: '',
+	});
+
+	useEffect(() => {
+		if (booking) {
+			setData('booking_id', booking.id);
+		}
+	}, [booking]);
+
+	const handleSubmit = (e: React.FormEvent) => {
+		e.preventDefault();
+
+		post('/booking-charges', {
+			onSuccess: () => {
+				toast.success('Booking charge added successfully!');
+				reset();
+				onOpenChange(false);
+			},
+			onError: () => {
+				toast.error('Failed to add booking charge.');
+			},
+		});
+	};
+
 	const { charges } = usePage<PageProps>().props;
+	const total_amount = (parseFloat(data.value) || 0) * parseInt(data.quantity);
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className='min-w-200'>
-				<DialogHeader>
-					<DialogTitle>Add Charge</DialogTitle>
-				</DialogHeader>
-				<div className='flex flex-row gap-6'>
-					<div className='flex-1 space-y-2'>
-						<DialogDescription>Amenities</DialogDescription>
-						<ScrollArea className='h-90'>
-							{charges
-								.filter((charge: any) => charge.type === 'amenity')
-								.map((charge: any) => (
-									<Button
-										key={charge.id}
-										variant='outline'
-										className='mb-2 w-full justify-between'
-										onClick={() => {
-											onSelect(charge);
-											onOpenChange(false);
-										}}
-									>
-										<span>{charge.name}</span>
-										<span className='text-muted-foreground'>₱{charge.value}</span>
-									</Button>
-								))}
-						</ScrollArea>
-					</div>
-					<div className='flex-1 space-y-2'>
-						<DialogDescription>Damages</DialogDescription>
-						<ScrollArea className='h-90'>
-							{charges
-								.filter((charge: any) => charge.type === 'damage')
-								.map((charge: any) => (
-									<Button
-										key={charge.id}
-										variant='outline'
-										className='mb-2 w-full justify-between'
-										onClick={() => {
-											onSelect(charge);
-											onOpenChange(false);
-										}}
-									>
-										<span>{charge.name}</span>
-										<span className='text-muted-foreground'>₱{charge.value}</span>
-									</Button>
-								))}
-						</ScrollArea>
-					</div>
-				</div>
-				<DialogFooter>
-					<DialogClose asChild>
-						<Button variant='outline'>Cancel</Button>
-					</DialogClose>
-				</DialogFooter>
+			<DialogContent className='max-h-[90vh] min-w-[90vw] overflow-y-auto lg:min-w-md'>
+				<form onSubmit={handleSubmit}>
+					<FieldGroup>
+						<FieldSet>
+							<FieldLegend>Add Booking Charge</FieldLegend>
+							<FieldSeparator />
+
+							<Field>
+								<FieldLabel>Charge Item</FieldLabel>
+								<Select
+									value={data.charge_id}
+									onValueChange={(value) => {
+										setData('charge_id', value);
+
+										const selectedCharge = charges.find((c: any) => c.id.toString() === value);
+
+										if (selectedCharge) {
+											setData('value', selectedCharge.value.toString());
+										}
+									}}
+								>
+									<SelectTrigger>
+										<SelectValue placeholder='Select Charge' />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectGroup>
+											<SelectLabel className='text-xs text-gray-400'>Amenity</SelectLabel>
+											{charges
+												.filter((charge: any) => charge.type === 'amenity')
+												.map((charge: any) => (
+													<SelectItem key={charge.id} value={charge.id.toString()}>
+														<span>{charge.name}</span>
+														<span className='text-muted-foreground'>₱{charge.value}</span>
+													</SelectItem>
+												))}
+										</SelectGroup>
+										<SelectGroup>
+											<SelectLabel className='pt-4 text-xs text-gray-400'>Damage</SelectLabel>
+											{charges
+												.filter((charge: any) => charge.type === 'damage')
+												.map((charge: any) => (
+													<SelectItem key={charge.id} value={charge.id.toString()}>
+														<span>{charge.name}</span>
+														<span className='text-muted-foreground'>₱{charge.value}</span>
+													</SelectItem>
+												))}
+										</SelectGroup>
+									</SelectContent>
+								</Select>
+							</Field>
+							<FieldGroup className='grid grid-cols-2 gap-4'>
+								<Field>
+									<FieldLabel>Quantity</FieldLabel>
+									<Input
+										type='number'
+										step='1'
+										min='1'
+										required
+										value={data.quantity}
+										onChange={(e) => setData('quantity', e.target.value)}
+									/>
+								</Field>
+
+								<Field>
+									<FieldLabel>Total</FieldLabel>
+									<Input type='number' value={total_amount.toFixed(2)} readOnly />
+								</Field>
+							</FieldGroup>
+						</FieldSet>
+					</FieldGroup>
+
+					<FieldSeparator className='py-6' />
+
+					<DialogFooter>
+						<Button type='button' variant='outline' onClick={() => onOpenChange(false)}>
+							Cancel
+						</Button>
+						<Button type='submit' disabled={processing} onClick={() => setData('total', total_amount.toString())}>
+							{processing ? 'Adding...' : 'Add Charge'}
+						</Button>
+					</DialogFooter>
+				</form>
+			</DialogContent>
+		</Dialog>
+	);
+};
+
+const AddPaymentDialog = ({
+	open,
+	onOpenChange,
+	booking,
+}: {
+	open: boolean;
+	onOpenChange: (open: boolean) => void;
+	booking: Booking | null;
+}) => {
+	const { data, setData, post, processing, reset } = useForm({
+		booking_id: booking?.id || '',
+		amount: '',
+		payment_type: '',
+		payment_method: '',
+	});
+
+	useEffect(() => {
+		if (booking) {
+			setData('booking_id', booking.id);
+		}
+	}, [booking]);
+
+	const handleSubmit = (e: React.FormEvent) => {
+		e.preventDefault();
+
+		post('/payments', {
+			onSuccess: () => {
+				toast.success('Payment added successfully!');
+				reset();
+				onOpenChange(false);
+			},
+			onError: () => {
+				toast.error('Failed to add payment.');
+			},
+		});
+	};
+
+	return (
+		<Dialog open={open} onOpenChange={onOpenChange}>
+			<DialogContent className='max-h-[90vh] min-w-[90vw] overflow-y-auto lg:min-w-md'>
+				<form onSubmit={handleSubmit}>
+					<FieldGroup>
+						<FieldSet>
+							<FieldLegend>Add Payment</FieldLegend>
+							<FieldSeparator />
+
+							<Field>
+								<FieldLabel>Payment Type</FieldLabel>
+								<Select value={data.payment_type} onValueChange={(value) => setData('payment_type', value)}>
+									<SelectTrigger>
+										<SelectValue placeholder='Select type' />
+									</SelectTrigger>
+									<SelectContent>
+										<SelectItem value='downpayment'>Downpayment</SelectItem>
+										<SelectItem value='partial'>Partial Payment</SelectItem>
+										<SelectItem value='full'>Full Payment</SelectItem>
+									</SelectContent>
+								</Select>
+							</Field>
+
+							<FieldGroup className='grid grid-cols-2 gap-4'>
+								<Field>
+									<FieldLabel>Amount</FieldLabel>
+									<Input
+										type='number'
+										step='0.01'
+										min='0'
+										required
+										value={data.amount}
+										onChange={(e) => setData('amount', e.target.value)}
+									/>
+								</Field>
+
+								<Field>
+									<FieldLabel>Payment Method</FieldLabel>
+									<Select value={data.payment_method} onValueChange={(value) => setData('payment_method', value)}>
+										<SelectTrigger>
+											<SelectValue placeholder='Select method' />
+										</SelectTrigger>
+										<SelectContent>
+											<SelectItem value='cash'>Cash</SelectItem>
+											<SelectItem value='gcash'>GCash</SelectItem>
+											<SelectItem value='credit_card'>Credit Card</SelectItem>
+											<SelectItem value='bank_transfer'>Bank Transfer</SelectItem>
+										</SelectContent>
+									</Select>
+								</Field>
+							</FieldGroup>
+						</FieldSet>
+					</FieldGroup>
+
+					<FieldSeparator className='py-6' />
+
+					<DialogFooter>
+						<Button type='button' variant='outline' onClick={() => onOpenChange(false)}>
+							Cancel
+						</Button>
+						<Button type='submit' disabled={processing}>
+							{processing ? 'Adding...' : 'Add Payment'}
+						</Button>
+					</DialogFooter>
+				</form>
 			</DialogContent>
 		</Dialog>
 	);
@@ -281,9 +473,10 @@ export default function Index() {
 
 	const [selectedAmenities, setSelectedAmenities] = useState<Charge[]>([]);
 	const [selectedDamages, setSelectedDamages] = useState<Charge[]>([]);
-	const [isAddChargeDialogOpen, setIsAddChargeDialogOpen] = useState(false);
+	const [isAddBookingChargeDialogOpen, setIsAddBookingChargeDialogOpen] = useState(false);
 	const [chargeType, setChargeType] = useState<'amenity' | 'damage'>('amenity');
 	const [isFindClientsDialogOpen, setIsFindClientsDialogOpen] = useState(false);
+	const [isAddPaymentDialogOpen, setIsAddPaymentDialogOpen] = useState(false);
 
 	const [checkInTime, setCheckInTime] = useState('8:00');
 	const [checkOutTime, setCheckOutTime] = useState('17:00');
@@ -313,7 +506,7 @@ export default function Index() {
 	const { data, setData, post, processing, errors } = useForm(emptyForm);
 
 	// Use the PageProps type
-	const { bookings, stats, rooms, rates, bookingTypes, charges } = usePage<PageProps>().props;
+	const { bookings, stats, rooms, rates, bookingTypes, charges, payments } = usePage<PageProps>().props;
 
 	// Calculate duration when dates change
 	useEffect(() => {
@@ -490,18 +683,16 @@ export default function Index() {
 		onSelect: (client: Client) => void;
 	}) => {
 		const { clients } = usePage<PageProps>().props;
-	
-		const sortedClients = [...clients].sort((a, b) =>
-			a.first_name.localeCompare(b.first_name)
-		);
-	
+
+		const sortedClients = [...clients].sort((a, b) => a.first_name.localeCompare(b.first_name));
+
 		return (
 			<Dialog open={open} onOpenChange={onOpenChange}>
 				<DialogContent>
 					<DialogHeader>
 						<DialogTitle>Find Client</DialogTitle>
 					</DialogHeader>
-	
+
 					<ScrollArea className='h-90'>
 						{sortedClients.map((client: any) => (
 							<Button
@@ -514,11 +705,9 @@ export default function Index() {
 								}}
 							>
 								<span>
-									{client.first_name} {client.last_name} Added 
+									{client.first_name} {client.last_name}
 								</span>
-								<span className='text-primary-foreground'>
-									{client.email}
-								</span>
+								<span className='text-primary-foreground'>{client.email}</span>
 							</Button>
 						))}
 					</ScrollArea>
@@ -526,8 +715,6 @@ export default function Index() {
 			</Dialog>
 		);
 	};
-
-
 
 	return (
 		<AppLayout breadcrumbs={breadcrumbs}>
@@ -698,7 +885,7 @@ export default function Index() {
 
 															<Field>
 																<FieldLabel htmlFor='remarks'>Remarks/Special Requests</FieldLabel>
-																<textarea
+																<Textarea
 																	id='remarks'
 																	placeholder='Any special requests or requirements...'
 																	className='flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50'
@@ -1066,9 +1253,6 @@ export default function Index() {
 							</TableHeader>
 							<TableBody>
 								{bookings.data.map((booking) => {
-									const totalPaid = booking.payments.reduce((sum, payment) => sum + payment.amount, 0);
-									const balance = booking.total_amount - totalPaid;
-
 									return (
 										<TableRow
 											key={booking.id}
@@ -1110,7 +1294,20 @@ export default function Index() {
 											</TableCell>
 											<TableCell className='text-right'>
 												<div className='font-medium'>₱{Number(booking.total_amount).toFixed(2)}</div>
-												<div className='text-sm text-muted-foreground'>Balance: ₱{balance.toFixed(2)}</div>
+												<div className='text-sm text-muted-foreground'>
+													Balance: ₱{' '}
+													{(
+												Number(booking.total_amount ?? 0) +
+												(booking.booking_charges ?? []).reduce(
+													(sum, bookingCharge) => sum + Number(bookingCharge.total ?? 0),
+													0,
+												) -
+												(booking.payments ?? []).reduce(
+													(sum, payment) => sum + Number(payment.amount ?? 0),
+													0,
+												)
+											).toFixed(2)}
+												</div>
 											</TableCell>
 											<TableCell className='text-right'>
 												<DropdownMenu>
@@ -1221,10 +1418,6 @@ export default function Index() {
 										<span>Number of Guests</span>
 										<span>{selectedBooking?.guest_count}</span>
 									</div>
-									<div className='flex justify-between'>
-										<span>Sub Total</span>
-										<span>7000.00</span>
-									</div>
 								</DialogDescription>
 							</div>
 							<div>
@@ -1254,7 +1447,7 @@ export default function Index() {
 							</div>
 						</div>
 						<Separator orientation='vertical' className='mx-4' />
-						<div className='flex-1 px-4'>
+						<div className='flex flex-1 flex-col px-4'>
 							<DialogHeader className='font-semibold'>Guest Profile</DialogHeader>
 							<div className='flex items-center p-2'>
 								<CircleUserRound className='mr-3 size-12 text-primary-foreground' />
@@ -1280,105 +1473,109 @@ export default function Index() {
 								</DialogDescription>
 							</div>
 							<Separator className='my-2' />
-							<div>
-								<div className='flex items-center justify-between'>
-									<DialogHeader className='font-semibold'>Additional</DialogHeader>
-									<div className='flex gap-2'>
-										<Button
-											className='flex h-6 h-7 items-center text-xs'
-											size='sm'
-											onClick={() => {
-												setIsAddChargeDialogOpen(true);
-											}}
-										>
-											<Plus className='size-3' />
-											Add
-										</Button>
-									</div>
-								</div>
-
-								{/* Amenities Section */}
-								<DialogDescription className='py-2 font-medium'>Amenities</DialogDescription>
-								<div className='mb-4 flex flex-wrap gap-2'>
-									{selectedAmenities.length > 0 ? (
-										selectedAmenities.map((amenity) => (
-											<Badge key={amenity.id} className='flex items-center gap-1 pr-1'>
-												{amenity.name}
-												<button
-													onClick={() => setSelectedAmenities((prev) => prev.filter((a) => a.id !== amenity.id))}
-													className='ml-1 hover:text-destructive'
-												>
-													×
-												</button>
-											</Badge>
-										))
-									) : (
-										<DialogDescription className='text-sm text-muted-foreground'>No amenities added</DialogDescription>
-									)}
-								</div>
-
-								{/* Damages Section */}
-								<DialogDescription className='py-2 font-medium'>Damages</DialogDescription>
-								<div className='flex flex-wrap gap-2'>
-									{selectedDamages.length > 0 ? (
-										selectedDamages.map((damage) => (
-											<Badge key={damage.id} className='flex items-center gap-1 pr-1'>
-												{damage.name}
-												<button
-													onClick={() => setSelectedDamages((prev) => prev.filter((d) => d.id !== damage.id))}
-													className='ml-1 hover:text-destructive'
-												>
-													×
-												</button>
-											</Badge>
-										))
-									) : (
-										<DialogDescription className='text-sm text-muted-foreground'>No damages added</DialogDescription>
-									)}
-								</div>
-							</div>
 
 							<AddChargeDialog
-								open={isAddChargeDialogOpen}
-								onOpenChange={setIsAddChargeDialogOpen}
-								onSelect={(charge) => {
-									if (charge.type === 'amenity') {
-										setSelectedAmenities((prev) => [...prev, charge]);
-									} else {
-										setSelectedDamages((prev) => [...prev, charge]);
-									}
-								}}
+								open={isAddBookingChargeDialogOpen}
+								onOpenChange={setIsAddBookingChargeDialogOpen}
+								booking={selectedBooking}
 							/>
 
-							<div className='py-8'>
+							<AddPaymentDialog
+								open={isAddPaymentDialogOpen}
+								onOpenChange={setIsAddPaymentDialogOpen}
+								booking={selectedBooking}
+							/>
+
+							<div className='mt-auto pt-4 pb-8'>
 								<div className='flex items-center justify-between'>
 									<DialogHeader className='font-semibold'>Bill</DialogHeader>
-									<div className='flex gap-2'>
-										<Button
-											className='flex h-6 h-7 items-center text-xs'
-											size='sm'
-											onClick={() => {
-												setIsAddChargeDialogOpen(true);
-											}}
-										>
-											<Plus className='size-3' />
-											Add Payment
-										</Button>
+									<div>
+										<div className='flex flex-row gap-2'>
+											<Button
+												className='h-6 items-center text-xs'
+												size='sm'
+												onClick={() => {
+													setIsAddBookingChargeDialogOpen(true);
+												}}
+											>
+												<Plus className='size-3' />
+												Charge
+											</Button>
+											<Button
+												className='h-6 items-center text-xs'
+												size='sm'
+												onClick={() => {
+													setIsAddPaymentDialogOpen(true);
+												}}
+											>
+												<Plus className='size-3' />
+												Payment
+											</Button>
+										</div>
 									</div>
 								</div>
 								<DialogDescription className='space-y-1 py-2'>
-									<div className='flex justify-between'>
-										<span>Downpayment</span>
-										<span>-4000.00</span>
+									<div className='flex justify-between text-primary-foreground'>
+										<span>Room ({selectedBooking?.rate?.name || 'N/A'})</span>
+										<span>{selectedBooking?.total_amount}</span>
 									</div>
-									<div className='flex justify-between'>
-										<span>Employee Rate</span>
-										<span>-790.00</span>
-									</div>
+									{(selectedBooking?.booking_charges ?? [])
+										.filter((bc) => bc.charge?.type === 'amenity')
+										.map((amenity) => (
+											<div key={amenity.id} className='flex justify-between'>
+												<span>
+													{amenity.charge?.name} {amenity.quantity > 1 ? `x${amenity.quantity}` : ''}
+												</span>
+												<span>{amenity.total}</span>
+											</div>
+										))}
+									{(selectedBooking?.booking_charges ?? [])
+										.filter((bc) => bc.charge?.type === 'damage')
+										.map((damage) => (
+											<div key={damage.id} className='flex justify-between'>
+												<span>
+													{damage.charge?.name} {damage.quantity > 1 ? `x${damage.quantity}` : ''}
+												</span>
+												<span>{damage.total}</span>
+											</div>
+										))}
 									<Separator />
-									<div className='flex justify-between'>
-										<span className='font-bold text-primary-foreground'>Balance</span>
-										<span className='font-bold text-primary-foreground'>{selectedBooking?.total_amount}</span>
+									<div className='flex justify-between font-bold text-primary-foreground dark:text-primary'>
+										<span>Sub Total</span>
+										<span>
+											{' '}
+											{(
+												Number(selectedBooking?.total_amount ?? 0) +
+												(selectedBooking?.booking_charges ?? []).reduce(
+													(sum, charge) => sum + Number(charge.total ?? 0),
+													0,
+												)
+											).toFixed(2)}
+										</span>
+									</div>
+									{selectedBooking?.payments?.map((payment) => (
+										<div key={payment.id} className='flex justify-between'>
+											<span>{payment.payment_type.charAt(0).toUpperCase() + payment.payment_type.slice(1)}</span>
+											<span>-{payment.amount}</span>
+										</div>
+									))}
+									<Separator />
+									<div className='flex justify-between font-bold text-primary-foreground dark:text-primary'>
+										<span>Balance</span>
+										<span>
+											₱{' '}
+											{(
+												Number(selectedBooking?.total_amount ?? 0) +
+												(selectedBooking?.booking_charges ?? []).reduce(
+													(sum, bookingCharge) => sum + Number(bookingCharge.total ?? 0),
+													0,
+												) -
+												(selectedBooking?.payments ?? []).reduce(
+													(sum, payment) => sum + Number(payment.amount ?? 0),
+													0,
+												)
+											).toFixed(2)}
+										</span>
 									</div>
 								</DialogDescription>
 							</div>

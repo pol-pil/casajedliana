@@ -8,6 +8,7 @@ use App\Models\Room;
 use App\Models\Rate;
 use App\Models\Charge;
 use App\Models\BookingType;
+use App\Models\Payment;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -15,23 +16,53 @@ class BookingsController extends Controller
 {
     public function index()
     {
-        $bookings = Booking::with(['client', 'room', 'payments', 'bookingType'])
+        $bookings = Booking::with([
+                'client',
+                'room',
+                'payments',
+                'bookingType',
+                'bookingCharges.charge',
+                'rate'
+            ])
             ->orderBy('created_at', 'desc')
             ->paginate(10);
-
+    
+        // 🔹 Merge same-name damage charges per booking
+        $bookings->getCollection()->transform(function ($booking) {
+    
+            $booking->bookingCharges = $booking->bookingCharges
+                ->groupBy(function ($bc) {
+                    return $bc->charge->type === 'damage'
+                        ? $bc->charge->name
+                        : 'unique_' . $bc->id; // keep non-damage unique
+                })
+                ->map(function ($group) {
+                    $first = $group->first();
+    
+                    $first->quantity = $group->sum('quantity');
+                    $first->total = $group->sum('total');
+    
+                    return $first;
+                })
+                ->values();
+    
+            return $booking;
+        });
+    
         $stats = [
             'totalBookings' => Booking::count(),
             'activeGuests' => Booking::where('status', 'checked_in')->count(),
             'pendingBookings' => Booking::where('status', 'pencil')->count(),
             'totalRevenue' => Booking::sum('total_amount'),
         ];
-
+    
         $rooms = Room::where('status', 'available')->get();
         $rates = Rate::all();
         $charges = Charge::all();
         $clients = Client::all();
+        $payments = Payment::all();
         $bookingTypes = BookingType::where('is_active', true)->get();
-
+    
         return Inertia::render('Bookings/Index', [
             'bookings' => $bookings,
             'stats' => $stats,
@@ -86,7 +117,7 @@ class BookingsController extends Controller
             'booking_type_id' => $validated['booking_type_id'],
             'total_amount' => $validated['total_amount'],
             'remarks' => $validated['remarks'] ?? '',
-            'status' => 'pencil', // ✅ matches ENUM
+            'status' => 'pencil',
         ]);
 
         // Record downpayment if provided
@@ -96,6 +127,14 @@ class BookingsController extends Controller
                 'payment_method' => $validated['payment_method'],
                 'payment_type' => 'downpayment',
             ]);
+
+            $totalPaid = $booking->payments()->sum('amount');
+            $requiredDownpayment = $booking->total_amount * 0.30;
+    
+            if ($totalPaid >= $requiredDownpayment) {
+                $booking->status = 'confirmed';
+                $booking->save();
+            }
         }
 
         return redirect()->route('bookings.index')
