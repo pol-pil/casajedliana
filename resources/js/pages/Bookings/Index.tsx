@@ -55,6 +55,7 @@ import { toast } from 'sonner';
 import { set } from 'date-fns';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Textarea } from '@/components/ui/textarea';
 
 type Booking = {
 	id: number;
@@ -780,7 +781,6 @@ export default function Index() {
 		);
 	};
 
-	console.log(selectedBooking?.booking_charges);
 	return (
 		<AppLayout breadcrumbs={breadcrumbs}>
 			<div className='p-6'>
@@ -950,7 +950,7 @@ export default function Index() {
 
 															<Field>
 																<FieldLabel htmlFor='remarks'>Remarks/Special Requests</FieldLabel>
-																<textarea
+																<Textarea
 																	id='remarks'
 																	placeholder='Any special requests or requirements...'
 																	className='flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50'

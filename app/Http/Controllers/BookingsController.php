@@ -16,24 +16,53 @@ class BookingsController extends Controller
 {
     public function index()
     {
-        $bookings = Booking::with(['client', 'room', 'payments', 'bookingType', 'bookingCharges.charge', 'rate'])
+        $bookings = Booking::with([
+                'client',
+                'room',
+                'payments',
+                'bookingType',
+                'bookingCharges.charge',
+                'rate'
+            ])
             ->orderBy('created_at', 'desc')
             ->paginate(10);
-
+    
+        // 🔹 Merge same-name damage charges per booking
+        $bookings->getCollection()->transform(function ($booking) {
+    
+            $booking->bookingCharges = $booking->bookingCharges
+                ->groupBy(function ($bc) {
+                    return $bc->charge->type === 'damage'
+                        ? $bc->charge->name
+                        : 'unique_' . $bc->id; // keep non-damage unique
+                })
+                ->map(function ($group) {
+                    $first = $group->first();
+    
+                    $first->quantity = $group->sum('quantity');
+                    $first->total = $group->sum('total');
+    
+                    return $first;
+                })
+                ->values();
+    
+            return $booking;
+        });
+    
         $stats = [
             'totalBookings' => Booking::count(),
             'activeGuests' => Booking::where('status', 'checked-in')->count(),
             'pendingBookings' => Booking::where('status', 'pending')->count(),
             'totalRevenue' => Booking::sum('total_amount'),
         ];
-
+    
         $rooms = Room::where('status', 'available')->get();
         $rates = Rate::all();
         $charges = Charge::all();
         $clients = Client::all();
         $payments = Payment::all();
         $bookingTypes = BookingType::where('is_active', true)->get();
-
+    
         return Inertia::render('Bookings/Index', [
             'bookings' => $bookings,
             'stats' => $stats,
