@@ -52,7 +52,7 @@ class BookingsController extends Controller
         $stats = [
             'totalBookings' => Booking::count(),
             'activeGuests' => Booking::where('status', 'checked_in')->count(),
-            'pendingBookings' => Booking::where('status', 'pencil')->count(),
+            'pendingBookings' => Booking::where('status', 'pending')->count(),
             'totalRevenue' => Booking::sum('total_amount'),
         ];
     

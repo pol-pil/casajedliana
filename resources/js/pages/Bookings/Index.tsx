@@ -274,7 +274,15 @@ const AddChargeDialog = ({
 	const total_amount = (parseFloat(data.value) || 0) * parseInt(data.quantity);
 
 	return (
-		<Dialog open={open} onOpenChange={onOpenChange}>
+		<Dialog
+			open={open}
+			onOpenChange={(isOpen) => {
+				if (!isOpen) {
+					reset();
+				}
+				onOpenChange(isOpen);
+			}}
+		>
 			<DialogContent className='max-h-[90vh] min-w-[90vw] overflow-y-auto lg:min-w-md'>
 				<form onSubmit={handleSubmit}>
 					<FieldGroup>
@@ -400,7 +408,15 @@ const AddPaymentDialog = ({
 	};
 
 	return (
-		<Dialog open={open} onOpenChange={onOpenChange}>
+		<Dialog
+			open={open}
+			onOpenChange={(isOpen) => {
+				if (!isOpen) {
+					reset();
+				}
+				onOpenChange(isOpen);
+			}}
+		>
 			<DialogContent className='max-h-[90vh] min-w-[90vw] overflow-y-auto lg:min-w-md'>
 				<form onSubmit={handleSubmit}>
 					<FieldGroup>
@@ -616,6 +632,8 @@ export default function Index() {
 
 	const handleClose = () => {
 		setIsDialogOpen(false);
+		setIsEditMode(false);
+		setEditingBookingId(null);
 		setDateRange({ from: undefined, to: undefined });
 		setSelectedRoomId('');
 		setSelectedRateId('');
@@ -772,7 +790,15 @@ export default function Index() {
 				<div className='rounded-lg border'>
 					<div className='flex flex-row items-center justify-between border-b p-4'>
 						<h2 className='text-lg font-semibold'>Recent Bookings</h2>
-						<Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+						<Dialog
+							open={isDialogOpen}
+							onOpenChange={(open) => {
+								if (!open) {
+									resetForm();
+								}
+								setIsDialogOpen(open);
+							}}
+						>
 							<DialogTrigger asChild>
 								<Button className='flex items-center'>
 									<Plus className='h-4 w-4' />
@@ -1617,7 +1643,6 @@ export default function Index() {
 								variant='outline'
 								onClick={() => {
 									if (!selectedBooking) return;
-
 									setIsBookingInfoDialogOpen(false);
 									setIsDialogOpen(true);
 									setIsEditMode(true);
