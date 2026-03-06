@@ -149,7 +149,7 @@ const mapStatus = (status?: string): RoomStatus => {
   const s = (status ?? '').toString().trim().toLowerCase()
 
   if (['occupied', 'checked_in', 'checkedin', 'checked-in'].includes(s)) return 'Occupied'
-  if (['reserved', 'confirmed'].includes(s)) return 'Reserved'
+  if (['reserved', 'confirmed', 'pencil'].includes(s)) return 'Reserved'
   if (['cleaning', 'completed', 'cleaning_needed'].includes(s)) return 'Cleaning'
   if (['maintenance'].includes(s)) return 'Maintenance'
   if (['available', 'vacant', 'free'].includes(s)) return 'Available'

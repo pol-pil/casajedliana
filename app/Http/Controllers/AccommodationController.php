@@ -60,8 +60,11 @@ class AccommodationController extends Controller
                             break;
 
                         case 'reserved':
-                        case 'pencil': // treat pencil like reserved
                             $finalStatus = 'Reserved';
+                            break;
+
+                        case 'pencil':
+                            $finalStatus = 'Pencil';
                             break;
 
                         default:

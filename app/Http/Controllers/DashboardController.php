@@ -67,10 +67,12 @@ class DashboardController extends Controller
 
         if ($status === 'checked_in') {
             $computedStatus = 'Occupied';
-        } elseif ($status === 'reserved' || $status === 'pencil') {
-            $computedStatus = 'Reserved';
+        } elseif ($status === 'reserved') {
+    $computedStatus = 'Reserved';
+        } elseif ($status === 'pencil') {
+            $computedStatus = 'Pending';
         } else {
-            $computedStatus = 'Reserved';
+            $computedStatus = 'Reserved';   
         }
 
     }

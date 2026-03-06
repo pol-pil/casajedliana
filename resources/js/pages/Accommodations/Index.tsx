@@ -362,6 +362,20 @@ export default function Index() {
          <DropdownMenuContent align="end" className="w-48">
 
           {/* ================= OCCUPIED ================= */}
+                    {room.status === "Pencil" && (
+            <DropdownMenuItem
+              onClick={() => {
+                router.post(`/rooms/${room.id}/mark-paid`, {}, {
+                  preserveScroll: true,
+                  onSuccess: () => {
+                    router.get('/rooms', { date: selectedDate }, { replace: true })
+                  }
+                })
+              }}
+            >
+              Mark Paid
+            </DropdownMenuItem>
+          )}
           {room.status === "Occupied" && (
             <DropdownMenuItem
               onClick={() => {
