@@ -56,6 +56,8 @@ import { set } from 'date-fns';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 type Booking = {
 	id: number;
@@ -611,7 +613,7 @@ export default function Index() {
 
 	const handleErrors = (errors: Record<string, string>, action: 'create' | 'update') => {
 		toast.error(`Failed to ${action} booking`);
-	
+
 		Object.values(errors).forEach((message) => {
 			toast.error(message);
 		});
@@ -1422,7 +1424,7 @@ export default function Index() {
 					if (!open) setSelectedBooking(null);
 				}}
 			>
-				<DialogContent className='min-w-180'>
+				<DialogContent className='min-w-200'>
 					<div className='flex flex-row'>
 						<div className='flex-1 space-y-4 px-4'>
 							<div>
@@ -1532,6 +1534,15 @@ export default function Index() {
 								</DialogDescription>
 							</div>
 							<Separator className='my-2' />
+
+							<div>
+								<ToggleGroup variant="outline" type="single">
+									<ToggleGroupItem value='pencil'>Pencil</ToggleGroupItem>
+									<ToggleGroupItem value='confirmed'>Confirmed</ToggleGroupItem>
+									<ToggleGroupItem value='checked_in'>Checked In</ToggleGroupItem>
+									<ToggleGroupItem value='checked_out'>Checked Out</ToggleGroupItem>
+								</ToggleGroup>
+							</div>
 
 							<AddChargeDialog
 								open={isAddBookingChargeDialogOpen}
