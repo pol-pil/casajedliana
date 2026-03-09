@@ -44,6 +44,8 @@ import {
 	MapPin,
 	UserRoundSearch,
 	UserSearch,
+	CircleDollarSign,
+	EyeOff,
 } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import { Field, FieldGroup, FieldLabel, FieldLegend, FieldSeparator, FieldSet } from '@/components/ui/field';
@@ -743,6 +745,19 @@ export default function Index() {
 		);
 	};
 
+	const updateStatus = (status: 'checked_in' | 'cancelled') => {
+		if (!selectedBooking?.id) return;
+	
+		put(`/bookings/${selectedBooking.id}`, {
+			onSuccess: () => {
+				toast.success(`Booking ${status.replace('_', ' ')} successfully`);
+			},
+			onError: () => {
+				toast.error('Failed to update booking status');
+			},
+		});
+	};
+
 	return (
 		<AppLayout breadcrumbs={breadcrumbs}>
 			<div className='p-6'>
@@ -1426,20 +1441,67 @@ export default function Index() {
 			>
 				<DialogContent className='min-w-200'>
 					<div className='flex flex-row'>
-						<div className='flex-1 space-y-4 px-4'>
+						<div className='flex-2 space-y-4 px-4'>
 							<div>
 								<DialogHeader className='flex flex-row justify-between font-semibold'>
 									<span>Booking Info</span>
-									<StatusBadge
-										status={
-											(selectedBooking?.status as
-												| 'confirmed'
-												| 'pending'
-												| 'checked_in'
-												| 'checked_out'
-												| 'cancelled') || 'pending'
-										}
-									/>
+
+									<DropdownMenu>
+										<DropdownMenuTrigger asChild>
+											<Button variant='ghost' className='h-full rounded-full p-1'>
+												<StatusBadge
+													status={
+														(selectedBooking?.status as
+															| 'confirmed'
+															| 'pending'
+															| 'checked_in'
+															| 'checked_out'
+															| 'cancelled') || 'pending'
+													}
+												/>
+											</Button>
+										</DropdownMenuTrigger>
+
+										<DropdownMenuContent>
+											{/* PENDING */}
+											{selectedBooking?.status === 'pending' && (
+												<DropdownMenuItem className='text-destructive focus:bg-red-200'>
+													<TrashIcon className='mr-2 h-4 w-4' />
+													Cancel Booking
+												</DropdownMenuItem>
+											)}
+
+											{/* CONFIRMED */}
+											{selectedBooking?.status === 'confirmed' && (
+												<>
+													<DropdownMenuItem className='focus:text-blue-500'>
+														<CheckCircleIcon className='mr-2 h-4 w-4' />
+														Check In
+													</DropdownMenuItem>
+
+													<DropdownMenuItem className='focus:text-orange-600'>
+														<EyeOff className='mr-2 h-4 w-4' />
+														No Show
+													</DropdownMenuItem>
+
+													<DropdownMenuSeparator />
+
+													<DropdownMenuItem className='text-destructive focus:bg-red-200'>
+														<TrashIcon className='mr-2 h-4 w-4' />
+														Cancel Booking
+													</DropdownMenuItem>
+												</>
+											)}
+
+											{/* CHECKED IN */}
+											{selectedBooking?.status === 'checked_in' && (
+												<DropdownMenuItem className='focus:bg-gray-200'>
+													<EyeIcon className='mr-2 h-4 w-4' />
+													Check Out
+												</DropdownMenuItem>
+											)}
+										</DropdownMenuContent>
+									</DropdownMenu>
 								</DialogHeader>
 								<DialogDescription className='space-y-1 py-2'>
 									<div className='flex justify-between'>
@@ -1508,7 +1570,7 @@ export default function Index() {
 							</div>
 						</div>
 						<Separator orientation='vertical' className='mx-4' />
-						<div className='flex flex-1 flex-col px-4'>
+						<div className='flex flex-3 flex-col px-4'>
 							<DialogHeader className='font-semibold'>Guest Profile</DialogHeader>
 							<div className='flex items-center p-2'>
 								<CircleUserRound className='mr-3 size-12 text-primary-foreground dark:text-primary' />
@@ -1534,15 +1596,6 @@ export default function Index() {
 								</DialogDescription>
 							</div>
 							<Separator className='my-2' />
-
-							<div>
-								<ToggleGroup variant="outline" type="single">
-									<ToggleGroupItem value='pencil'>Pencil</ToggleGroupItem>
-									<ToggleGroupItem value='confirmed'>Confirmed</ToggleGroupItem>
-									<ToggleGroupItem value='checked_in'>Checked In</ToggleGroupItem>
-									<ToggleGroupItem value='checked_out'>Checked Out</ToggleGroupItem>
-								</ToggleGroup>
-							</div>
 
 							<AddChargeDialog
 								open={isAddBookingChargeDialogOpen}
