@@ -46,6 +46,9 @@ import {
 	UserSearch,
 	CircleDollarSign,
 	EyeOff,
+	ListRestart,
+	CheckCircle,
+	Check,
 } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import { Field, FieldGroup, FieldLabel, FieldLegend, FieldSeparator, FieldSet } from '@/components/ui/field';
@@ -233,6 +236,12 @@ const statusConfig = {
 		variant: 'destructive' as const,
 		icon: XCircleIcon,
 		color: 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300',
+	},
+	no_show: {
+		label: 'No Show',
+		variant: 'default' as const,
+		icon: EyeOff,
+		color: 'bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-300',
 	},
 };
 
@@ -745,17 +754,22 @@ export default function Index() {
 		);
 	};
 
-	const updateStatus = (status: 'checked_in' | 'cancelled') => {
+	const updateStatus = (status: string) => {
 		if (!selectedBooking?.id) return;
-	
-		put(`/bookings/${selectedBooking.id}`, {
-			onSuccess: () => {
-				toast.success(`Booking ${status.replace('_', ' ')} successfully`);
+
+		router.patch(
+			`/bookings/${selectedBooking.id}/status`,
+			{ status },
+			{
+				preserveScroll: true,
+				onSuccess: () => {
+					toast.success(`Booking ${status.replace('_', ' ')} successfully`);
+				},
+				onError: () => {
+					toast.error('Failed to update booking status');
+				},
 			},
-			onError: () => {
-				toast.error('Failed to update booking status');
-			},
-		});
+		);
 	};
 
 	return (
@@ -764,7 +778,7 @@ export default function Index() {
 				<Head title='Bookings' />
 
 				{/* Stats overview */}
-				<div className='lg:flex flex-row gap-4 pb-4'>
+				<div className='flex-row gap-4 pb-4 lg:flex'>
 					<div className='flex-1 rounded-lg border bg-card p-4'>
 						<div className='flex items-center justify-between'>
 							<div>
@@ -1441,7 +1455,7 @@ export default function Index() {
 			>
 				<DialogContent className='lg:min-w-200'>
 					<div className='lg:flex'>
-						<div className='flex-4 space-y-4 px-4 lg:border-r-1 pr-8 mr-4'>
+						<div className='mr-4 flex-4 space-y-4 px-4 pr-8 lg:border-r-1'>
 							<div>
 								<DialogHeader className='flex flex-row justify-between font-semibold'>
 									<span>Booking Info</span>
@@ -1463,43 +1477,93 @@ export default function Index() {
 										</DropdownMenuTrigger>
 
 										<DropdownMenuContent>
-											{/* PENDING */}
-											{selectedBooking?.status === 'pending' && (
-												<DropdownMenuItem className='text-destructive focus:bg-red-200'>
+											{/* {selectedBooking?.status === 'pending' && (
+												<DropdownMenuItem
+													className='text-destructive focus:bg-red-200'
+													onClick={() => updateStatus('cancelled')}
+												>
 													<TrashIcon className='mr-2 h-4 w-4' />
 													Cancel Booking
 												</DropdownMenuItem>
 											)}
-
-											{/* CONFIRMED */}
 											{selectedBooking?.status === 'confirmed' && (
 												<>
-													<DropdownMenuItem className='focus:text-blue-500'>
+													<DropdownMenuItem
+														className='focus:text-blue-500'
+														onClick={() => updateStatus('checked_in')}
+													>
 														<CheckCircleIcon className='mr-2 h-4 w-4' />
 														Check In
 													</DropdownMenuItem>
 
-													<DropdownMenuItem className='focus:text-orange-600'>
+													<DropdownMenuItem
+														className='focus:text-orange-600'
+														onClick={() => updateStatus('no_show')}
+													>
 														<EyeOff className='mr-2 h-4 w-4' />
 														No Show
 													</DropdownMenuItem>
 
 													<DropdownMenuSeparator />
 
-													<DropdownMenuItem className='text-destructive focus:bg-red-200'>
+													<DropdownMenuItem
+														className='text-destructive focus:bg-red-200'
+														onClick={() => updateStatus('cancelled')}
+													>
 														<TrashIcon className='mr-2 h-4 w-4' />
 														Cancel Booking
 													</DropdownMenuItem>
 												</>
 											)}
-
-											{/* CHECKED IN */}
 											{selectedBooking?.status === 'checked_in' && (
-												<DropdownMenuItem className='focus:bg-gray-200'>
+												<DropdownMenuItem className='focus:bg-gray-200' onClick={() => updateStatus('checked_out')}>
 													<EyeIcon className='mr-2 h-4 w-4' />
 													Check Out
 												</DropdownMenuItem>
 											)}
+											{selectedBooking?.status === 'cancelled' && (
+												<DropdownMenuItem className='focus:bg-gray-200' onClick={() => updateStatus('pending')}>
+													<ListRestart className='mr-2 h-4 w-4' />
+													Restore
+												</DropdownMenuItem>
+											)}
+											{selectedBooking?.status === 'no_show' && (
+												<DropdownMenuItem
+													className='focus:text-blue-500'
+													onClick={() => updateStatus('checked_in')}
+												>
+													<CheckCircleIcon className='mr-2 h-4 w-4' />
+													Check In
+												</DropdownMenuItem>
+											)} */}
+											<DropdownMenuItem className='focus:text-yellow-600' onClick={() => updateStatus('pending')}>
+												<ClockIcon className='mr-2 h-4 w-4' />
+												Pending
+											</DropdownMenuItem>
+											<DropdownMenuItem className='focus:text-green-700' onClick={() => updateStatus('confirmed')}>
+												<Check className='mr-2 h-4 w-4' />
+												Confirmed
+											</DropdownMenuItem>
+											<DropdownMenuItem className='focus:text-blue-500' onClick={() => updateStatus('checked_in')}>
+												<CheckCircleIcon className='mr-2 h-4 w-4' />
+												Check In
+											</DropdownMenuItem>
+											<DropdownMenuItem className='focus:text-red-700' onClick={() => updateStatus('checked_out')}>
+												<EyeIcon className='mr-2 h-4 w-4' />
+												Check Out
+											</DropdownMenuItem>
+											<DropdownMenuItem className='focus:text-orange-600' onClick={() => updateStatus('no_show')}>
+												<EyeOff className='mr-2 h-4 w-4' />
+												No Show
+											</DropdownMenuItem>
+											<DropdownMenuSeparator />
+											<DropdownMenuItem
+												className='text-destructive focus:bg-red-200'
+												onClick={() => updateStatus('cancelled')}
+											>
+												<TrashIcon className='mr-2 h-4 w-4' />
+												Cancel Booking
+											</DropdownMenuItem>
 										</DropdownMenuContent>
 									</DropdownMenu>
 								</DialogHeader>
@@ -1527,7 +1591,7 @@ export default function Index() {
 								</DialogDescription>
 							</div>
 							<div>
-								<DialogHeader className='font-semibold text-left'>Room Details</DialogHeader>
+								<DialogHeader className='text-left font-semibold'>Room Details</DialogHeader>
 								<DialogDescription className='space-y-1 py-2'>
 									<div className='flex justify-between'>
 										<span>Room Type</span>
@@ -1544,7 +1608,7 @@ export default function Index() {
 								</DialogDescription>
 							</div>
 							<div>
-								<DialogHeader className='font-semibold text-left'>Check-In / Check-Out</DialogHeader>
+								<DialogHeader className='text-left font-semibold'>Check-In / Check-Out</DialogHeader>
 								<DialogDescription className='space-y-1 py-2'>
 									<div className='flex justify-between'>
 										<span>Check-In Date</span>
@@ -1565,13 +1629,13 @@ export default function Index() {
 								</DialogDescription>
 							</div>
 							<div>
-								<DialogHeader className='font-semibold text-left'>Special Request</DialogHeader>
+								<DialogHeader className='text-left font-semibold'>Special Request</DialogHeader>
 								<DialogDescription className='py-2'>{selectedBooking?.remarks}</DialogDescription>
 							</div>
 						</div>
-		
+
 						<div className='flex flex-5 flex-col px-4'>
-							<DialogHeader className='font-semibold text-left'>Guest Profile</DialogHeader>
+							<DialogHeader className='text-left font-semibold'>Guest Profile</DialogHeader>
 							<div className='flex items-center p-2'>
 								<CircleUserRound className='mr-3 size-12 text-primary-foreground dark:text-primary' />
 								<div>
