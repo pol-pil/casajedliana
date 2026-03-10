@@ -764,7 +764,7 @@ export default function Index() {
 				<Head title='Bookings' />
 
 				{/* Stats overview */}
-				<div className='flex flex-row gap-4 pb-4'>
+				<div className='lg:flex flex-row gap-4 pb-4'>
 					<div className='flex-1 rounded-lg border bg-card p-4'>
 						<div className='flex items-center justify-between'>
 							<div>
@@ -1439,9 +1439,9 @@ export default function Index() {
 					if (!open) setSelectedBooking(null);
 				}}
 			>
-				<DialogContent className='min-w-200'>
-					<div className='flex flex-row'>
-						<div className='flex-2 space-y-4 px-4'>
+				<DialogContent className='lg:min-w-200'>
+					<div className='lg:flex'>
+						<div className='flex-4 space-y-4 px-4 lg:border-r-1 pr-8 mr-4'>
 							<div>
 								<DialogHeader className='flex flex-row justify-between font-semibold'>
 									<span>Booking Info</span>
@@ -1527,7 +1527,7 @@ export default function Index() {
 								</DialogDescription>
 							</div>
 							<div>
-								<DialogHeader className='font-semibold'>Room Details</DialogHeader>
+								<DialogHeader className='font-semibold text-left'>Room Details</DialogHeader>
 								<DialogDescription className='space-y-1 py-2'>
 									<div className='flex justify-between'>
 										<span>Room Type</span>
@@ -1544,7 +1544,7 @@ export default function Index() {
 								</DialogDescription>
 							</div>
 							<div>
-								<DialogHeader className='font-semibold'>Check-In / Check-Out</DialogHeader>
+								<DialogHeader className='font-semibold text-left'>Check-In / Check-Out</DialogHeader>
 								<DialogDescription className='space-y-1 py-2'>
 									<div className='flex justify-between'>
 										<span>Check-In Date</span>
@@ -1565,13 +1565,13 @@ export default function Index() {
 								</DialogDescription>
 							</div>
 							<div>
-								<DialogHeader className='font-semibold'>Special Request</DialogHeader>
+								<DialogHeader className='font-semibold text-left'>Special Request</DialogHeader>
 								<DialogDescription className='py-2'>{selectedBooking?.remarks}</DialogDescription>
 							</div>
 						</div>
-						<Separator orientation='vertical' className='mx-4' />
-						<div className='flex flex-3 flex-col px-4'>
-							<DialogHeader className='font-semibold'>Guest Profile</DialogHeader>
+		
+						<div className='flex flex-5 flex-col px-4'>
+							<DialogHeader className='font-semibold text-left'>Guest Profile</DialogHeader>
 							<div className='flex items-center p-2'>
 								<CircleUserRound className='mr-3 size-12 text-primary-foreground dark:text-primary' />
 								<div>
