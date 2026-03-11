@@ -39,4 +39,4 @@ class Room extends Model
 
         return !$overlapping;
     }
-}
+}   

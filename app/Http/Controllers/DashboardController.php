@@ -10,98 +10,121 @@ use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
-   public function index(Request $request)
-{
-    $date = $request->get('date')
-        ? Carbon::parse($request->get('date'))->toDateString()
-        : Carbon::today()->toDateString();
+    public function index(Request $request)
+    {
+        $start = $request->get('start')
+            ? Carbon::parse($request->get('start'))->toDateString()
+            : Carbon::today()->toDateString();
 
-    $today = Carbon::today()->toDateString();
-    $isToday = $date === $today;
+        $end = $request->get('end')
+            ? Carbon::parse($request->get('end'))->toDateString()
+            : Carbon::today()->addDay()->toDateString();
 
-    $rooms = Room::all();
+        $rooms = Room::all();
 
-    // All bookings overlapping selected date
-    $bookings = Booking::with(['client','room'])
-        ->whereDate('check_in', '<=', $date)
-        ->whereDate('check_out', '>', $date)
-        ->whereNotIn('status', ['cancelled','checked_out'])
-        ->get();
-
-    // Separate arrivals & departures
-    $checkIns = Booking::with(['client','room'])
-        ->whereDate('check_in', $date)
-        ->get();
-
-    $checkOuts = Booking::with(['client','room'])
-        ->whereDate('check_out', $date)
-        ->get();
-
-    // Compute occupied rooms
-    $occupiedRoomIds = $bookings->pluck('room_id')->unique();
-
-    $roomsTransformed = $rooms->map(function ($room) use ($bookings, $isToday) {
-
-    $booking = $bookings->firstWhere('room_id', $room->id);
-
-    /*
+        /*
     |----------------------------------------------------------
-    | PRIORITY ORDER (MATCH ROOM MANAGEMENT)
+    | BOOKINGS OVERLAPPING SELECTED RANGE
     |----------------------------------------------------------
-    | 1. Maintenance
-    | 2. Booking overlap
-    | 3. Cleaning (today only)
-    | 4. Available
     */
 
-    // 1️⃣ Maintenance override
-    if (strtolower($room->status) === 'maintenance') {
+        $bookings = Booking::with(['client', 'room', 'payments'])
+            ->whereDate('check_in', '<=', $end)
+            ->whereDate('check_out', '>', $start)
+            ->whereNotIn('status', ['cancelled', 'checked_out'])
+            ->get();
 
-        $computedStatus = 'Maintenance';
+        /*
+    |----------------------------------------------------------
+    | ARRIVALS / DEPARTURES
+    |----------------------------------------------------------
+    */
 
+        $checkIns = Booking::with(['client', 'room', 'payments'])
+            ->whereBetween('check_in', [$start, $end])
+            ->get();
+
+        $checkOuts = Booking::with(['client', 'room', 'payments'])
+            ->whereBetween('check_out', [$start, $end])
+            ->get();
+
+        /*
+|----------------------------------------------------------
+| ROOM STATUS COMPUTATION (Same Logic as Room Page)
+|----------------------------------------------------------
+*/
+
+        $roomsTransformed = $rooms->map(function ($room) use ($bookings) {
+
+            $booking = $bookings->firstWhere('room_id', $room->id);
+
+            if ($room->status === 'maintenance') {
+
+                $computedStatus = 'Maintenance';
+            } elseif ($booking) {
+
+                $bookingStatus = strtolower($booking->status);
+
+                if ($bookingStatus === 'checked_in') {
+
+                    $computedStatus = 'Occupied';
+                } else {
+
+                    $computedStatus = 'Reserved';
+                }
+            } else {
+
+                $computedStatus = 'Available';
+            }
+
+            return [
+                'id' => $room->id,
+                'room_number' => $room->room_number,
+                'room_type' => $room->room_type,
+                'status' => $computedStatus,
+            ];
+        });
+
+
+        /*
+|----------------------------------------------------------
+| PAYMENT STATUS COMPUTATION
+|----------------------------------------------------------
+*/
+
+        $computePaymentStatus = function ($booking) {
+
+            $totalPaid = $booking->payments->sum('amount');
+
+            if ($totalPaid <= 0) {
+                $booking->payment_status = 'unpaid';
+            } elseif ($totalPaid < $booking->total_amount) {
+                $booking->payment_status = 'partial';
+            } else {
+                $booking->payment_status = 'paid';
+            }
+
+            return $booking;
+        };
+
+        $bookings = $bookings->map($computePaymentStatus);
+        $checkIns = $checkIns->map($computePaymentStatus);
+        $checkOuts = $checkOuts->map($computePaymentStatus);
+
+
+        /*
+|----------------------------------------------------------
+| RETURN DASHBOARD DATA
+|----------------------------------------------------------
+*/
+
+        return Inertia::render('Dashboard/Index', [
+            'startDate' => $start,
+            'endDate' => $end,
+            'rooms' => $roomsTransformed,
+            'bookings' => $bookings,
+            'checkIns' => $checkIns,
+            'checkOuts' => $checkOuts,
+        ]);
     }
-    // 2️⃣ Booking overlap
-    elseif ($booking) {
-
-        $status = strtolower($booking->status);
-
-        if ($status === 'checked_in') {
-            $computedStatus = 'Occupied';
-        } elseif ($status === 'reserved') {
-    $computedStatus = 'Reserved';
-        } elseif ($status === 'pending') {
-            $computedStatus = 'Pending';
-        } else {
-            $computedStatus = 'Reserved';   
-        }
-
-    }
-    // 3️⃣ Cleaning only for today
-    elseif ($isToday && strtolower($room->status) === 'cleaning') {
-
-        $computedStatus = 'Cleaning';
-
-    }
-    // 4️⃣ Default
-    else {
-
-        $computedStatus = 'Available';
-    }
-
-    return [
-        'id' => $room->id,
-        'room_number' => $room->room_number,
-        'room_type' => $room->room_type,
-        'status' => $computedStatus,
-    ];
-});
-
-    return Inertia::render('Dashboard/Index', [
-        'selectedDate' => $date,
-        'rooms' => $roomsTransformed,
-        'bookings' => $bookings,
-        'checkIns' => $checkIns,
-        'checkOuts' => $checkOuts,
-    ]);
-}
 }

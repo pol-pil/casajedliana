@@ -17,90 +17,84 @@ class AccommodationController extends Controller
     |--------------------------------------------------------------------------
     */
     public function index(Request $request)
-        {
-            $date = $request->get('date')
-                ? Carbon::parse($request->get('date'))->toDateString()
-                : Carbon::today()->toDateString();
+    {
+        $start = $request->get('start')
+            ? Carbon::parse($request->get('start'))->toDateString()
+            : Carbon::today()->toDateString();
 
-            $rooms = Room::all();
+        $end = $request->get('end')
+            ? Carbon::parse($request->get('end'))->toDateString()
+            : Carbon::today()->addDay()->toDateString();
 
-            $roomsTransformed = $rooms->map(function ($room) use ($date) {
+        $rooms = Room::all();
 
-                // Get overlapping booking for selected date
-                $booking = Booking::where('room_id', $room->id)
-                    ->whereDate('check_in', '<=', $date)
-                    ->whereDate('check_out', '>', $date)
-                    ->whereNotIn('status', ['cancelled', 'checked_out'])
-                    ->orderByDesc('created_at')
-                    ->first();
+        $roomsTransformed = $rooms->map(function ($room) use ($start, $end) {
 
-                /*
-                |----------------------------------------------------------
-                | PRIORITY ORDER
-                |----------------------------------------------------------
-                | 1. Maintenance (always override)
-                | 2. Booking overlap
-                | 3. Cleaning
-                | 4. Available
-                */
+            /*
+        |----------------------------------------------------------
+        | Get booking overlapping the selected range
+        |
+        | booking.check_in <= selected_end
+        | booking.check_out > selected_start
+        |
+        | This detects ANY overlap with the selected stay period
+        */
 
-                // 1️⃣ Maintenance overrides everything
-                if (strtolower($room->status) === 'maintenance') {
+            $booking = Booking::where('room_id', $room->id)
+                ->whereDate('check_in', '<=', $end)
+                ->whereDate('check_out', '>', $start)
+                ->whereNotIn('status', ['cancelled', 'checked_out'])
+                ->orderByDesc('created_at')
+                ->first();
 
-                    $finalStatus = 'Maintenance';
+            /*
+|----------------------------------------------------------
+| FINAL ROOM STATUS (Simplified for UI)
+|----------------------------------------------------------
+| Maintenance
+| Occupied
+| Reserved
+| Available
+*/
 
+            if ($room->status === 'maintenance') {
+
+                $finalStatus = 'Maintenance';
+            } elseif ($booking) {
+
+                $bookingStatus = strtolower($booking->status);
+
+
+                if ($bookingStatus === 'checked_in') {
+
+                    $finalStatus = 'Occupied';
+                } else {
+
+                    // pencil + reserved both block the room
+                    $finalStatus = 'Reserved';
                 }
-                // 2️⃣ Booking overlap
-                elseif ($booking) {
+            } else {
 
-                    switch ($booking->status) {
+                $finalStatus = 'Available';
+            }
 
-                        case 'checked_in':
-                            $finalStatus = 'Occupied';
-                            break;
+            return [
+                'id' => $room->id,
+                'roomNumber' => $room->room_number,
+                'category' => $room->room_type,
+                'capacity' => (int) $room->capacity,
+                'beds' => $room->description ?? '',
+                'status' => $finalStatus,
+                'price' => $room->price,
+            ];
+        });
 
-                        case 'reserved':
-                            $finalStatus = 'Reserved';
-                            break;
-
-                        case 'pencil':
-                            $finalStatus = 'Pencil';
-                            break;
-
-                        default:
-                            $finalStatus = 'Reserved';
-                            break;
-                    }
-
-                }
-                // 3️⃣ Cleaning (only if no booking)
-                elseif (strtolower($room->status) === 'cleaning') {
-
-                    $finalStatus = 'Cleaning';
-
-                }
-                // 4️⃣ Default
-                else {
-
-                    $finalStatus = 'Available';
-                }
-
-                return [
-                    'id' => $room->id,
-                    'roomNumber' => $room->room_number,
-                    'category' => $room->room_type,
-                    'capacity' => (int) $room->capacity,
-                    'beds' => $room->description ?? '',
-                    'status' => $finalStatus,
-                    'price' => $room->price,
-                ];
-            });
-
-            return Inertia::render('Accommodations/Index', [
-                'rooms' => $roomsTransformed,
-                'selectedDate' => $date,
-            ]);
-        }
+        return Inertia::render('Accommodations/Index', [
+            'rooms' => $roomsTransformed,
+            'startDate' => $start,
+            'endDate' => $end,
+        ]);
+    }
 
 
     /*
@@ -109,22 +103,22 @@ class AccommodationController extends Controller
     |--------------------------------------------------------------------------
     */
     public function updateStatus(Request $request, Room $room)
-{
-    $request->validate([
-        'status' => 'required|in:available,cleaning,maintenance'
-    ]);
+    {
+        $request->validate([
+            'status' => 'required|in:available,cleaning,maintenance'
+        ]);
 
-    // Force lowercase to match ENUM exactly
-    $status = strtolower($request->status);
+        // Force lowercase to match ENUM exactly
+        $status = strtolower($request->status);
 
-    // Debug temporarily (optional)
-    // dd($status);
+        // Debug temporarily (optional)
+        // dd($status);
 
-    $room->status = $status;
-    $room->save();
+        $room->status = $status;
+        $room->save();
 
-    return back()->with('success', 'Room operational status updated.');
-}
+        return back()->with('success', 'Room operational status updated.');
+    }
 
 
     /*
@@ -134,8 +128,11 @@ class AccommodationController extends Controller
     */
     public function checkIn(Room $room)
     {
+        if ($room->status === 'maintenance') {
+            return back()->withErrors('Room is under maintenance.');
+        }
         $booking = Booking::where('room_id', $room->id)
-            ->where('status', 'reserved')
+            ->whereIn('status', ['reserved', 'pencil'])
             ->latest()
             ->first();
 
@@ -184,7 +181,7 @@ class AccommodationController extends Controller
     public function cancelBooking(Room $room)
     {
         $booking = Booking::where('room_id', $room->id)
-            ->whereIn('status', ['reserved'])
+            ->whereIn('status', ['reserved', 'pencil'])
             ->latest()
             ->first();
 
@@ -244,5 +241,32 @@ class AccommodationController extends Controller
         $room->save();
 
         return back()->with('success', 'Room cleaned and available.');
+    }
+
+    /*
+|--------------------------------------------------------------------------
+| STORE NEW ROOM
+|--------------------------------------------------------------------------
+*/
+    public function store(Request $request)
+    {
+        $request->validate([
+            'room_number' => 'required|unique:rooms,room_number',
+            'room_type' => 'required|string|max:255',
+            'capacity' => 'required|integer|min:1',
+            'price' => 'required|numeric|min:0',
+            'description' => 'nullable|string',
+        ]);
+
+        Room::create([
+            'room_number' => $request->room_number,
+            'room_type' => $request->room_type,
+            'capacity' => $request->capacity,
+            'price' => $request->price,
+            'description' => $request->description,
+            'status' => 'available',
+        ]);
+
+        return back()->with('success', 'Room added successfully.');
     }
 }
