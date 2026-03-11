@@ -172,7 +172,6 @@ type Client = {
 	company: string;
 };
 
-// Add PageProps type definition
 type PageProps = {
 	bookings: {
 		data: Booking[];
