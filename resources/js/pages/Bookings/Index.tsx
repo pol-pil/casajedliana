@@ -78,7 +78,7 @@ type Booking = {
 	guest_count: string;
 	check_in: string;
 	check_out: string;
-	status: 'pencil' | 'reserved' | 'checked_in' | 'checked_out' | 'cancelled';
+	status: string;
 	total_amount: number;
 	remarks: string;
 	balance: number;
@@ -192,6 +192,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 const statusConfig = {
+<<<<<<< HEAD
 	pencil: {
 		label: 'Pencil',
 		variant: 'secondary' as const,
@@ -206,11 +207,31 @@ const statusConfig = {
 	},
 	checked_in: {
 		label: 'Checked In',
+=======
+	confirmed: {
+		label: 'Confirmed',
+>>>>>>> 193066c8b74e382a48805c3513ec58d69f25ee31
 		variant: 'default' as const,
 		icon: CheckCircleIcon,
 		color: 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-400',
 	},
+<<<<<<< HEAD
 	checked_out: {
+=======
+	pending: {
+		label: 'Pending Payment',
+		variant: 'secondary' as const,
+		icon: ClockIcon,
+		color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-950 dark:text-yellow-400',
+	},
+	'checked_in': {
+		label: 'Checked In',
+		variant: 'default' as const,
+		icon: CheckCircleIcon,
+		color: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300',
+	},
+	'checked_out': {
+>>>>>>> 193066c8b74e382a48805c3513ec58d69f25ee31
 		label: 'Checked Out',
 		variant: 'outline' as const,
 		icon: CheckCircleIcon,
@@ -1290,7 +1311,7 @@ export default function Index() {
 											<TableCell>{formatDateTime(booking.check_in)}</TableCell>
 											<TableCell>{formatDateTime(booking.check_out)}</TableCell>
 											<TableCell>
-												<StatusBadge status={booking.status} />
+												<StatusBadge status={booking.status as "confirmed" | "pending" | "checked_in" | "checked_out" | "cancelled"} />
 											</TableCell>
 											<TableCell className='text-right'>
 												<div className='font-medium'>₱{Number(booking.total_amount).toFixed(2)}</div>
@@ -1386,7 +1407,7 @@ export default function Index() {
 							<div>
 								<DialogHeader className='flex flex-row justify-between font-semibold'>
 									<span>Booking Info</span>
-									<StatusBadge status={selectedBooking?.status || 'pencil'} />
+									<StatusBadge status={selectedBooking?.status as "confirmed" | "pending" | "checked_in" | "checked_out" | "cancelled" || 'pending'} />
 								</DialogHeader>
 								<DialogDescription className='space-y-1 py-2'>
 									<div className='flex justify-between'>
@@ -1450,7 +1471,7 @@ export default function Index() {
 						<div className='flex flex-1 flex-col px-4'>
 							<DialogHeader className='font-semibold'>Guest Profile</DialogHeader>
 							<div className='flex items-center p-2'>
-								<CircleUserRound className='mr-3 size-12 text-primary-foreground' />
+								<CircleUserRound className='mr-3 size-12 text-primary-foreground dark:text-primary' />
 								<div>
 									<DialogHeader className='font-semibold'>
 										{selectedBooking?.client.first_name} {selectedBooking?.client.last_name}
