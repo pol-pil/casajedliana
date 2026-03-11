@@ -1396,26 +1396,6 @@ export default function Index() {
 													).toFixed(2)}
 												</div>
 											</TableCell>
-											<TableCell className='text-right'>
-												<DropdownMenu>
-													<DropdownMenuTrigger asChild>
-														<Button variant='ghost' size='icon'>
-															<MoreHorizontalIcon className='h-4 w-4' />
-														</Button>
-													</DropdownMenuTrigger>
-													<DropdownMenuContent align='end'>
-														<DropdownMenuItem>
-															<EyeIcon className='mr-2 h-4 w-4' />
-															View Details
-														</DropdownMenuItem>
-														<DropdownMenuSeparator />
-														<DropdownMenuItem className='text-destructive'>
-															<TrashIcon className='mr-2 h-4 w-4' />
-															Cancel Booking
-														</DropdownMenuItem>
-													</DropdownMenuContent>
-												</DropdownMenu>
-											</TableCell>
 										</TableRow>
 									);
 								})}
