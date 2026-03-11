@@ -269,4 +269,43 @@ class AccommodationController extends Controller
 
         return back()->with('success', 'Room added successfully.');
     }
+
+    /*
+|--------------------------------------------------------------------------
+| UPDATE ROOM
+|--------------------------------------------------------------------------
+*/
+    public function update(Request $request, Room $room)
+    {
+        $request->validate([
+            'room_number' => 'required|string|max:50',
+            'room_type' => 'required|string|max:255',
+            'capacity' => 'required|integer|min:1',
+            'price' => 'required|numeric|min:0',
+            'description' => 'nullable|string',
+        ]);
+
+        $room->update([
+            'room_number' => $request->room_number,
+            'room_type' => $request->room_type,
+            'capacity' => $request->capacity,
+            'price' => $request->price,
+            'description' => $request->description,
+        ]);
+
+        return back()->with('success', 'Room updated successfully.');
+    }
+
+
+    /*
+|--------------------------------------------------------------------------
+| DELETE ROOM
+|--------------------------------------------------------------------------
+*/
+    public function destroy(Room $room)
+    {
+        $room->delete();
+
+        return back()->with('success', 'Room deleted successfully.');
+    }
 }

@@ -110,6 +110,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/booking-charges', [BookingChargesController::class, 'storeBookingCharge'])->name('booking-charges.store');
     // Add Rooms
     Route::post('/rooms', [AccommodationController::class, 'store']);
+    Route::patch('/rooms/{room}', [AccommodationController::class, 'update'])->name('rooms.update');
+    Route::delete('/rooms/{room}', [AccommodationController::class, 'destroy'])->name('rooms.destroy');
 });
 
 require __DIR__ . '/settings.php';

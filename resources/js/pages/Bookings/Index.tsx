@@ -224,7 +224,7 @@ const statusConfig = {
 		icon: CheckCircleIcon,
 		color: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300',
 	},
-	checked_out: {
+	'checked_out': {
 		label: 'Checked Out',
 		variant: 'outline' as const,
 		icon: CheckCircleIcon,
