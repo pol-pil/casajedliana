@@ -40,9 +40,6 @@ type Item = {
 	bookings?: any[];
 };
 
-/* ====================== */
-/* Mock Amenities (client-side only) */
-/* ====================== */
 
 const mockAmenities: Record<string, string[]> = {
 	Standard: ['Air Conditioning', 'Private Bathroom', '32" Smart TV', 'Wi-Fi', 'Wardrobe', 'Work Desk'],
@@ -53,9 +50,6 @@ const mockAmenities: Record<string, string[]> = {
 	'Rest House': ['Kitchenette', 'Outdoor Seating', 'Large Dining Area', 'Wi-Fi'],
 };
 
-/* ====================== */
-/* Status color helper */
-/* ====================== */
 
 const statusColor = (status: Status) => {
 	switch (status) {
@@ -76,9 +70,6 @@ const statusColor = (status: Status) => {
 	}
 };
 
-/* ====================== */
-/* Page component */
-/* ====================== */
 
 export default function Index() {
 	const [addRoomOpen, setAddRoomOpen] = useState(false);
@@ -89,24 +80,18 @@ export default function Index() {
 	const [price, setPrice] = useState(0);
 	const [description, setDescription] = useState('');
 
-	// read server props (works with raw rooms or transformed rooms)
 	const { props } = usePage() as any;
 	const rawRooms = props.rooms ?? [];
 	const serverStartDate = props.startDate;
 	const serverEndDate = props.endDate;
 
-	/* ====================== */
-	/* Local date picker state (same UI/format as Dashboard) */
-	/* ====================== */
+
 	const [isDateOpen, setIsDateOpen] = useState(false);
 	const [range, setRange] = useState<DateRange | undefined>({
 		from: serverStartDate ? new Date(serverStartDate) : new Date(),
 		to: serverEndDate ? new Date(serverEndDate) : new Date(),
 	});
 
-	/* ====================== */
-	/* Normalize server rows to Item[] shape (safe) */
-	/* ====================== */
 	const normalizedRooms: Item[] = rawRooms.map((r: any) => {
 		const id = r.id;
 		const roomNumber = r.roomNumber ?? r.room_number ?? String(id);
@@ -132,16 +117,10 @@ export default function Index() {
 		};
 	});
 
-	/* ====================== */
-	/* Filters/state */
-	/* ====================== */
 	const [search, setSearch] = useState<string>('');
 	const [activeStatus, setActiveStatus] = useState<Status | 'All'>('All');
 	const [activeCategory, setActiveCategory] = useState<Category | 'All'>('All');
 
-	/* ====================== */
-	/* Filter logic (client-side) */
-	/* ====================== */
 	const filteredRooms = useMemo(() => {
 		return normalizedRooms.filter((room) => {
 			const matchSearch = room.roomNumber.toLowerCase().includes(search.toLowerCase());
@@ -151,9 +130,6 @@ export default function Index() {
 		});
 	}, [normalizedRooms, search, activeStatus, activeCategory]);
 
-	/* ====================== */
-	/* Group rooms by category */
-	/* ====================== */
 	const groupedRooms = useMemo(() => {
 		return Object.entries(
 			filteredRooms.reduce((acc: Record<string, Item[]>, room) => {
@@ -164,9 +140,6 @@ export default function Index() {
 		);
 	}, [filteredRooms]);
 
-	/* ====================== */
-	/* Date apply handler (same as Dashboard) */
-	/* ====================== */
 	function applyRange() {
 		if (!range?.from || !range?.to) return;
 
@@ -199,9 +172,6 @@ export default function Index() {
 		);
 	}
 
-	/* ====================== */
-	/* Render */
-	/* ====================== */
 	return (
 		<AppLayout breadcrumbs={breadcrumbs}>
 			<Head title='Rooms' />
@@ -221,7 +191,6 @@ export default function Index() {
 
 						<Button onClick={() => setAddRoomOpen(true)}>+ Add Room</Button>
 
-						{/* DATE PICKER (Popover + Calendar) - same format as Dashboard */}
 						<Popover open={isDateOpen} onOpenChange={setIsDateOpen}>
 							<PopoverTrigger asChild>
 								<Button variant='outline' className='justify-start'>
@@ -254,9 +223,9 @@ export default function Index() {
 					</div>
 				</div>
 
-				{/* FILTER SECTION */}
+
 				<div className='flex flex-col gap-4 md:flex-row md:items-center'>
-					{/* ROOM TYPE DROPDOWN */}
+	
 					<div className='w-full md:w-60'>
 						<Select value={activeCategory} onValueChange={(value) => setActiveCategory(value as Category | 'All')}>
 							<SelectTrigger>
@@ -275,7 +244,6 @@ export default function Index() {
 						</Select>
 					</div>
 
-					{/* STATUS FILTER BUTTONS */}
 					<div className='flex flex-wrap gap-2'>
 						{(['All', 'Available', 'Occupied', 'Reserved', 'Maintenance'] as const).map((status) => (
 							<Button
@@ -290,17 +258,17 @@ export default function Index() {
 					</div>
 				</div>
 
-				{/* ROOM CATEGORIES */}
+
 				{groupedRooms.map(([category, rooms]) => (
 					<div key={category} className='space-y-6'>
-						{/* CATEGORY TITLE */}
+		
 						<h2 className='border-b pb-3 text-xl font-semibold'>{category}</h2>
-						{/* GRID FOR 1920px */}
+		
 						<div className='grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'>
 							{rooms.map((room) => (
 								<Dialog key={room.id}>
 									<Card className='relative flex h-48 flex-col justify-between p-6 text-center transition hover:shadow-lg'>
-										{/* EDIT DROPDOWN - TOP RIGHT */}
+					
 										<div className='absolute top-4 right-4 z-10'>
 											<DropdownMenu>
 												<DropdownMenuTrigger asChild>
@@ -329,7 +297,7 @@ export default function Index() {
 														</DropdownMenuItem>
 													)}
 
-													{/* ================= RESERVED ================= */}
+												
 													{room.status === 'Reserved' && (
 														<>
 															<DropdownMenuItem
@@ -363,7 +331,7 @@ export default function Index() {
 															</DropdownMenuItem>
 														</>
 													)}
-													{/* ================= AVAILABLE ================= */}
+											
 													{room.status === 'Available' && (
 														<DropdownMenuItem
 															onClick={() => {
@@ -381,7 +349,7 @@ export default function Index() {
 														</DropdownMenuItem>
 													)}
 
-													{/* ================= MAINTENANCE ================= */}
+										
 													{room.status === 'Maintenance' && (
 														<DropdownMenuItem
 															onClick={() => {
@@ -402,10 +370,10 @@ export default function Index() {
 											</DropdownMenu>
 										</div>
 
-										{/* CLICKABLE BODY TO OPEN DETAILS */}
+									
 										<DialogTrigger asChild>
 											<div className='flex h-full cursor-pointer flex-col justify-between'>
-												{/* ROOM INFO */}
+											
 												<div>
 													<h3 className='text-lg font-semibold'>Room {room.roomNumber}</h3>
 													{room.price !== undefined && (
@@ -415,7 +383,7 @@ export default function Index() {
 													<p className='text-sm text-muted-foreground'>Capacity: {room.capacity} Pax</p>
 												</div>
 
-												{/* STATUS DISPLAY */}
+												
 												<div className='mt-4 flex justify-center'>
 													<span
 														className={`rounded-full px-4 py-2 text-sm font-medium ${statusColor(room.status)}`}
@@ -427,7 +395,7 @@ export default function Index() {
 										</DialogTrigger>
 									</Card>
 
-									{/* ROOM DETAILS DIALOG */}
+							
 									<DialogContent>
 										<DialogHeader>
 											<DialogTitle>Room {room.roomNumber}</DialogTitle>
@@ -469,13 +437,13 @@ export default function Index() {
 						</DialogHeader>
 
 						<div className='space-y-4'>
-							{/* ROOM NUMBER */}
+					
 							<div className='space-y-1'>
 								<label className='text-sm font-medium'>Room Number</label>
 								<Input placeholder='Example: 101' value={roomNumber} onChange={(e) => setRoomNumber(e.target.value)} />
 							</div>
 
-							{/* ROOM TYPE */}
+				
 							<div className='space-y-1'>
 								<label className='text-sm font-medium'>Room Type</label>
 
@@ -495,7 +463,7 @@ export default function Index() {
 								</Select>
 							</div>
 
-							{/* CAPACITY + PRICE */}
+		
 							<div className='grid grid-cols-2 gap-3'>
 								<div className='space-y-1'>
 									<label className='text-sm font-medium'>Capacity</label>
@@ -520,7 +488,6 @@ export default function Index() {
 								</div>
 							</div>
 
-							{/* DESCRIPTION */}
 							<div className='space-y-1'>
 								<label className='text-sm font-medium'>Room Description</label>
 								<Input
@@ -530,7 +497,7 @@ export default function Index() {
 								/>
 							</div>
 
-							{/* ACTION BUTTON */}
+					
 							<Button
 								className='w-full'
 								onClick={() => {
