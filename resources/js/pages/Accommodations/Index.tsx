@@ -40,7 +40,6 @@ type Item = {
 	bookings?: any[];
 };
 
-
 const mockAmenities: Record<string, string[]> = {
 	Standard: ['Air Conditioning', 'Private Bathroom', '32" Smart TV', 'Wi-Fi', 'Wardrobe', 'Work Desk'],
 	Suite: ['Living Area', 'Mini Refrigerator', '50" Smart TV', 'Sofa Lounge', 'Coffee Table', 'Wi-Fi'],
@@ -49,7 +48,6 @@ const mockAmenities: Record<string, string[]> = {
 	Penthouse: ['Private Balcony', 'Mini Bar', 'Premium Bathroom', 'Lounge Area', 'Wi-Fi'],
 	'Rest House': ['Kitchenette', 'Outdoor Seating', 'Large Dining Area', 'Wi-Fi'],
 };
-
 
 const statusColor = (status: Status) => {
 	switch (status) {
@@ -70,7 +68,6 @@ const statusColor = (status: Status) => {
 	}
 };
 
-
 export default function Index() {
 	const [addRoomOpen, setAddRoomOpen] = useState(false);
 
@@ -80,11 +77,14 @@ export default function Index() {
 	const [price, setPrice] = useState(0);
 	const [description, setDescription] = useState('');
 
+	const [editRoomOpen, setEditRoomOpen] = useState(false);
+	const [deleteRoomOpen, setDeleteRoomOpen] = useState(false);
+	const [selectedRoom, setSelectedRoom] = useState<Item | null>(null);
+
 	const { props } = usePage() as any;
 	const rawRooms = props.rooms ?? [];
 	const serverStartDate = props.startDate;
 	const serverEndDate = props.endDate;
-
 
 	const [isDateOpen, setIsDateOpen] = useState(false);
 	const [range, setRange] = useState<DateRange | undefined>({
@@ -223,9 +223,7 @@ export default function Index() {
 					</div>
 				</div>
 
-
 				<div className='flex flex-col gap-4 md:flex-row md:items-center'>
-	
 					<div className='w-full md:w-60'>
 						<Select value={activeCategory} onValueChange={(value) => setActiveCategory(value as Category | 'All')}>
 							<SelectTrigger>
@@ -258,17 +256,14 @@ export default function Index() {
 					</div>
 				</div>
 
-
 				{groupedRooms.map(([category, rooms]) => (
 					<div key={category} className='space-y-6'>
-		
 						<h2 className='border-b pb-3 text-xl font-semibold'>{category}</h2>
-		
+
 						<div className='grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'>
 							{rooms.map((room) => (
 								<Dialog key={room.id}>
 									<Card className='relative flex h-48 flex-col justify-between p-6 text-center transition hover:shadow-lg'>
-					
 										<div className='absolute top-4 right-4 z-10'>
 											<DropdownMenu>
 												<DropdownMenuTrigger asChild>
@@ -280,6 +275,29 @@ export default function Index() {
 													</button>
 												</DropdownMenuTrigger>
 												<DropdownMenuContent align='end' className='w-48'>
+													<DropdownMenuItem
+														onClick={() => {
+															setSelectedRoom(room);
+															setRoomNumber(room.roomNumber);
+															setRoomType(room.category);
+															setCapacity(room.capacity);
+															setPrice(room.price ?? 0);
+															setDescription(room.beds ?? '');
+															setEditRoomOpen(true);
+														}}
+													>
+														Edit Room
+													</DropdownMenuItem>
+
+													<DropdownMenuItem
+														className='text-red-500'
+														onClick={() => {
+															setSelectedRoom(room);
+															setDeleteRoomOpen(true);
+														}}
+													>
+														Delete Room
+													</DropdownMenuItem>
 													{room.status === 'Occupied' && (
 														<DropdownMenuItem
 															onClick={() => {
@@ -297,7 +315,6 @@ export default function Index() {
 														</DropdownMenuItem>
 													)}
 
-												
 													{room.status === 'Reserved' && (
 														<>
 															<DropdownMenuItem
@@ -331,7 +348,7 @@ export default function Index() {
 															</DropdownMenuItem>
 														</>
 													)}
-											
+
 													{room.status === 'Available' && (
 														<DropdownMenuItem
 															onClick={() => {
@@ -349,7 +366,6 @@ export default function Index() {
 														</DropdownMenuItem>
 													)}
 
-										
 													{room.status === 'Maintenance' && (
 														<DropdownMenuItem
 															onClick={() => {
@@ -370,10 +386,8 @@ export default function Index() {
 											</DropdownMenu>
 										</div>
 
-									
 										<DialogTrigger asChild>
 											<div className='flex h-full cursor-pointer flex-col justify-between'>
-											
 												<div>
 													<h3 className='text-lg font-semibold'>Room {room.roomNumber}</h3>
 													{room.price !== undefined && (
@@ -383,7 +397,6 @@ export default function Index() {
 													<p className='text-sm text-muted-foreground'>Capacity: {room.capacity} Pax</p>
 												</div>
 
-												
 												<div className='mt-4 flex justify-center'>
 													<span
 														className={`rounded-full px-4 py-2 text-sm font-medium ${statusColor(room.status)}`}
@@ -395,7 +408,6 @@ export default function Index() {
 										</DialogTrigger>
 									</Card>
 
-							
 									<DialogContent>
 										<DialogHeader>
 											<DialogTitle>Room {room.roomNumber}</DialogTitle>
@@ -437,13 +449,11 @@ export default function Index() {
 						</DialogHeader>
 
 						<div className='space-y-4'>
-					
 							<div className='space-y-1'>
 								<label className='text-sm font-medium'>Room Number</label>
 								<Input placeholder='Example: 101' value={roomNumber} onChange={(e) => setRoomNumber(e.target.value)} />
 							</div>
 
-				
 							<div className='space-y-1'>
 								<label className='text-sm font-medium'>Room Type</label>
 
@@ -463,7 +473,6 @@ export default function Index() {
 								</Select>
 							</div>
 
-		
 							<div className='grid grid-cols-2 gap-3'>
 								<div className='space-y-1'>
 									<label className='text-sm font-medium'>Capacity</label>
@@ -497,7 +506,6 @@ export default function Index() {
 								/>
 							</div>
 
-					
 							<Button
 								className='w-full'
 								onClick={() => {
@@ -532,6 +540,128 @@ export default function Index() {
 								}}
 							>
 								Save Room
+							</Button>
+						</div>
+					</DialogContent>
+				</Dialog>
+				<Dialog open={editRoomOpen} onOpenChange={setEditRoomOpen}>
+					<DialogContent className='max-w-lg'>
+						<DialogHeader>
+							<DialogTitle>Edit Room</DialogTitle>
+						</DialogHeader>
+
+						<div className='space-y-4'>
+							{/* ROOM NUMBER */}
+							<div className='space-y-1'>
+								<label className='text-sm font-medium'>Room Number</label>
+								<Input placeholder='Example: 101' value={roomNumber} onChange={(e) => setRoomNumber(e.target.value)} />
+							</div>
+
+							{/* ROOM TYPE */}
+							<div className='space-y-1'>
+								<label className='text-sm font-medium'>Room Type</label>
+
+								<Select value={roomType} onValueChange={(value) => setRoomType(value)}>
+									<SelectTrigger>
+										<SelectValue placeholder='Select room type' />
+									</SelectTrigger>
+
+									<SelectContent>
+										<SelectItem value='Standard'>Standard</SelectItem>
+										<SelectItem value='Suite'>Suite</SelectItem>
+										<SelectItem value='Quadro'>Quadro</SelectItem>
+										<SelectItem value='Family'>Family</SelectItem>
+										<SelectItem value='Penthouse'>Penthouse</SelectItem>
+										<SelectItem value='Rest House'>Rest House</SelectItem>
+									</SelectContent>
+								</Select>
+							</div>
+
+							{/* CAPACITY + PRICE */}
+							<div className='grid grid-cols-2 gap-3'>
+								<div className='space-y-1'>
+									<label className='text-sm font-medium'>Capacity</label>
+									<Input
+										type='number'
+										min={1}
+										placeholder='Guests'
+										value={capacity}
+										onChange={(e) => setCapacity(Number(e.target.value))}
+									/>
+								</div>
+
+								<div className='space-y-1'>
+									<label className='text-sm font-medium'>Price per Night</label>
+									<Input
+										type='number'
+										min={0}
+										placeholder='₱'
+										value={price}
+										onChange={(e) => setPrice(Number(e.target.value))}
+									/>
+								</div>
+							</div>
+
+							{/* ROOM DESCRIPTION */}
+							<div className='space-y-1'>
+								<label className='text-sm font-medium'>Room Description / Beds</label>
+								<Input
+									placeholder='Example: 2 Queen Beds'
+									value={description}
+									onChange={(e) => setDescription(e.target.value)}
+								/>
+							</div>
+
+							{/* SAVE BUTTON */}
+							<Button
+								className='w-full'
+								onClick={() => {
+									if (!selectedRoom) return;
+
+									router.patch(
+										`/rooms/${selectedRoom.id}`,
+										{
+											room_number: roomNumber,
+											room_type: roomType,
+											capacity,
+											price,
+											description,
+										},
+										{
+											onSuccess: () => {
+												setEditRoomOpen(false);
+												refreshRooms();
+											},
+										},
+									);
+								}}
+							>
+								Update Room
+							</Button>
+						</div>
+					</DialogContent>
+				</Dialog>
+				<Dialog open={deleteRoomOpen} onOpenChange={setDeleteRoomOpen}>
+					<DialogContent className='max-w-sm'>
+						<DialogHeader>
+							<DialogTitle>Delete Room</DialogTitle>
+						</DialogHeader>
+
+						<p>Are you sure you want to delete Room {selectedRoom?.roomNumber}?</p>
+
+						<div className='flex justify-end gap-2 pt-4'>
+							<Button variant='outline' onClick={() => setDeleteRoomOpen(false)}>
+								Cancel
+							</Button>
+
+							<Button
+								variant='destructive'
+								onClick={() => {
+									if (!selectedRoom) return;
+									router.delete(`/rooms/${selectedRoom.id}`);
+								}}
+							>
+								Delete
 							</Button>
 						</div>
 					</DialogContent>
