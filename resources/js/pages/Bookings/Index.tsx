@@ -772,6 +772,17 @@ export default function Index() {
 		);
 	};
 
+	const allowedActions: Record<string, string[]> = {
+		pending: ['cancelled'],
+		confirmed: ['checked_in', 'cancelled', 'no_show'],
+		checked_in: ['checked_out'],
+		checked_out: [],
+		no_show: [],
+		cancelled: [],
+	};
+
+	const can = (action: string) => !allowedActions[selectedBooking?.status ?? '']?.includes(action);
+
 	return (
 		<AppLayout breadcrumbs={breadcrumbs}>
 			<div className='p-6'>
@@ -1477,89 +1488,39 @@ export default function Index() {
 										</DropdownMenuTrigger>
 
 										<DropdownMenuContent>
-											{/* {selectedBooking?.status === 'pending' && (
-												<DropdownMenuItem
-													className='text-destructive focus:bg-red-200'
-													onClick={() => updateStatus('cancelled')}
-												>
-													<TrashIcon className='mr-2 h-4 w-4' />
-													Cancel Booking
-												</DropdownMenuItem>
-											)}
-											{selectedBooking?.status === 'confirmed' && (
-												<>
-													<DropdownMenuItem
-														className='focus:text-blue-500'
-														onClick={() => updateStatus('checked_in')}
-													>
-														<CheckCircleIcon className='mr-2 h-4 w-4' />
-														Check In
-													</DropdownMenuItem>
-
-													<DropdownMenuItem
-														className='focus:text-orange-600'
-														onClick={() => updateStatus('no_show')}
-													>
-														<EyeOff className='mr-2 h-4 w-4' />
-														No Show
-													</DropdownMenuItem>
-
-													<DropdownMenuSeparator />
-
-													<DropdownMenuItem
-														className='text-destructive focus:bg-red-200'
-														onClick={() => updateStatus('cancelled')}
-													>
-														<TrashIcon className='mr-2 h-4 w-4' />
-														Cancel Booking
-													</DropdownMenuItem>
-												</>
-											)}
-											{selectedBooking?.status === 'checked_in' && (
-												<DropdownMenuItem className='focus:bg-gray-200' onClick={() => updateStatus('checked_out')}>
-													<EyeIcon className='mr-2 h-4 w-4' />
-													Check Out
-												</DropdownMenuItem>
-											)}
-											{selectedBooking?.status === 'cancelled' && (
-												<DropdownMenuItem className='focus:bg-gray-200' onClick={() => updateStatus('pending')}>
-													<ListRestart className='mr-2 h-4 w-4' />
-													Restore
-												</DropdownMenuItem>
-											)}
-											{selectedBooking?.status === 'no_show' && (
-												<DropdownMenuItem
-													className='focus:text-blue-500'
-													onClick={() => updateStatus('checked_in')}
-												>
-													<CheckCircleIcon className='mr-2 h-4 w-4' />
-													Check In
-												</DropdownMenuItem>
-											)} */}
-											<DropdownMenuItem className='focus:text-yellow-600' onClick={() => updateStatus('pending')}>
-												<ClockIcon className='mr-2 h-4 w-4' />
-												Pending
-											</DropdownMenuItem>
-											<DropdownMenuItem className='focus:text-green-700' onClick={() => updateStatus('confirmed')}>
-												<Check className='mr-2 h-4 w-4' />
-												Confirmed
-											</DropdownMenuItem>
-											<DropdownMenuItem className='focus:text-blue-500' onClick={() => updateStatus('checked_in')}>
+											<DropdownMenuItem
+												className='focus:text-blue-500'
+												onClick={() => updateStatus('checked_in')}
+												disabled={can('checked_in')}
+											>
 												<CheckCircleIcon className='mr-2 h-4 w-4' />
 												Check In
 											</DropdownMenuItem>
-											<DropdownMenuItem className='focus:text-red-700' onClick={() => updateStatus('checked_out')}>
+
+											<DropdownMenuItem
+												className='focus:text-red-700'
+												onClick={() => updateStatus('checked_out')}
+												disabled={can('checked_out')}
+											>
 												<EyeIcon className='mr-2 h-4 w-4' />
 												Check Out
 											</DropdownMenuItem>
-											<DropdownMenuItem className='focus:text-orange-600' onClick={() => updateStatus('no_show')}>
+
+											<DropdownMenuItem
+												className='focus:text-orange-600'
+												onClick={() => updateStatus('no_show')}
+												disabled={can('no_show')}
+											>
 												<EyeOff className='mr-2 h-4 w-4' />
 												No Show
 											</DropdownMenuItem>
+
 											<DropdownMenuSeparator />
+
 											<DropdownMenuItem
 												className='text-destructive focus:bg-red-200'
 												onClick={() => updateStatus('cancelled')}
+												disabled={can('cancelled')}
 											>
 												<TrashIcon className='mr-2 h-4 w-4' />
 												Cancel Booking
