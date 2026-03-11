@@ -17,6 +17,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarDays } from 'lucide-react';
 import { DateRange } from 'react-day-picker';
+import { toast } from 'sonner';
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Rooms', href: '/rooms' }];
 
@@ -525,6 +526,8 @@ export default function Index() {
 										},
 										{
 											onSuccess: () => {
+												toast.success('Room added successfully');
+
 												setAddRoomOpen(false);
 
 												setRoomNumber('');
@@ -629,6 +632,8 @@ export default function Index() {
 										},
 										{
 											onSuccess: () => {
+												toast.success('Room updated successfully');
+
 												setEditRoomOpen(false);
 												refreshRooms();
 											},
@@ -658,7 +663,14 @@ export default function Index() {
 								variant='destructive'
 								onClick={() => {
 									if (!selectedRoom) return;
-									router.delete(`/rooms/${selectedRoom.id}`);
+									router.delete(`/rooms/${selectedRoom.id}`, {
+										onSuccess: () => {
+											toast.success('Room deleted successfully');
+
+											setDeleteRoomOpen(false);
+											refreshRooms();
+										},
+									});
 								}}
 							>
 								Delete
