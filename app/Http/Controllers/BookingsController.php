@@ -27,28 +27,6 @@ class BookingsController extends Controller
             ->orderBy('created_at', 'desc')
             ->paginate(10);
     
-        // 🔹 Merge same-name damage charges per booking
-        $bookings->getCollection()->transform(function ($booking) {
-    
-            $booking->bookingCharges = $booking->bookingCharges
-                ->groupBy(function ($bc) {
-                    return $bc->charge->type === 'damage'
-                        ? $bc->charge->name
-                        : 'unique_' . $bc->id; // keep non-damage unique
-                })
-                ->map(function ($group) {
-                    $first = $group->first();
-    
-                    $first->quantity = $group->sum('quantity');
-                    $first->total = $group->sum('total');
-    
-                    return $first;
-                })
-                ->values();
-    
-            return $booking;
-        });
-    
         $stats = [
             'totalBookings' => Booking::count(),
             'activeGuests' => Booking::where('status', 'checked_in')->count(),

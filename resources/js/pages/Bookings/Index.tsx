@@ -1326,7 +1326,6 @@ export default function Index() {
 									<TableHead>Check-out</TableHead>
 									<TableHead>Status</TableHead>
 									<TableHead className='text-right'>Amount</TableHead>
-									<TableHead className='text-right'></TableHead>
 								</TableRow>
 							</TableHeader>
 							<TableBody>
