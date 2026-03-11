@@ -105,6 +105,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/payments', [PaymentsController::class, 'storePayment'])->name('payments.store');
     // Booking Charge routes
     Route::post('/booking-charges', [BookingChargesController::class, 'storeBookingCharge'])->name('booking-charges.store');
+    // Add Rooms
+    Route::post('/rooms', [AccommodationController::class, 'store']);
 });
 
 require __DIR__ . '/settings.php';

@@ -74,7 +74,7 @@ type Booking = {
 	};
 	rate: {
 		name: string;
-	}
+	};
 	guest_count: string;
 	check_in: string;
 	check_out: string;
@@ -192,36 +192,36 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 const statusConfig = {
-  pencil: {
-    label: 'Pencil',
-    variant: 'secondary' as const,
-    icon: ClockIcon,
-    color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-950 dark:text-yellow-400',
-  },
-  reserved: {
-    label: 'Reserved',
-    variant: 'secondary' as const,
-    icon: CalendarIcon,
-    color: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300',
-  },
-  checked_in: {
-    label: 'Checked In',
-    variant: 'default' as const,
-    icon: CheckCircleIcon,
-    color: 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-400',
-  },
-  checked_out: {
-    label: 'Checked Out',
-    variant: 'outline' as const,
-    icon: CheckCircleIcon,
-    color: 'bg-gray-100 text-gray-800 dark:bg-gray-950 dark:text-gray-300',
-  },
-  cancelled: {
-    label: 'Cancelled',
-    variant: 'destructive' as const,
-    icon: XCircleIcon,
-    color: 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300',
-  },
+	pencil: {
+		label: 'Pencil',
+		variant: 'secondary' as const,
+		icon: ClockIcon,
+		color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-950 dark:text-yellow-400',
+	},
+	reserved: {
+		label: 'Reserved',
+		variant: 'secondary' as const,
+		icon: CalendarIcon,
+		color: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300',
+	},
+	checked_in: {
+		label: 'Checked In',
+		variant: 'default' as const,
+		icon: CheckCircleIcon,
+		color: 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-400',
+	},
+	checked_out: {
+		label: 'Checked Out',
+		variant: 'outline' as const,
+		icon: CheckCircleIcon,
+		color: 'bg-gray-100 text-gray-800 dark:bg-gray-950 dark:text-gray-300',
+	},
+	cancelled: {
+		label: 'Cancelled',
+		variant: 'destructive' as const,
+		icon: XCircleIcon,
+		color: 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300',
+	},
 };
 
 const AddChargeDialog = ({
@@ -661,9 +661,9 @@ export default function Index() {
 			variant: 'secondary' as const,
 			icon: AlertCircle,
 			color: 'bg-gray-100 text-gray-800',
-			};
+		};
 
-			const Icon = config.icon;
+		const Icon = config.icon;
 
 		return (
 			<Badge variant={config.variant} className={cn('flex items-center gap-1', config.color)}>
@@ -1297,16 +1297,16 @@ export default function Index() {
 												<div className='text-sm text-muted-foreground'>
 													Balance: ₱{' '}
 													{(
-												Number(booking.total_amount ?? 0) +
-												(booking.booking_charges ?? []).reduce(
-													(sum, bookingCharge) => sum + Number(bookingCharge.total ?? 0),
-													0,
-												) -
-												(booking.payments ?? []).reduce(
-													(sum, payment) => sum + Number(payment.amount ?? 0),
-													0,
-												)
-											).toFixed(2)}
+														Number(booking.total_amount ?? 0) +
+														(booking.booking_charges ?? []).reduce(
+															(sum, bookingCharge) => sum + Number(bookingCharge.total ?? 0),
+															0,
+														) -
+														(booking.payments ?? []).reduce(
+															(sum, payment) => sum + Number(payment.amount ?? 0),
+															0,
+														)
+													).toFixed(2)}
 												</div>
 											</TableCell>
 											<TableCell className='text-right'>

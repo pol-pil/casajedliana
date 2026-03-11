@@ -1,529 +1,420 @@
 // resources/js/pages/Dashboard.tsx
-import { useMemo, useState, useEffect } from 'react'
-import AppLayout from '@/layouts/app-layout'
-import type { BreadcrumbItem } from '@/types'
-import { Head, usePage, router } from '@inertiajs/react'
-import { format } from 'date-fns'
+import { useMemo, useState } from 'react';
+import AppLayout from '@/layouts/app-layout';
+import type { BreadcrumbItem } from '@/types';
+import { Head, usePage, router } from '@inertiajs/react';
+import { format } from 'date-fns';
 
 /* ======================= UI ======================= */
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
-import { Calendar } from '@/components/ui/calendar'
-import { Button } from '@/components/ui/button'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-} from '@/components/ui/tabs'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Calendar } from '@/components/ui/calendar';
+import { Button } from '@/components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 /* ======================= ICONS ======================= */
-import {
-  DoorOpen,
-  LogOut,
-  Lock,
-  Check,
-  CalendarDays,
-} from 'lucide-react'
+import { DoorOpen, LogOut, Lock, Check, CalendarDays } from 'lucide-react';
+
+import { DateRange } from 'react-day-picker';
 
 /* ======================= TYPES ======================= */
 
-type RoomStatus =
-  | 'Available'
-  | 'Reserved'
-  | 'Occupied'
-  | 'Cleaning'
-  | 'Maintenance'
+type RoomStatus = 'Available' | 'Reserved' | 'Occupied' | 'Maintenance';
 
-type RoomFilter = 'All' | RoomStatus
-type RoomScope = 'hotel' | 'event'
+type RoomFilter = 'All' | RoomStatus;
+type RoomScope = 'hotel' | 'event';
 
 interface Client {
-  id: number
-  first_name: string
-  last_name: string
+	id: number;
+	first_name: string;
+	last_name: string;
 }
 
 interface Room {
-  id: number
-  room_number?: string
-  room_type?: string
-  status?: string
+	id: number;
+	room_number?: string;
+	room_type?: string;
+	status?: string;
 }
 
 interface Booking {
-  id: number
-  room_id: number
-  status: string
-  check_in: string
-  check_out: string
-  total_amount: number
-  client?: Client
-  room?: Room
+	id: number;
+	room_id: number;
+	status: string;
+	check_in: string;
+	check_out: string;
+	total_amount: number;
+	payment_status?: string;
+	client?: Client;
+	room?: Room;
 }
 
 /* ======================= STATUS COLORS ======================= */
 
 const statusBadge: Record<RoomStatus, string> = {
-  Available: 'bg-green-100 text-green-700',
-  Reserved: 'bg-purple-100 text-purple-700',
-  Occupied: 'bg-red-100 text-red-700',
-  Cleaning: 'bg-yellow-100 text-yellow-700',
-  Maintenance: 'bg-gray-200 text-gray-700',
-}
+	Available: 'bg-green-100 text-green-700',
+	Reserved: 'bg-purple-100 text-purple-700',
+	Occupied: 'bg-red-100 text-red-700',
+	Maintenance: 'bg-gray-200 text-gray-700',
+};
 
+const bookingStatusBadge: Record<string, string> = {
+	Reserved: 'bg-purple-100 text-purple-700',
+	Pencil: 'bg-orange-100 text-orange-700',
+	'Checked In': 'bg-green-100 text-green-700',
+	'Checked Out': 'bg-blue-100 text-blue-700',
+	Cancelled: 'bg-gray-200 text-gray-700',
+};
 const summaryIconStyle: Record<string, string> = {
-  'Check-ins': 'bg-blue-100 text-blue-600',
-  'Check-outs': 'bg-orange-100 text-orange-600',
-  Occupied: 'bg-red-100 text-red-600',
-  Available: 'bg-green-100 text-green-600',
-}
+	'Check-ins': 'bg-blue-100 text-blue-600',
+	'Check-outs': 'bg-orange-100 text-orange-600',
+	Occupied: 'bg-red-100 text-red-600',
+	Available: 'bg-green-100 text-green-600',
+};
 
-const breadcrumbs: BreadcrumbItem[] = [
-  { title: 'Dashboard', href: '/dashboard' },
-]
+const breadcrumbs: BreadcrumbItem[] = [{ title: 'Dashboard', href: '/dashboard' }];
 
 export default function Dashboard() {
-  
-  const page = usePage<{
-  rooms?: Room[]
-  bookings?: Booking[]
-  checkIns?: Booking[]
-  checkOuts?: Booking[]
-  selectedDate: string
-}>().props
+	const page = usePage<{
+		rooms?: Room[];
+		bookings?: Booking[];
+		checkIns?: Booking[];
+		checkOuts?: Booking[];
+		startDate: string;
+		endDate: string;
+	}>().props;
 
-const rooms = page.rooms ?? []
-const bookings = page.bookings ?? []
-const checkIns = page.checkIns ?? []
-const checkOuts = page.checkOuts ?? []
-const selectedDate = page.selectedDate
+	const rooms = page.rooms ?? [];
+	const bookings = page.bookings ?? [];
+	const checkIns = page.checkIns ?? [];
+	const checkOuts = page.checkOuts ?? [];
+	const startDate = page.startDate;
+	const endDate = page.endDate;
 
-  // Debug — keeps your previous debug logging so we can inspect props
-  useEffect(() => {
-    console.log('DEBUG rooms prop:', rooms)
-    console.log('DEBUG bookings prop:', bookings)
-    const r206 = (rooms || []).find(
-      (r: any) => r.room_number === '206' || (r as any).roomNumber === '206'
-    )
-    console.log('DEBUG room 206 from props:', r206)
-  }, [rooms, bookings])
+	const [roomScope, setRoomScope] = useState<RoomScope>('hotel');
 
-//   /* ======================= AUTO REFRESH (FIXED) ======================= */
-// useEffect(() => {
-//   const interval = setInterval(() => {
-//     router.reload({
-//       only: ['rooms', 'bookings', 'checkIns', 'checkOuts'],
-//     })
-//   }, 5000) // refresh every 5 seconds
+	const [activeFilter, setActiveFilter] = useState<RoomFilter>('All');
 
-//   return () => clearInterval(interval)
-// }, [])
+	const [search, setSearch] = useState('');
+	const [isDateOpen, setIsDateOpen] = useState(false);
 
-  const selectedDateState = new Date(selectedDate)
+	const [range, setRange] = useState<DateRange | undefined>({
+		from: startDate ? new Date(startDate) : new Date(),
+		to: endDate ? new Date(endDate) : new Date(),
+	});
 
-  const [roomScope, setRoomScope] =
-    useState<RoomScope>('hotel')
+	const mapBookingStatus = (status?: string) => {
+		const s = (status ?? '').toString().trim().toLowerCase();
 
-  const [activeFilter, setActiveFilter] =
-    useState<RoomFilter>('All')
+		if (s.includes('pencil')) return 'Pencil';
+		if (s.includes('reserved')) return 'Reserved';
+		if (s.includes('checked_in')) return 'Checked In';
+		if (s.includes('checked_out')) return 'Checked Out';
+		if (s.includes('cancel')) return 'Cancelled';
 
-  const [search, setSearch] = useState('')
-  const [isDateOpen, setIsDateOpen] = useState(false)
-  const [tempDate, setTempDate] =
-    useState<Date | null>(selectedDateState)
+		return 'Reserved';
+	};
+	/* helper: check if booking overlaps selected date (inclusive) and is not cancelled */
+	const bookingOverlapsRange = (b: Booking) => {
+		if (!range?.from || !range?.to) return false;
 
-  /* ======================= STATUS MAPPER (robust) ======================= */
+		const checkIn = new Date(b.check_in);
+		const checkOut = new Date(b.check_out);
 
-const mapStatus = (status?: string): RoomStatus => {
-  const s = (status ?? '').toString().trim().toLowerCase()
+		return checkIn <= range.to && checkOut > range.from && b.status.toLowerCase() !== 'cancelled';
+	};
 
-  if (['occupied', 'checked_in', 'checkedin', 'checked-in'].includes(s)) return 'Occupied'
-  if (['reserved', 'confirmed', 'pencil'].includes(s)) return 'Reserved'
-  if (['cleaning', 'completed', 'cleaning_needed'].includes(s)) return 'Cleaning'
-  if (['maintenance'].includes(s)) return 'Maintenance'
-  if (['available', 'vacant', 'free'].includes(s)) return 'Available'
+	/* ======================= AVAILABILITY (consider selected date) ======================= */
 
-  return 'Available'
-}
+	// get occupied room IDs based on bookings that overlap the selected date
+	const occupiedRoomIds = useMemo(() => {
+		return Array.from(new Set(bookings.filter((b) => bookingOverlapsRange(b)).map((b) => b.room_id)));
+	}, [bookings, range]);
 
-  /* helper: check if booking overlaps selected date (inclusive) and is not cancelled */
-  const bookingOverlapsSelectedDate = (b: Booking, date: Date) => {
-    try {
-      const checkIn = new Date(b.check_in)
-      const checkOut = new Date(b.check_out)
-      if (isNaN(checkIn.getTime()) || isNaN(checkOut.getTime())) return false
-      const inRange = checkIn <= date && checkOut >= date
-      const notCancelled = (b.status ?? '').toString().toLowerCase() !== 'cancelled'
-      return inRange && notCancelled
-    } catch {
-      return false
-    }
-  }
+	const availableCount = useMemo(() => {
+		return rooms.filter((room) => !occupiedRoomIds.includes(room.id)).length;
+	}, [rooms, occupiedRoomIds]);
 
-  /* ======================= AVAILABILITY (consider selected date) ======================= */
+	/* ======================= ROOM FILTERING (respect DB status, override with booking) ======================= */
+	const roomsForDate = (rooms ?? [])
+		.filter((room) =>
+			roomScope === 'hotel'
+				? !(room.room_type ?? '').toLowerCase().includes('event')
+				: (room.room_type ?? '').toLowerCase().includes('event'),
+		)
+		.map((room) => ({
+			id: room.id,
+			label: room.room_number ?? 'Room',
+			subLabel: room.room_type ?? '',
+			status: (room.status ?? 'Available') as RoomStatus,
+		}))
+		.filter((room) => (activeFilter === 'All' ? true : room.status === activeFilter));
 
-  // get occupied room IDs based on bookings that overlap the selected date
-  const occupiedRoomIds = Array.from(
-  new Set(
-    bookings
-      .filter((b: Booking) =>
-        bookingOverlapsSelectedDate(b, selectedDateState)
-      )
-      .map((b: Booking) => b.room_id)
-  )
-)
+	/* ======================= SUMMARY ======================= */
 
-  const availableCount = rooms.filter(
-    room => !occupiedRoomIds.includes(room.id)
-  ).length
+	const summary = [
+		{ label: 'Check-ins', value: checkIns?.length ?? 0, icon: DoorOpen },
+		{ label: 'Check-outs', value: checkOuts?.length ?? 0, icon: LogOut },
+		{
+			label: 'Occupied',
+			value: occupiedRoomIds.length,
+			icon: Lock,
+		},
+		{
+			label: 'Available',
+			value: availableCount,
+			icon: Check,
+		},
+	];
 
-  /* ======================= ROOM FILTERING (respect DB status, override with booking) ======================= */
+	/* ======================= ARRIVALS ======================= */
 
-  const roomsForDate = (rooms ?? [])
-  .filter(room =>
-    roomScope === 'hotel'
-      ? !room.room_type?.toLowerCase().includes('event')
-      : room.room_type?.toLowerCase().includes('event')
-  )
-  .map(room => ({
-    id: room.id,
-    label: room.room_number ?? 'Room',
-    subLabel: room.room_type ?? '',
-    status: room.status as RoomStatus, // 🔥 trust backend
-  }))
-  .filter(room =>
-    activeFilter === 'All'
-      ? true
-      : room.status === activeFilter
-  )
+	const combinedArrivals = [
+		...(checkIns ?? []).map((b) => ({ ...b, type: 'arrival' })),
+		...(checkOuts ?? []).map((b) => ({ ...b, type: 'departure' })),
+	];
 
-  /* ======================= SUMMARY ======================= */
+	const filteredArrivals = useMemo(() => {
+		return combinedArrivals.filter((b: any) =>
+			`${b.client?.first_name ?? ''} ${b.client?.last_name ?? ''}`.toLowerCase().includes(search.toLowerCase()),
+		);
+	}, [combinedArrivals, search]);
 
-  const summary = [
-    { label: 'Check-ins', value: checkIns?.length ?? 0, icon: DoorOpen },
-    { label: 'Check-outs', value: checkOuts?.length ?? 0, icon: LogOut },
-    {
-      label: 'Occupied',
-      value: occupiedRoomIds.length,
-      icon: Lock,
-    },
-    {
-      label: 'Available',
-      value: availableCount,
-      icon: Check,
-    },
-  ]
+	/* ======================= UI ======================= */
 
-  /* ======================= ARRIVALS ======================= */
+	return (
+		<AppLayout breadcrumbs={breadcrumbs}>
+			<Head title='Dashboard' />
 
-  const combinedArrivals = [
-  ...(checkIns ?? []).map(b => ({ ...b, type: 'arrival' })),
-  ...(checkOuts ?? []).map(b => ({ ...b, type: 'departure' })),
-]
+			<div className='grid grid-cols-1 gap-6 px-6 pb-10 lg:grid-cols-4'>
+				{/* LEFT */}
+				<div className='space-y-6 lg:col-span-3'>
+					{/* SUMMARY */}
+					<div>
+						<h2 className='mb-3 text-xl font-semibold'>
+							{range?.from && range?.to ? `${format(range.from, 'MMM dd')} - ${format(range.to, 'MMM dd')}` : 'Select Dates'}{' '}
+							Summary
+						</h2>
 
-  const filteredArrivals = useMemo(() => {
-    return combinedArrivals.filter((b: Booking) =>
-      `${b.client?.first_name ?? ''} ${b.client?.last_name ?? ''}`
-        .toLowerCase()
-        .includes(search.toLowerCase())
-    )
-  }, [combinedArrivals, search])
+						<div className='grid grid-cols-2 gap-4 md:grid-cols-4'>
+							{summary.map((item) => (
+								<Card key={item.label}>
+									<CardContent className='flex items-center justify-between p-4 text-center'>
+										{/* Left Side: Label + Value */}
+										<div>
+											<p className='text-sm text-muted-foreground'>{item.label}</p>
+											<p className='text-2xl font-semibold'>{item.value}</p>
+										</div>
 
-  /* ======================= UI ======================= */
+										{/* Right Side: Colored Icon Badge */}
+										<div
+											className={`flex h-10 w-10 items-center justify-center rounded-full ${summaryIconStyle[item.label]}`}
+										>
+											<item.icon className='h-5 w-5' />
+										</div>
+									</CardContent>
+								</Card>
+							))}
+						</div>
+					</div>
 
-  return (
-    <AppLayout breadcrumbs={breadcrumbs}>
-      <Head title="Dashboard" />
+					{/* HOTEL / EVENT TOGGLE */}
+					<div className='flex gap-3'>
+						<Button variant={roomScope === 'hotel' ? 'default' : 'outline'} onClick={() => setRoomScope('hotel')}>
+							Hotel Rooms
+						</Button>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 px-6 pb-10">
+						<Button variant={roomScope === 'event' ? 'default' : 'outline'} onClick={() => setRoomScope('event')}>
+							Event Rooms
+						</Button>
+					</div>
 
-        {/* LEFT */}
-        <div className="lg:col-span-3 space-y-6">
+					{/* STATUS FILTER */}
+					<Tabs value={activeFilter} onValueChange={(v) => setActiveFilter(v as RoomFilter)}>
+						<TabsList>
+							{['All', 'Available', 'Reserved', 'Occupied', 'Maintenance'].map((tab) => (
+								<TabsTrigger key={tab} value={tab}>
+									{tab}
+								</TabsTrigger>
+							))}
+						</TabsList>
+					</Tabs>
 
-          {/* SUMMARY */}
-          <div>
-            <h2 className="text-xl font-semibold mb-3">
-              {format(selectedDateState, 'MMMM dd, yyyy')} Summary
-            </h2>
+					{/* ROOM GRID */}
+					<div className='grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4'>
+						{roomsForDate.map((room) => (
+							<div key={room.id} className='rounded-lg border p-3'>
+								<p className='font-semibold'>{room.label}</p>
+								<p className='text-xs text-muted-foreground'>{room.subLabel}</p>
+								<Badge className={`mt-2 ${statusBadge[room.status]}`}>{room.status}</Badge>
+							</div>
+						))}
+					</div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {summary.map(item => (
-                <Card key={item.label}>
-                  <CardContent className="p-4 flex items-center justify-between text-center">
+					{/* ARRIVAL TABLE */}
+					<Card>
+						<CardHeader className='flex justify-between'>
+							<CardTitle>Arrival / Departure</CardTitle>
+							<Input
+								placeholder='Search guest...'
+								className='w-48'
+								value={search}
+								onChange={(e) => setSearch(e.target.value)}
+							/>
+						</CardHeader>
 
-                    {/* Left Side: Label + Value */}
-                    <div>
-                      <p className="text-sm text-muted-foreground">
-                        {item.label}
-                      </p>
-                      <p className="text-2xl font-semibold">
-                        {item.value}
-                      </p>
-                    </div>
+						<CardContent>
+							<table className='w-full text-sm'>
+								<thead>
+									<tr className='border-b text-left'>
+										<th className='py-2'>Check-in Date</th>
+										<th>Check-in Time</th>
+										<th>Check-out Date</th>
+										<th>Check-out Time</th>
+										<th>Guest</th>
+										<th>Room</th>
+										<th>Booking Status</th>
+										<th>Payment Status</th>
+									</tr>
+								</thead>
 
-                    {/* Right Side: Colored Icon Badge */}
-                    <div
-                      className={`h-10 w-10 rounded-full flex items-center justify-center ${summaryIconStyle[item.label]}`}
-                    >
-                      <item.icon className="h-5 w-5" />
-                    </div>
+								<tbody>
+									{filteredArrivals.map((b: any) => {
+										const checkInDate = format(new Date(b.check_in), 'MMM dd yyyy');
+										const checkInTime = format(new Date(b.check_in), 'hh:mm a');
 
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
+										const checkOutDate = format(new Date(b.check_out), 'MMM dd yyyy');
+										const checkOutTime = format(new Date(b.check_out), 'hh:mm a');
+										/* BOOKING STATUS BADGE */
+										const bookingStatus = mapBookingStatus(b.status);
 
-          {/* HOTEL / EVENT TOGGLE */}
-          <div className="flex gap-3">
-            <Button
-              variant={roomScope === 'hotel' ? 'default' : 'outline'}
-              onClick={() => setRoomScope('hotel')}
-            >
-              Hotel Rooms
-            </Button>
+										/* PAYMENT BADGE */
+										const paymentRaw = (b.payment_status ?? '').toLowerCase();
 
-            <Button
-              variant={roomScope === 'event' ? 'default' : 'outline'}
-              onClick={() => setRoomScope('event')}
-            >
-              Event Rooms
-            </Button>
-          </div>
+										let paymentLabel = 'Unpaid';
+										let paymentColor = 'bg-red-100 text-red-700';
 
-          {/* STATUS FILTER */}
-          <Tabs
-            value={activeFilter}
-            onValueChange={v =>
-              setActiveFilter(v as RoomFilter)
-            }
-          >
-            <TabsList>
-              {[
-                'All',
-                'Available',
-                'Reserved',
-                'Occupied',
-                'Cleaning',
-                'Maintenance',
-              ].map(tab => (
-                <TabsTrigger key={tab} value={tab}>
-                  {tab}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
+										if (paymentRaw === 'paid' || paymentRaw === 'successful') {
+											paymentLabel = 'Successful';
+											paymentColor = 'bg-green-100 text-green-700';
+										} else if (paymentRaw === 'cancelled') {
+											paymentLabel = 'Cancelled';
+											paymentColor = 'bg-gray-200 text-gray-700';
+										}
 
-          {/* ROOM GRID */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-            {roomsForDate.map(room => (
-              <div key={room.id} className="rounded-lg border p-3">
-                <p className="font-semibold">{room.label}</p>
-                <p className="text-xs text-muted-foreground">
-                  {room.subLabel}
-                </p>
-                <Badge className={`mt-2 ${statusBadge[room.status]}`}>
-                  {room.status}
-                </Badge>
-              </div>
-            ))}
-          </div>
+										/* ROOM ACTION OVERVIEW (ROBUST VERSION) */
 
-          {/* ARRIVAL TABLE */}
-          <Card>
-            <CardHeader className="flex justify-between">
-              <CardTitle>Arrival / Departure</CardTitle>
-              <Input
-                placeholder="Search guest..."
-                className="w-48"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-              />
-            </CardHeader>
+										let actionLabel: string | null = null;
+										let actionColor = '';
 
-            <CardContent>
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b text-left">
-                    <th className="py-2">Time</th>
-                    <th>Guest</th>
-                    <th>Room</th>
-                    <th>Booking Status</th>
-                    <th>Payment</th>
-                    <th>Room Action</th>
-                  </tr>
-                </thead>
+										const statusLower = (b.status ?? '').toString().trim().toLowerCase();
 
-                <tbody>
-                  {filteredArrivals.map((b: any) => {
+										// normalize variations
+										if (statusLower.includes('reserved') || statusLower.includes('pencil')) {
+											actionLabel = 'Check in';
+											actionColor = 'bg-blue-100 text-blue-700';
+										} else if (
+											statusLower.includes('checked') ||
+											statusLower.includes('occupied') ||
+											statusLower.includes('complete')
+										) {
+											actionLabel = 'Check out';
+											actionColor = 'bg-orange-100 text-orange-700';
+										} else if (statusLower.includes('cancel')) {
+											actionLabel = 'Cancelled';
+											actionColor = 'bg-gray-200 text-gray-700';
+										}
 
-                    const isArrival = b.type === 'arrival'
+										return (
+											<tr key={`${b.id}-${b.type}`} className='border-b'>
+												<td className='py-2'>{checkInDate}</td>
 
-                    const eventTime = isArrival
-                      ? new Date(b.check_in)
-                      : new Date(b.check_out)
+												<td>{checkInTime}</td>
 
-                    const formattedTime = format(eventTime, 'hh:mm a')
+												<td>{checkOutDate}</td>
 
-                    /* BOOKING STATUS BADGE */
-                    const bookingStatus = mapStatus(b.status)
+												<td>{checkOutTime}</td>
 
-                    /* PAYMENT BADGE */
-                    const paymentRaw = (b.payment_status ?? '').toLowerCase()
+												<td>
+													{b.client?.first_name} {b.client?.last_name}
+												</td>
 
-                    let paymentLabel = 'Unpaid'
-                    let paymentColor = 'bg-red-100 text-red-700'
+												<td>
+													{b.room?.room_number} - {b.room?.room_type}
+												</td>
 
-                    if (paymentRaw === 'paid' || paymentRaw === 'successful') {
-                      paymentLabel = 'Successful'
-                      paymentColor = 'bg-green-100 text-green-700'
-                    } else if (paymentRaw === 'cancelled') {
-                      paymentLabel = 'Cancelled'
-                      paymentColor = 'bg-gray-200 text-gray-700'
-                    }
+												<td>
+													<Badge className={bookingStatusBadge[bookingStatus]}>{bookingStatus}</Badge>
+												</td>
 
-                   /* ROOM ACTION OVERVIEW (ROBUST VERSION) */
+												<td>
+													<Badge className={paymentColor}>{paymentLabel}</Badge>
+												</td>
+											</tr>
+										);
+									})}
+								</tbody>
+							</table>
+						</CardContent>
+					</Card>
+				</div>
 
-                      let actionLabel: string | null = null
-                      let actionColor = ''
+				{/* RIGHT CALENDAR */}
+				<div className='space-y-4 lg:col-span-1'>
+					<Card className='overflow-hidden'>
+						<CardHeader className='pb-2'>
+							<Popover open={isDateOpen} onOpenChange={setIsDateOpen}>
+								<PopoverTrigger asChild>
+									<Button variant='outline' className='w-full justify-start'>
+										<CalendarDays className='mr-2 h-4 w-4' />
+										{range?.from && range?.to
+											? `${format(range.from, 'MMM dd')} - ${format(range.to, 'MMM dd')} Summary`
+											: 'Summary'}
+									</Button>
+								</PopoverTrigger>
 
-                      const statusLower = (b.status ?? '').toString().trim().toLowerCase()
+								<PopoverContent className='w-[650px] overflow-visible p-4'>
+									<Calendar
+										mode='range'
+										selected={range}
+										onSelect={setRange}
+										numberOfMonths={2}
+										pagedNavigation
+										className='w-full rounded-md border'
+									/>
 
-                      // normalize variations
-                      if (
-                        statusLower.includes('reserved') ||
-                        statusLower.includes('pencil')
-                      ) {
-                        actionLabel = 'Check in'
-                        actionColor = 'bg-blue-100 text-blue-700'
-                      } 
-                      else if (
-                        statusLower.includes('checked') ||
-                        statusLower.includes('occupied') ||
-                        statusLower.includes('complete')
-                      ) {
-                        actionLabel = 'Check out'
-                        actionColor = 'bg-orange-100 text-orange-700'
-                      } 
-                      else if (
-                        statusLower.includes('cancel')
-                      ) {
-                        actionLabel = 'Cancelled'
-                        actionColor = 'bg-gray-200 text-gray-700'
-                      }
+									<div className='flex justify-end pt-2'>
+										<Button
+											size='sm'
+											onClick={() => {
+												if (!range?.from || !range?.to) return;
 
-                    return (
-                      <tr key={`${b.id}-${b.type}`} className="border-b">
-                        <td className="py-2">{formattedTime}</td>
+												router.get(
+													'/dashboard',
+													{
+														start: format(range.from, 'yyyy-MM-dd'),
+														end: format(range.to, 'yyyy-MM-dd'),
+													},
+													{
+														preserveState: true,
+														replace: true,
+													},
+												);
 
-                        <td>
-                          {b.client?.first_name} {b.client?.last_name}
-                        </td>
-
-                        <td>
-                          {b.room?.room_number} - {b.room?.room_type}
-                        </td>
-
-                        <td>
-                          <Badge className={statusBadge[bookingStatus]}>
-                            {bookingStatus}
-                          </Badge>
-                        </td>
-
-                        <td>
-                          <span className={`px-2 py-1 rounded text-xs ${paymentColor}`}>
-                            {paymentLabel}
-                          </span>
-                        </td>
-
-                        <td>
-                          {actionLabel && (
-                            <span className={`px-2 py-1 rounded text-xs ${actionColor}`}>
-                              {actionLabel}
-                            </span>
-                          )}
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </CardContent>
-          </Card>
-
-        </div>
-
-      {/* RIGHT CALENDAR */}
-        <div className="lg:col-span-1 space-y-4">
-          <Card className="overflow-hidden">
-            <CardHeader className="pb-2">
-              <Popover open={isDateOpen} onOpenChange={setIsDateOpen}>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-full justify-start">
-                    <CalendarDays className="mr-2 h-4 w-4" />
-                    {format(selectedDateState, 'MMMM dd, yyyy')}
-                  </Button>
-                </PopoverTrigger>
-
-                <PopoverContent className="p-3 w-auto">
-                  <div className="w-full">
-                    <Calendar
-                      mode="single"
-                      selected={tempDate ?? undefined}
-                      onSelect={d => d && setTempDate(d)}
-                      className="w-full"
-                    />
-                  </div>
-
-                  <div className="flex justify-end pt-2">
-                    <Button
-                      size="sm"
-                      onClick={() => {
-                        if (tempDate) {
-                          router.get('/dashboard', {
-                            date: format(tempDate, 'yyyy-MM-dd'),
-                          })
-                        }
-                        setIsDateOpen(false)
-                      }}
-                    >
-                      Apply
-                    </Button>
-                  </div>
-                </PopoverContent>
-              </Popover>
-            </CardHeader>
-
-            <CardContent className="p-0">
-              <div className="w-full">
-                <Calendar
-                  mode="single"
-                  selected={selectedDateState}
-                  onSelect={d =>
-                    d &&
-                    router.get('/dashboard', {
-                      date: format(d, 'yyyy-MM-dd'),
-                    })
-                  }
-                  className="w-full"
-                />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-      </div>
-    </AppLayout>
-  )
+												setIsDateOpen(false);
+											}}
+										>
+											Apply
+										</Button>
+									</div>
+								</PopoverContent>
+							</Popover>
+						</CardHeader>
+					</Card>
+				</div>
+			</div>
+		</AppLayout>
+	);
 }
