@@ -192,32 +192,12 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 const statusConfig = {
-<<<<<<< HEAD
-	pencil: {
-		label: 'Pencil',
-		variant: 'secondary' as const,
-		icon: ClockIcon,
-		color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-950 dark:text-yellow-400',
-	},
-	reserved: {
-		label: 'Reserved',
-		variant: 'secondary' as const,
-		icon: CalendarIcon,
-		color: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300',
-	},
-	checked_in: {
-		label: 'Checked In',
-=======
 	confirmed: {
 		label: 'Confirmed',
->>>>>>> 193066c8b74e382a48805c3513ec58d69f25ee31
 		variant: 'default' as const,
 		icon: CheckCircleIcon,
 		color: 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-400',
 	},
-<<<<<<< HEAD
-	checked_out: {
-=======
 	pending: {
 		label: 'Pending Payment',
 		variant: 'secondary' as const,
@@ -231,7 +211,6 @@ const statusConfig = {
 		color: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300',
 	},
 	'checked_out': {
->>>>>>> 193066c8b74e382a48805c3513ec58d69f25ee31
 		label: 'Checked Out',
 		variant: 'outline' as const,
 		icon: CheckCircleIcon,
