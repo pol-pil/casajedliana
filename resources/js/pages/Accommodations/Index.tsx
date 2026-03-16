@@ -233,10 +233,10 @@ export default function Index() {
 
 							<SelectContent>
 								<SelectItem value='All'>All Types</SelectItem>
-								<SelectItem value='Standard'>Standard</SelectItem>
-								<SelectItem value='Suite'>Suite</SelectItem>
-								<SelectItem value='Quadro'>Quadro</SelectItem>
-								<SelectItem value='Family'>Family</SelectItem>
+								<SelectItem value='Standard Room'>Standard</SelectItem>
+								<SelectItem value='Suite Room'>Suite</SelectItem>
+								<SelectItem value='Quadro Room'>Quadro</SelectItem>
+								<SelectItem value='Family Room'>Family</SelectItem>
 								<SelectItem value='Penthouse'>Penthouse</SelectItem>
 								<SelectItem value='Rest House'>Rest House</SelectItem>
 							</SelectContent>
@@ -464,10 +464,11 @@ export default function Index() {
 									</SelectTrigger>
 
 									<SelectContent>
-										<SelectItem value='Standard'>Standard</SelectItem>
-										<SelectItem value='Suite'>Suite</SelectItem>
-										<SelectItem value='Quadro'>Quadro</SelectItem>
-										<SelectItem value='Family'>Family</SelectItem>
+										<SelectItem value='All'>All Types</SelectItem>
+										<SelectItem value='Standard Room'>Standard</SelectItem>
+										<SelectItem value='Suite Room'>Suite</SelectItem>
+										<SelectItem value='Quadro Room'>Quadro</SelectItem>
+										<SelectItem value='Family Room'>Family</SelectItem>
 										<SelectItem value='Penthouse'>Penthouse</SelectItem>
 										<SelectItem value='Rest House'>Rest House</SelectItem>
 									</SelectContent>
@@ -570,10 +571,11 @@ export default function Index() {
 									</SelectTrigger>
 
 									<SelectContent>
-										<SelectItem value='Standard'>Standard</SelectItem>
-										<SelectItem value='Suite'>Suite</SelectItem>
-										<SelectItem value='Quadro'>Quadro</SelectItem>
-										<SelectItem value='Family'>Family</SelectItem>
+										<SelectItem value='All'>All Types</SelectItem>
+										<SelectItem value='Standard Room'>Standard</SelectItem>
+										<SelectItem value='Suite Room'>Suite</SelectItem>
+										<SelectItem value='Quadro Room'>Quadro</SelectItem>
+										<SelectItem value='Family Room'>Family</SelectItem>
 										<SelectItem value='Penthouse'>Penthouse</SelectItem>
 										<SelectItem value='Rest House'>Rest House</SelectItem>
 									</SelectContent>
