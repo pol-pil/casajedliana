@@ -63,6 +63,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import SoaPdf from '@/components/soa-pdf';
 
 type Booking = {
 	id: number;
@@ -1755,7 +1756,7 @@ export default function Index() {
 								Edit
 							</Button>
 						</DialogClose>
-						<Button type='submit'>Print SOA</Button>
+						{selectedBooking?.id !== undefined && <SoaPdf booking_id={selectedBooking.id} />}
 					</DialogFooter>
 				</DialogContent>
 			</Dialog>

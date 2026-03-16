@@ -43,11 +43,6 @@ const mainNavItems: NavItem[] = [
         href: '/rates',
         icon: Columns3Cog,
     },
-    {
-        title: 'Reports & Analytics',
-        href: '/reports',
-        icon: ChartPie,
-    },
 ];
 
 const footerNavItems: NavItem[] = [

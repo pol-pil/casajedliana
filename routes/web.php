@@ -112,6 +112,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/rooms', [AccommodationController::class, 'store']);
     Route::patch('/rooms/{room}', [AccommodationController::class, 'update'])->name('rooms.update');
     Route::delete('/rooms/{room}', [AccommodationController::class, 'destroy'])->name('rooms.destroy');
+    // Print SOA
+    Route::get('/bookings/{booking}/print', [BookingsController::class, 'printSOA'])->name('bookings.printSOA');
 });
 
 require __DIR__ . '/settings.php';

@@ -194,4 +194,21 @@ class BookingsController extends Controller
             ->orWhere('contact_number', $request->contact_number)
             ->first();
     }
+
+    public function printSOA(Booking $booking)
+    {
+        $booking->load([
+            'client',
+            'room',
+            'payments',
+            'bookingType',
+            'rate',
+            'bookingCharges',
+        ]);
+    
+        $pdf = \PDF::loadView('pdfs.booking_soa', compact('booking'))
+            ->setPaper('legal', 'portrait');
+    
+        return $pdf->stream('booking_soa.pdf');
+    }
 }
