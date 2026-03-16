@@ -776,7 +776,7 @@ export default function Index() {
 		confirmed: ['checked_in', 'cancelled', 'no_show'],
 		checked_in: ['checked_out'],
 		checked_out: [],
-		no_show: [],
+		no_show: ['checked_in'],
 		cancelled: [],
 	};
 
