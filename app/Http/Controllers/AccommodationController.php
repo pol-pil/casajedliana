@@ -26,7 +26,15 @@ class AccommodationController extends Controller
             ? Carbon::parse($request->get('end'))->toDateString()
             : Carbon::today()->addDay()->toDateString();
 
-        $rooms = Room::all();
+        $rooms = Room::select(
+            'id',
+            'room_number',
+            'room_type',
+            'capacity',
+            'price',
+            'description',
+            'status'
+        )->get();
 
         $roomsTransformed = $rooms->map(function ($room) use ($start, $end) {
 
@@ -56,7 +64,6 @@ class AccommodationController extends Controller
 | Reserved
 | Available
 */
-
             if ($room->status === 'maintenance') {
 
                 $finalStatus = 'Maintenance';
@@ -64,14 +71,15 @@ class AccommodationController extends Controller
 
                 $bookingStatus = strtolower($booking->status);
 
-
                 if ($bookingStatus === 'checked_in') {
 
                     $finalStatus = 'Occupied';
+                } elseif (in_array($bookingStatus, ['reserved', 'pencil'])) {
+
+                    $finalStatus = 'Reserved';
                 } else {
 
-                    // pencil + reserved both block the room
-                    $finalStatus = 'Reserved';
+                    $finalStatus = 'Available';
                 }
             } else {
 
@@ -108,117 +116,21 @@ class AccommodationController extends Controller
             'status' => 'required|in:available,cleaning,maintenance'
         ]);
 
-        // Force lowercase to match ENUM exactly
         $status = strtolower($request->status);
 
-        // Debug temporarily (optional)
-        // dd($status);
+        $activeBooking = Booking::where('room_id', $room->id)
+            ->whereIn('status', ['reserved', 'checked_in'])
+            ->exists();
+
+        if ($activeBooking && $status === 'maintenance') {
+            return back()->withErrors('Room has an active booking.');
+        }
 
         $room->status = $status;
         $room->save();
 
         return back()->with('success', 'Room operational status updated.');
     }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | CHECK IN (Reserved → Checked In)
-    |--------------------------------------------------------------------------
-    */
-    public function checkIn(Room $room)
-    {
-        if ($room->status === 'maintenance') {
-            return back()->withErrors('Room is under maintenance.');
-        }
-        $booking = Booking::where('room_id', $room->id)
-            ->whereIn('status', ['reserved', 'pencil'])
-            ->latest()
-            ->first();
-
-        if (!$booking) {
-            return back()->withErrors('No reserved booking found.');
-        }
-
-        $booking->status = 'checked_in';
-        $booking->save();
-
-        return back()->with('success', 'Guest checked in.');
-    }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | CHECK OUT (Checked In → Checked Out + Cleaning)
-    |--------------------------------------------------------------------------
-    */
-    public function checkOut(Room $room)
-    {
-        $booking = Booking::where('room_id', $room->id)
-            ->where('status', 'checked_in')
-            ->latest()
-            ->first();
-
-        if (!$booking) {
-            return back()->withErrors('No active check-in found.');
-        }
-
-        $booking->status = 'checked_out';
-        $booking->save();
-
-        $room->status = 'cleaning';
-        $room->save();
-
-        return back()->with('success', 'Guest checked out. Room set to cleaning.');
-    }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | CANCEL BOOKING (Reserved / Pencil → Cancelled)
-    |--------------------------------------------------------------------------
-    */
-    public function cancelBooking(Room $room)
-    {
-        $booking = Booking::where('room_id', $room->id)
-            ->whereIn('status', ['reserved', 'pencil'])
-            ->latest()
-            ->first();
-
-        if (!$booking) {
-            return back()->withErrors('No cancellable booking found.');
-        }
-
-        $booking->status = 'cancelled';
-        $booking->save();
-
-        return back()->with('success', 'Booking cancelled.');
-    }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | MARK PAID (Pencil → Reserved)
-    |--------------------------------------------------------------------------
-    */
-    public function markPaid(Room $room)
-    {
-        $booking = Booking::where('room_id', $room->id)
-            ->where('status', 'pencil')
-            ->latest()
-            ->first();
-
-        if (!$booking) {
-            return back()->withErrors('No pencil booking found.');
-        }
-
-        $booking->status = 'reserved';
-        $booking->payment_status = 'paid';
-        $booking->save();
-
-        return back()->with('success', 'Booking marked as paid and reserved.');
-    }
-
 
     /*
     |--------------------------------------------------------------------------
@@ -278,7 +190,7 @@ class AccommodationController extends Controller
     public function update(Request $request, Room $room)
     {
         $request->validate([
-            'room_number' => 'required|string|max:50',
+            'room_number' => 'required|string|max:50|unique:rooms,room_number,' . $room->id,
             'room_type' => 'required|string|max:255',
             'capacity' => 'required|integer|min:1',
             'price' => 'required|numeric|min:0',
@@ -304,6 +216,12 @@ class AccommodationController extends Controller
 */
     public function destroy(Room $room)
     {
+        $hasBookings = Booking::where('room_id', $room->id)->exists();
+
+        if ($hasBookings) {
+            return back()->withErrors('Cannot delete a room with existing bookings.');
+        }
+
         $room->delete();
 
         return back()->with('success', 'Room deleted successfully.');

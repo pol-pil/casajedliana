@@ -18,7 +18,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 	{ title: 'History', href: '/reports/history' },
 ];
 
-/* ================= MOCK DATA ================= */
+/* ================= MOCK DATA ================s= */
 
 /* HOTEL BOOKINGS */
 const hotelBookings = Array.from({ length: 12 }, (_, i) => ({
@@ -59,14 +59,40 @@ export default function History() {
 
 	/* HELPERS */
 
-	const paginate = (data: any[], page: number) => {
+	type HotelBooking = {
+		id: number;
+		date: string;
+		guest: string;
+		room: string;
+		checkIn: string;
+		checkOut: string;
+		payment: string;
+		status: string;
+	};
+
+	type EventBooking = {
+		id: number;
+		date: string;
+		guest: string;
+		venue: string;
+		purpose: string;
+		eventDate: string;
+		payment: string;
+		status: string;
+	};
+
+	const paginate = <T,>(data: T[], page: number) => {
 		const start = (page - 1) * rowsPerPage;
 		return data.slice(start, start + rowsPerPage);
 	};
 
-	const filterData = (data: any[], search: string, key: string) =>
-		data.filter((item) => item[key].toLowerCase().includes(search.toLowerCase()));
-
+	function filterData<T>(data: T[], search: string, key: keyof T) {
+	return data.filter((item) =>
+		String(item[key] ?? '')
+			.toLowerCase()
+			.includes(search.toLowerCase()),
+	)
+}
 	/* FILTERED DATA */
 
 	const filteredHotels = useMemo(() => filterData(hotelBookings, searchHotel, 'guest'), [searchHotel]);
@@ -133,7 +159,7 @@ export default function History() {
 
 					<CardContent>
 						<Tabs defaultValue='hotel'>
-							<TabsList>
+							<TabsList className='mb-4'>
 								<TabsTrigger value='hotel'>Hotel Bookings</TabsTrigger>
 
 								<TabsTrigger value='events'>Event Bookings</TabsTrigger>
@@ -158,7 +184,7 @@ export default function History() {
 									/>
 									<tbody>
 										{paginate(filteredHotels, hotelPage).map((b) => (
-											<tr key={b.id} className='border-b'>
+											<tr key={b.id} className='border-b hover:bg-muted/40'>
 												<Td>{b.date}</Td>
 												<Td>{b.guest}</Td>
 												<Td>{b.room}</Td>
@@ -171,7 +197,7 @@ export default function History() {
 
 												<Td>{b.status}</Td>
 
-												<Td className='flex gap-2'>
+												<Td className='flex items-center gap-2'>
 													<Button size='icon' variant='outline'>
 														<Eye className='h-4 w-4' />
 													</Button>
@@ -193,7 +219,7 @@ export default function History() {
 							<TabsContent value='events'>
 								<Input
 									placeholder='Search organizer...'
-									value={searchEvent}
+									value={searchEvent}	
 									onChange={(e) => {
 										setSearchEvent(e.target.value);
 										setEventPage(1);
@@ -208,7 +234,7 @@ export default function History() {
 
 									<tbody>
 										{paginate(filteredEvents, eventPage).map((e) => (
-											<tr key={e.id} className='border-b'>
+											<tr key={e.id} className='border-b hover:bg-muted/40'>
 												<Td>{e.date}</Td>
 
 												<Td>{e.guest}</Td>
@@ -225,7 +251,7 @@ export default function History() {
 
 												<Td>{e.status}</Td>
 
-												<Td className='flex gap-2'>
+												<Td className='flex items-center gap-2'>
 													<Button size='icon' variant='outline'>
 														<Eye className='h-4 w-4' />
 													</Button>

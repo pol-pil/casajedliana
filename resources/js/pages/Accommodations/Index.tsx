@@ -276,80 +276,7 @@ export default function Index() {
 													</button>
 												</DropdownMenuTrigger>
 												<DropdownMenuContent align='end' className='w-48'>
-													<DropdownMenuItem
-														onClick={() => {
-															setSelectedRoom(room);
-															setRoomNumber(room.roomNumber);
-															setRoomType(room.category);
-															setCapacity(room.capacity);
-															setPrice(room.price ?? 0);
-															setDescription(room.beds ?? '');
-															setEditRoomOpen(true);
-														}}
-													>
-														Edit Room
-													</DropdownMenuItem>
-
-													<DropdownMenuItem
-														className='text-red-500'
-														onClick={() => {
-															setSelectedRoom(room);
-															setDeleteRoomOpen(true);
-														}}
-													>
-														Delete Room
-													</DropdownMenuItem>
-													{room.status === 'Occupied' && (
-														<DropdownMenuItem
-															onClick={() => {
-																router.post(
-																	`/rooms/${room.id}/check-out`,
-																	{},
-																	{
-																		preserveScroll: true,
-																		onSuccess: refreshRooms,
-																	},
-																);
-															}}
-														>
-															Check Out
-														</DropdownMenuItem>
-													)}
-
-													{room.status === 'Reserved' && (
-														<>
-															<DropdownMenuItem
-																onClick={() => {
-																	router.post(
-																		`/rooms/${room.id}/check-in`,
-																		{},
-																		{
-																			preserveScroll: true,
-																			onSuccess: refreshRooms,
-																		},
-																	);
-																}}
-															>
-																Check In
-															</DropdownMenuItem>
-
-															<DropdownMenuItem
-																onClick={() => {
-																	router.post(
-																		`/rooms/${room.id}/cancel-booking`,
-																		{},
-																		{
-																			preserveScroll: true,
-																			onSuccess: refreshRooms,
-																		},
-																	);
-																}}
-															>
-																Cancel Booking
-															</DropdownMenuItem>
-														</>
-													)}
-
+													{/* SET MAINTENANCE / AVAILABLE */}
 													{room.status === 'Available' && (
 														<DropdownMenuItem
 															onClick={() => {
@@ -358,7 +285,13 @@ export default function Index() {
 																	{ status: 'maintenance' },
 																	{
 																		preserveScroll: true,
-																		onSuccess: refreshRooms,
+																		onSuccess: () => {
+																			toast.success(`Room ${room.roomNumber} set to Maintenance`);
+																			refreshRooms();
+																		},
+																		onError: () => {
+																			toast.error('Failed to update room status');
+																		},
 																	},
 																);
 															}}
@@ -375,7 +308,13 @@ export default function Index() {
 																	{ status: 'available' },
 																	{
 																		preserveScroll: true,
-																		onSuccess: refreshRooms,
+																		onSuccess: () => {
+																			toast.success(`Room ${room.roomNumber} is now Available`);
+																			refreshRooms();
+																		},
+																		onError: () => {
+																			toast.error('Failed to update room status');
+																		},
 																	},
 																);
 															}}
@@ -383,6 +322,32 @@ export default function Index() {
 															Set Available
 														</DropdownMenuItem>
 													)}
+
+													{/* EDIT ROOM */}
+													<DropdownMenuItem
+														onClick={() => {
+															setSelectedRoom(room);
+															setRoomNumber(room.roomNumber);
+															setRoomType(room.category);
+															setCapacity(room.capacity);
+															setPrice(room.price ?? 0);
+															setDescription(room.beds ?? '');
+															setEditRoomOpen(true);
+														}}
+													>
+														Edit Room
+													</DropdownMenuItem>
+
+													{/* DELETE ROOM */}
+													<DropdownMenuItem
+														className='text-red-500'
+														onClick={() => {
+															setSelectedRoom(room);
+															setDeleteRoomOpen(true);
+														}}
+													>
+														Delete Room
+													</DropdownMenuItem>
 												</DropdownMenuContent>
 											</DropdownMenu>
 										</div>
@@ -526,7 +491,7 @@ export default function Index() {
 										},
 										{
 											onSuccess: () => {
-												toast.success('Room added successfully');
+												toast.success(`Room ${roomNumber} added successfully`);
 
 												setAddRoomOpen(false);
 
@@ -537,6 +502,9 @@ export default function Index() {
 												setDescription('');
 
 												refreshRooms();
+											},
+											onError: () => {
+												toast.error(`Failed to add Room ${roomNumber}`);
 											},
 										},
 									);
@@ -632,10 +600,13 @@ export default function Index() {
 										},
 										{
 											onSuccess: () => {
-												toast.success('Room updated successfully');
+												toast.success(`Room ${roomNumber} updated successfully`);
 
 												setEditRoomOpen(false);
 												refreshRooms();
+											},
+											onError: () => {
+												toast.error(`Failed to update Room ${roomNumber}`);
 											},
 										},
 									);
@@ -665,10 +636,13 @@ export default function Index() {
 									if (!selectedRoom) return;
 									router.delete(`/rooms/${selectedRoom.id}`, {
 										onSuccess: () => {
-											toast.success('Room deleted successfully');
+											toast.success(`Room ${selectedRoom?.roomNumber} deleted successfully`);
 
 											setDeleteRoomOpen(false);
 											refreshRooms();
+										},
+										onError: () => {
+											toast.error(`Failed to delete Room ${selectedRoom?.roomNumber}`);
 										},
 									});
 								}}
