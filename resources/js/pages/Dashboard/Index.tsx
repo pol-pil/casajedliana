@@ -369,7 +369,7 @@ export default function Dashboard() {
 				</div>
 
 				{/* RIGHT CALENDAR */}
-				<div className='space-y-4 lg:col-span-1'>
+				<div className='space-y-4 lg:col-span-1 mt-10'>
 					<Card className='overflow-hidden'>
 						<CardHeader className='pb-2'>
 							<Popover open={isDateOpen} onOpenChange={setIsDateOpen}>
