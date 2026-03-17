@@ -189,7 +189,7 @@ export default function Dashboard() {
 		<AppLayout breadcrumbs={breadcrumbs}>
 			<Head title='Dashboard' />
 
-			<div className='grid grid-cols-1 gap-6 px-6 pb-10 lg:grid-cols-4'>
+			<div className='grid grid-cols-1 gap-6 px-6 pb-10 lg:grid-cols-4 mt-10'>
 			
 				<div className='space-y-6 lg:col-span-3'>
 				
@@ -256,7 +256,7 @@ export default function Dashboard() {
 
 					{/* ARRIVAL TABLE */}
 					<Card>
-						<CardHeader className='flex justify-between'>
+						<CardHeader className='flex justify-between '>
 							<CardTitle>Arrival / Departure</CardTitle>
 							<Input
 								placeholder='Search guest...'
@@ -369,7 +369,7 @@ export default function Dashboard() {
 				</div>
 
 				{/* RIGHT CALENDAR */}
-				<div className='space-y-4 lg:col-span-1'>
+				<div className='space-y-4 lg:col-span-1 mt-10'>
 					<Card className='overflow-hidden'>
 						<CardHeader className='pb-2'>
 							<Popover open={isDateOpen} onOpenChange={setIsDateOpen}>
