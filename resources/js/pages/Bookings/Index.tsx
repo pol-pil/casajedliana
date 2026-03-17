@@ -183,7 +183,7 @@ type PageProps = {
 	stats: {
 		totalBookings: number;
 		activeGuests: number;
-		pendingBookings: number;
+		pencilBookings: number;
 		totalRevenue: number;
 	};
 	rooms: Room[];
@@ -213,8 +213,8 @@ const statusConfig = {
 		icon: CheckCircleIcon,
 		color: 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-400',
 	},
-	pending: {
-		label: 'Pending Payment',
+	pencil: {
+		label: 'Pencil Booked',
 		variant: 'secondary' as const,
 		icon: ClockIcon,
 		color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-950 dark:text-yellow-400',
@@ -225,7 +225,7 @@ const statusConfig = {
 		icon: CheckCircleIcon,
 		color: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300',
 	},
-	'checked_out': {
+	checked_out: {
 		label: 'Checked Out',
 		variant: 'outline' as const,
 		icon: CheckCircleIcon,
@@ -773,7 +773,7 @@ export default function Index() {
 	};
 
 	const allowedActions: Record<string, string[]> = {
-		pending: ['cancelled'],
+		pencil: ['cancelled'],
 		confirmed: ['checked_in', 'cancelled', 'no_show'],
 		checked_in: ['checked_out'],
 		checked_out: [],
@@ -815,8 +815,8 @@ export default function Index() {
 					<div className='flex-1 rounded-lg border bg-card p-4'>
 						<div className='flex items-center justify-between'>
 							<div>
-								<p className='text-sm font-medium text-muted-foreground'>Pending</p>
-								<p className='text-2xl font-bold'>{stats.pendingBookings}</p>
+								<p className='text-sm font-medium text-muted-foreground'>Pencil</p>
+								<p className='text-2xl font-bold'>{stats.pencilBookings}</p>
 							</div>
 							<div className='rounded-full bg-yellow-100 p-3 dark:bg-yellow-950'>
 								<ClockIcon className='h-6 w-6 text-yellow-600 dark:text-yellow-400' />
@@ -1368,19 +1368,19 @@ export default function Index() {
 											<TableCell>{formatDateTime(booking.check_in)}</TableCell>
 											<TableCell>{formatDateTime(booking.check_out)}</TableCell>
 											<TableCell>
-												<StatusBadge
-													status={
-														booking.status as
-															| 'confirmed'
-															| 'pending'
-															| 'checked_in'
-															| 'checked_out'
-															| 'cancelled'
-													}
-												/>
+												<StatusBadge status={booking.status as "confirmed" | "pencil" | "checked_in" | "checked_out" | "cancelled" | "no_show"} />
 											</TableCell>
 											<TableCell className='text-right'>
-												<div className='font-medium'>₱{Number(booking.total_amount).toFixed(2)}</div>
+												<div className='font-medium'>
+													₱{' '}
+													{(
+														Number(booking.total_amount ?? 0) +
+														(booking.booking_charges ?? []).reduce(
+															(sum, charge) => sum + Number(charge.total ?? 0),
+															0,
+														)
+													).toFixed(2)}
+												</div>
 												<div className='text-sm text-muted-foreground'>
 													Balance: ₱{' '}
 													{(
@@ -1453,16 +1453,7 @@ export default function Index() {
 									<DropdownMenu>
 										<DropdownMenuTrigger asChild>
 											<Button variant='ghost' className='h-full rounded-full p-1'>
-												<StatusBadge
-													status={
-														(selectedBooking?.status as
-															| 'confirmed'
-															| 'pending'
-															| 'checked_in'
-															| 'checked_out'
-															| 'cancelled') || 'pending'
-													}
-												/>
+												<StatusBadge status={selectedBooking?.status as "confirmed" | "pencil" | "checked_in" | "checked_out" | "cancelled" | "no_show"} />
 											</Button>
 										</DropdownMenuTrigger>
 

@@ -30,11 +30,11 @@ class BookingsController extends Controller
         $stats = [
             'totalBookings' => Booking::count(),
             'activeGuests' => Booking::where('status', 'checked_in')->count(),
-            'pendingBookings' => Booking::where('status', 'pending')->count(),
+            'pencilBookings' => Booking::where('status', 'pencil')->count(),
             'totalRevenue' => Booking::sum('total_amount'),
         ];
     
-        $rooms = Room::where('status', 'available')->get();
+        $rooms = Room::all();
         $rates = Rate::all();
         $charges = Charge::all();
         $clients = Client::all();
@@ -95,7 +95,7 @@ class BookingsController extends Controller
             'booking_type_id' => $validated['booking_type_id'],
             'total_amount' => $validated['total_amount'],
             'remarks' => $validated['remarks'] ?? '',
-            'status' => 'pending',
+            'status' => 'pencil',
         ]);
 
         // Record downpayment if provided
@@ -165,7 +165,7 @@ class BookingsController extends Controller
         if ($totalPaid >= $requiredDownpayment) {
             $booking->status = 'confirmed';
         } else {
-            $booking->status = 'pending';
+            $booking->status = 'pencil';
         }
 
         $booking->save();
@@ -177,7 +177,7 @@ class BookingsController extends Controller
     public function updateStatus(Request $request, Booking $booking)
     {
         $request->validate([
-            'status' => 'required|in:pending,confirmed,reserved,checked_in,checked_out,cancelled,no_show',
+            'status' => 'required|in:pencil,confirmed,reserved,checked_in,checked_out,cancelled,no_show',
         ]);
 
         $booking->update([

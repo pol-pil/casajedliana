@@ -6,9 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('rooms', function (Blueprint $table) {
@@ -18,21 +15,16 @@ return new class extends Migration
             $table->integer('capacity');
             $table->text('description')->nullable();
             $table->decimal('price', 10, 2);
-             $table->enum('status', [
-                 'available',
-                 'reserved',
-                 'occupied',
-                 'cleaning',
-                 'maintenance'
-            ])->default('available');
-
+            $table->string('status');
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
-        });    
+
+            $table->index('status');
+            $table->index('is_active');
+            $table->index('room_type');
+        });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('rooms');

@@ -21,6 +21,7 @@ class Booking extends Model
         'booking_type_id',
         'guest_count',
         'total_amount',
+        'payment_status',
         'status',
     ];
 

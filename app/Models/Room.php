@@ -16,6 +16,7 @@ class Room extends Model
         'description',
         'price',
         'status',
+        'is_active',
     ];
 
     public function bookings()

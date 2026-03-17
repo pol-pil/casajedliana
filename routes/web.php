@@ -20,28 +20,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])
         ->name('dashboard');
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | Rooms Monitoring Page
-    |--------------------------------------------------------------------------
-    */
     Route::get('/rooms', [AccommodationController::class, 'index'])
         ->name('rooms.index');
-    /*
-    |--------------------------------------------------------------------------
-    | Room Operational Status (available / cleaning / maintenance)
-    |--------------------------------------------------------------------------
-    */
+
     Route::patch(
         '/rooms/{room}/status',
         [AccommodationController::class, 'updateStatus']
     )->name('rooms.updateStatus');
-    /*
-    |--------------------------------------------------------------------------
-    | Booking Transitions (Triggered from Room Page)
-    |--------------------------------------------------------------------------
-    */
+
     Route::post(
         '/rooms/{room}/check-in',
         [AccommodationController::class, 'checkIn']
@@ -67,11 +53,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         [AccommodationController::class, 'confirmCleaning']
     )->name('rooms.confirmCleaning');
 
-    /*
-|--------------------------------------------------------------------------
-| REPORT ROUTES
-|--------------------------------------------------------------------------
-*/
     Route::prefix('reports')->group(function () {
 
         Route::get('/charts', function () {

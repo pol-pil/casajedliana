@@ -6,25 +6,19 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('booking_charges', function (Blueprint $table) {
             $table->id();
             $table->foreignId('booking_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('charge_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('charge_id')->constrained()->restrictOnDelete();
             $table->integer('quantity')->default(1);
-            $table->decimal('value', 10, 2); // snapshot of charge value at time of booking
-            $table->decimal('total', 10, 2); // quantity × value
+            $table->decimal('value', 10, 2);
+            $table->decimal('total', 10, 2);
             $table->timestamps();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('booking_charges');

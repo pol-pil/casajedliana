@@ -6,24 +6,20 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('charges', function (Blueprint $table) {
             $table->id();
-            $table->string('name'); // Example: Extra Bed, Late Checkout
-            $table->decimal('value', 10, 2); // price per unit
-            $table->string('type')->default('fixed'); // fixed or percentage (optional)
+            $table->string('name');
+            $table->decimal('value', 10, 2);
+            $table->string('type')->default('fixed');
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
-        });
-              
+
+            $table->index('is_active');
+        });      
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('charges');

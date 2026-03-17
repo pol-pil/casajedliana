@@ -13,6 +13,7 @@ class Charge extends Model
         'name',
         'value',
         'type',
+        'is_active',
     ];
 
     protected $casts = [
