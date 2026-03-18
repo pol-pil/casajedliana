@@ -108,7 +108,7 @@ class BookingsController extends Controller
             ]);
 
             $totalPaid = $booking->payments()->sum('amount');
-            $requiredDownpayment = $booking->total_amount * 0.30;
+            $requiredDownpayment = $booking->total_amount * 0.50;
 
             if ($totalPaid >= $requiredDownpayment) {
                 $booking->status = 'confirmed';

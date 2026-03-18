@@ -11,11 +11,6 @@ use Inertia\Inertia;
 
 class AccommodationController extends Controller
 {
-    /*
-    |--------------------------------------------------------------------------
-    | INDEX (Room Monitoring with Date Logic)
-    |--------------------------------------------------------------------------
-    */
     public function index(Request $request)
     {
         $start = $request->get('start')
@@ -37,15 +32,6 @@ class AccommodationController extends Controller
         )->get();
 
         $roomsTransformed = $rooms->map(function ($room) use ($start, $end) {
-            /*
-        |----------------------------------------------------------
-        | Get booking overlapping the selected range
-        |
-        | booking.check_in <= selected_end
-        | booking.check_out > selected_start
-        |
-        | This detects ANY overlap with the selected stay period
-        */
 
             $booking = Booking::where('room_id', $room->id)
                 ->whereDate('check_in', '<=', $end)
@@ -54,15 +40,6 @@ class AccommodationController extends Controller
                 ->orderByDesc('created_at')
                 ->first();
 
-            /*
-|----------------------------------------------------------
-| FINAL ROOM STATUS (Simplified for UI)
-|----------------------------------------------------------
-| Maintenance
-| Occupied
-| Reserved
-| Available
-*/
             if ($room->status === 'maintenance') {
                 $finalStatus = 'Maintenance';
             } elseif ($booking) {
@@ -97,11 +74,6 @@ class AccommodationController extends Controller
         ]);
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | OPERATIONAL STATUS ONLY (available / cleaning / maintenance)
-    |--------------------------------------------------------------------------
-    */
     public function updateStatus(Request $request, Room $room)
     {
         $request->validate([
@@ -124,11 +96,6 @@ class AccommodationController extends Controller
         return back()->with('success', 'Room operational status updated.');
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | CONFIRM CLEANING (Cleaning → Available + Log)
-    |--------------------------------------------------------------------------
-    */
     public function confirmCleaning(Room $room)
     {
         if ($room->status !== 'cleaning') {
@@ -147,11 +114,6 @@ class AccommodationController extends Controller
         return back()->with('success', 'Room cleaned and available.');
     }
 
-    /*
-|--------------------------------------------------------------------------
-| STORE NEW ROOM
-|--------------------------------------------------------------------------
-*/
     public function store(Request $request)
     {
         $request->validate([
@@ -174,11 +136,6 @@ class AccommodationController extends Controller
         return back()->with('success', 'Room added successfully.');
     }
 
-    /*
-|--------------------------------------------------------------------------
-| UPDATE ROOM
-|--------------------------------------------------------------------------
-*/
     public function update(Request $request, Room $room)
     {
         $request->validate([
@@ -200,11 +157,6 @@ class AccommodationController extends Controller
         return back()->with('success', 'Room updated successfully.');
     }
 
-    /*
-|--------------------------------------------------------------------------
-| DELETE ROOM
-|--------------------------------------------------------------------------
-*/
     public function destroy(Room $room)
     {
         $hasBookings = Booking::where('room_id', $room->id)->exists();
