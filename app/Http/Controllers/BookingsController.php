@@ -76,13 +76,11 @@ class BookingsController extends Controller
             'remarks' => 'nullable|string',
         ]);
 
-        // Create or find client
         $client = Client::firstOrCreate(
             ['contact_number' => $validated['client']['contact_number']],
             $validated['client']
         );
 
-        // Create booking
         $booking = Booking::create([
             'client_id' => $client->id,
             'room_id' => $validated['room_id'],
@@ -99,7 +97,6 @@ class BookingsController extends Controller
             'status' => 'pencil',
         ]);
 
-        // Record downpayment if provided
         if (! empty($validated['downpayment'])) {
             $booking->payments()->create([
                 'amount' => $validated['downpayment'],

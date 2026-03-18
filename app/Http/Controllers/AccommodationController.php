@@ -29,46 +29,54 @@ class AccommodationController extends Controller
             'price',
             'description',
             'status'
-        )->get();
-
-        $roomsTransformed = $rooms->map(function ($room) use ($start, $end) {
-
-            $booking = Booking::where('room_id', $room->id)
-                ->whereDate('check_in', '<=', $end)
-                ->whereDate('check_out', '>', $start)
-                ->whereNotIn('status', ['cancelled', 'checked_out'])
-                ->orderByDesc('created_at')
-                ->first();
-
-            if ($room->status === 'maintenance') {
-                $finalStatus = 'Maintenance';
-            } elseif ($booking) {
-                $bookingStatus = strtolower($booking->status);
-
-                if ($bookingStatus === 'checked_in') {
-                    $finalStatus = 'Occupied';
-                } elseif (in_array($bookingStatus, ['reserved', 'pencil'])) {
-                    $finalStatus = 'Reserved';
-                } else {
-                    $finalStatus = 'Available';
-                }
-            } else {
-                $finalStatus = 'Available';
+        )
+        ->with([
+            'bookings'=> function ($query) use ($start, $end) {
+                $query->whereDate('check_in', '<=', $end)
+                    ->whereDate('check_out', '>', $start)
+                    ->whereNotIn('status', ['cancelled', 'checked_out', 'no_show'])
+                    ->orderByDesc('created_at');
             }
+            ])->get();
 
-            return [
-                'id' => $room->id,
-                'roomNumber' => $room->room_number,
-                'category' => $room->room_type,
-                'capacity' => (int) $room->capacity,
-                'beds' => $room->description ?? '',
-                'status' => $finalStatus,
-                'price' => $room->price,
-            ];
-        });
+        // $roomsTransformed = $rooms->map(function ($room) use ($start, $end) {
+
+        //     $booking = Booking::where('room_id', $room->id)
+        //         ->whereDate('check_in', '<=', $end)
+        //         ->whereDate('check_out', '>', $start)
+        //         // ->whereNotIn('status', ['cancelled', 'checked_out', 'no_show'])
+        //         ->orderByDesc('created_at')
+        //         ->first();
+
+        //     if ($room->status === 'maintenance') {
+        //         $finalStatus = 'Maintenance';
+        //     } elseif ($booking) {
+        //         $bookingStatus = strtolower($booking->status);
+
+        //         if ($bookingStatus === 'checked_in') {
+        //             $finalStatus = 'Occupied';
+        //         } elseif (in_array($bookingStatus, ['reserved', 'pencil'])) {
+        //             $finalStatus = 'Reserved';
+        //         } else {
+        //             $finalStatus = 'Available';
+        //         }
+        //     } else {
+        //         $finalStatus = 'Available';
+        //     }
+
+        //     return [
+        //         'id' => $room->id,
+        //         'roomNumber' => $room->room_number,
+        //         'category' => $room->room_type,
+        //         'capacity' => (int) $room->capacity,
+        //         'beds' => $room->description ?? '',
+        //         'status' => $finalStatus,
+        //         'price' => $room->price,
+        //     ];
+        // });
 
         return Inertia::render('Accommodations/Index', [
-            'rooms' => $roomsTransformed,
+            'rooms' => $rooms,
             'startDate' => $start,
             'endDate' => $end,
         ]);
@@ -77,16 +85,16 @@ class AccommodationController extends Controller
     public function updateStatus(Request $request, Room $room)
     {
         $request->validate([
-            'status' => 'required|in:available,cleaning,maintenance',
+            'status' => 'required|in:Available,Maintenance',
         ]);
 
         $status = strtolower($request->status);
 
         $activeBooking = Booking::where('room_id', $room->id)
-            ->whereIn('status', ['reserved', 'checked_in'])
+            ->whereIn('status', ['confirmed', 'checked_in'])
             ->exists();
 
-        if ($activeBooking && $status === 'maintenance') {
+        if ($activeBooking && $status === 'Maintenance') {
             return back()->withErrors('Room has an active booking.');
         }
 
@@ -94,24 +102,6 @@ class AccommodationController extends Controller
         $room->save();
 
         return back()->with('success', 'Room operational status updated.');
-    }
-
-    public function confirmCleaning(Room $room)
-    {
-        if ($room->status !== 'cleaning') {
-            return back()->withErrors('Room is not in cleaning state.');
-        }
-
-        RoomCleaningLog::create([
-            'room_id' => $room->id,
-            'started_at' => now(),
-            'completed_at' => now(),
-        ]);
-
-        $room->status = 'available';
-        $room->save();
-
-        return back()->with('success', 'Room cleaned and available.');
     }
 
     public function store(Request $request)
@@ -130,7 +120,7 @@ class AccommodationController extends Controller
             'capacity' => $request->capacity,
             'price' => $request->price,
             'description' => $request->description,
-            'status' => 'available',
+            'status' => 'Available',
         ]);
 
         return back()->with('success', 'Room added successfully.');
@@ -139,7 +129,7 @@ class AccommodationController extends Controller
     public function update(Request $request, Room $room)
     {
         $request->validate([
-            'room_number' => 'required|string|max:50|unique:rooms,room_number,' . $room->id,
+            'room_number' => 'required|string|max:50|unique:rooms,room_number,'.$room->id,
             'room_type' => 'required|string|max:255',
             'capacity' => 'required|integer|min:1',
             'price' => 'required|numeric|min:0',

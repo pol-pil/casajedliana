@@ -11,6 +11,17 @@
       0 => 'Barryvdh\\DomPDF\\ServiceProvider',
     ),
   ),
+  'fruitcake/laravel-debugbar' => 
+  array (
+    'aliases' => 
+    array (
+      'Debugbar' => 'Fruitcake\\LaravelDebugbar\\Facades\\Debugbar',
+    ),
+    'providers' => 
+    array (
+      0 => 'Fruitcake\\LaravelDebugbar\\ServiceProvider',
+    ),
+  ),
   'inertiajs/inertia-laravel' => 
   array (
     'providers' => 

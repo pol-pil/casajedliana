@@ -20,7 +20,23 @@ class DashboardController extends Controller
             ? Carbon::parse($request->get('end'))->toDateString()
             : Carbon::today()->addDay()->toDateString();
 
-        $rooms = Room::all();
+            $rooms = Room::select(
+                'id',
+                'room_number',
+                'room_type',
+                'capacity',
+                'price',
+                'description',
+                'status'
+            )
+            ->with([
+                'bookings'=> function ($query) use ($start, $end) {
+                    $query->whereDate('check_in', '<=', $end)
+                        ->whereDate('check_out', '>', $start)
+                        ->whereNotIn('status', ['cancelled', 'checked_out', 'no_show'])
+                        ->orderByDesc('created_at');
+                }
+                ])->get();
 
         $bookings = Booking::with(['client', 'room', 'payments'])
             ->whereDate('check_in', '<=', $end)
@@ -36,30 +52,30 @@ class DashboardController extends Controller
             ->whereBetween('check_out', [$start, $end])
             ->get();
 
-        $roomsTransformed = $rooms->map(function ($room) use ($bookings) {
-            $booking = $bookings->firstWhere('room_id', $room->id);
+        // $roomsTransformed = $rooms->map(function ($room) use ($bookings) {
+        //     $booking = $bookings->firstWhere('room_id', $room->id);
 
-            if ($room->status === 'maintenance') {
-                $computedStatus = 'Maintenance';
-            } elseif ($booking) {
-                $bookingStatus = strtolower($booking->status);
+        //     if ($room->status === 'maintenance') {
+        //         $computedStatus = 'Maintenance';
+        //     } elseif ($booking) {
+        //         $bookingStatus = strtolower($booking->status);
 
-                if ($bookingStatus === 'checked_in') {
-                    $computedStatus = 'Occupied';
-                } else {
-                    $computedStatus = 'Reserved';
-                }
-            } else {
-                $computedStatus = 'Available';
-            }
+        //         if ($bookingStatus === 'checked_in') {
+        //             $computedStatus = 'Occupied';
+        //         } else {
+        //             $computedStatus = 'Reserved';
+        //         }
+        //     } else {
+        //         $computedStatus = 'Available';
+        //     }
 
-            return [
-                'id' => $room->id,
-                'room_number' => $room->room_number,
-                'room_type' => $room->room_type,
-                'status' => $computedStatus,
-            ];
-        });
+        //     return [
+        //         'id' => $room->id,
+        //         'room_number' => $room->room_number,
+        //         'room_type' => $room->room_type,
+        //         'status' => $computedStatus,
+        //     ];
+        // });
 
         $computePaymentStatus = function ($booking) {
             $totalPaid = $booking->payments->sum('amount');
@@ -82,7 +98,7 @@ class DashboardController extends Controller
         return Inertia::render('Dashboard/Index', [
             'startDate' => $start,
             'endDate' => $end,
-            'rooms' => $roomsTransformed,
+            'rooms' => $rooms,
             'bookings' => $bookings,
             'checkIns' => $checkIns,
             'checkOuts' => $checkOuts,
