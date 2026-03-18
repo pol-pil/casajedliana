@@ -20,7 +20,7 @@ return new class extends Migration
 
             $table->index('contact_number');
             $table->index(['first_name', 'last_name']);
-        });        
+        });
     }
 
     public function down(): void

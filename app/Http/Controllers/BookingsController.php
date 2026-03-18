@@ -3,12 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Booking;
-use App\Models\Client;
-use App\Models\Room;
-use App\Models\Rate;
-use App\Models\Charge;
 use App\Models\BookingType;
+use App\Models\Charge;
+use App\Models\Client;
 use App\Models\Payment;
+use App\Models\Rate;
+use App\Models\Room;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -17,30 +17,30 @@ class BookingsController extends Controller
     public function index()
     {
         $bookings = Booking::with([
-                'client',
-                'room',
-                'payments',
-                'bookingType',
-                'bookingCharges.charge',
-                'rate'
-            ])
+            'client',
+            'room',
+            'payments',
+            'bookingType',
+            'bookingCharges.charge',
+            'rate',
+        ])
             ->orderBy('created_at', 'desc')
             ->paginate(10);
-    
+
         $stats = [
             'totalBookings' => Booking::count(),
             'activeGuests' => Booking::where('status', 'checked_in')->count(),
             'pencilBookings' => Booking::where('status', 'pencil')->count(),
             'totalRevenue' => Booking::sum('total_amount'),
         ];
-    
+
         $rooms = Room::all();
         $rates = Rate::all();
         $charges = Charge::all();
         $clients = Client::all();
         $payments = Payment::all();
         $bookingTypes = BookingType::where('is_active', true)->get();
-    
+
         return Inertia::render('Bookings/Index', [
             'bookings' => $bookings,
             'stats' => $stats,
@@ -99,7 +99,7 @@ class BookingsController extends Controller
         ]);
 
         // Record downpayment if provided
-        if (!empty($validated['downpayment'])) {
+        if (! empty($validated['downpayment'])) {
             $booking->payments()->create([
                 'amount' => $validated['downpayment'],
                 'payment_method' => $validated['payment_method'],
@@ -108,7 +108,7 @@ class BookingsController extends Controller
 
             $totalPaid = $booking->payments()->sum('amount');
             $requiredDownpayment = $booking->total_amount * 0.30;
-    
+
             if ($totalPaid >= $requiredDownpayment) {
                 $booking->status = 'confirmed';
                 $booking->save();
@@ -119,7 +119,7 @@ class BookingsController extends Controller
             ->with('success', 'Booking created successfully.');
     }
 
-        public function update(Request $request, Booking $booking)
+    public function update(Request $request, Booking $booking)
     {
         $validated = $request->validate([
             'client' => 'required|array',
@@ -205,10 +205,10 @@ class BookingsController extends Controller
             'rate',
             'bookingCharges',
         ]);
-    
+
         $pdf = \PDF::loadView('pdfs.booking_soa', compact('booking'))
             ->setPaper('legal', 'portrait');
-    
+
         return $pdf->stream('booking_soa.pdf');
     }
 }

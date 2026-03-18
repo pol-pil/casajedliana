@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Rate;
-use App\Models\Charge;
-use App\Models\BookingType;
 use App\Models\Booking;
+use App\Models\BookingType;
+use App\Models\Charge;
+use App\Models\Rate;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 

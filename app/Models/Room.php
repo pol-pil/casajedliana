@@ -27,10 +27,10 @@ class Room extends Model
     public function isAvailable($checkIn, $checkOut)
     {
         $overlapping = $this->bookings()
-            ->where(function($query) use ($checkIn, $checkOut) {
+            ->where(function ($query) use ($checkIn, $checkOut) {
                 $query->whereBetween('check_in', [$checkIn, $checkOut])
                     ->orWhereBetween('check_out', [$checkIn, $checkOut])
-                    ->orWhere(function($q) use ($checkIn, $checkOut) {
+                    ->orWhere(function ($q) use ($checkIn, $checkOut) {
                         $q->where('check_in', '<', $checkIn)
                             ->where('check_out', '>', $checkOut);
                     });
@@ -38,6 +38,6 @@ class Room extends Model
             ->whereNotIn('status', ['cancelled'])
             ->exists();
 
-        return !$overlapping;
+        return ! $overlapping;
     }
-}   
+}

@@ -2,17 +2,17 @@
 
 namespace Database\Seeders;
 
-use App\Models\BookingType;
-use App\Models\Client;
-use App\Models\Room;
-use App\Models\Rate;
 use App\Models\Booking;
-use App\Models\Charge;
 use App\Models\BookingCharge;
+use App\Models\BookingType;
+use App\Models\Charge;
+use App\Models\Client;
 use App\Models\Payment;
+use App\Models\Rate;
+use App\Models\Room;
 use App\Models\User;
-use Illuminate\Database\Seeder;
 use Carbon\Carbon;
+use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -26,7 +26,7 @@ class DatabaseSeeder extends Seeder
             'Facebook',
             'Instagram',
             'Phone Call',
-            'Walk-In'
+            'Walk-In',
         ];
 
         foreach ($bookingTypes as $type) {
@@ -96,22 +96,22 @@ class DatabaseSeeder extends Seeder
             ['room_number' => '204', 'room_type' => 'Standard', 'capacity' => 2, 'price' => 2950.00],
             ['room_number' => '205', 'room_type' => 'Standard', 'capacity' => 2, 'price' => 2950.00],
             ['room_number' => '206', 'room_type' => 'Standard', 'capacity' => 2, 'price' => 2950.00],
-            
+
             // Suite rooms
             ['room_number' => '201', 'room_type' => 'Suite', 'capacity' => 2, 'price' => 3985.00],
             ['room_number' => '202', 'room_type' => 'Suite', 'capacity' => 2, 'price' => 3985.00],
-            
+
             // Quadro rooms
             ['room_number' => '207', 'room_type' => 'Quadro', 'capacity' => 4, 'price' => 5450.00],
             ['room_number' => '208', 'room_type' => 'Quadro', 'capacity' => 4, 'price' => 5450.00],
-            
+
             // Penthouse
             ['room_number' => '300', 'room_type' => 'Penthouse', 'capacity' => 2, 'price' => 6550.00],
-            
+
             // Family rooms
             ['room_number' => '101-102', 'room_type' => 'Family', 'capacity' => 5, 'price' => 5550.00],
             ['room_number' => '103-104', 'room_type' => 'Family', 'capacity' => 5, 'price' => 5550.00],
-            
+
             // Resthouse
             ['room_number' => '105', 'room_type' => 'Resthouse', 'capacity' => 8, 'price' => 12500.00],
         ];
@@ -150,11 +150,11 @@ class DatabaseSeeder extends Seeder
             $client = $clients->random();
             $rate = $rates->random();
             $bookingType = $bookingTypes->random();
-            
+
             $checkIn = Carbon::now()->subDays(rand(1, 60))->addHours(rand(0, 23));
             $checkOut = (clone $checkIn)->addDays(rand(1, 5));
             $nights = $checkIn->diffInDays($checkOut);
-            
+
             // Calculate total amount: room price * nights * (100 - rate%) / 100
             $baseAmount = $room->price * $nights;
             $discountMultiplier = (100 - $rate->value) / 100;
@@ -181,12 +181,12 @@ class DatabaseSeeder extends Seeder
             // Add random charges to booking
             $numberOfCharges = rand(0, 3);
             $totalCharges = 0;
-            
+
             for ($j = 0; $j < $numberOfCharges; $j++) {
                 $charge = $charges->random();
                 $quantity = rand(1, 3);
                 $chargeTotal = $charge->value * $quantity;
-                
+
                 BookingCharge::create([
                     'booking_id' => $booking->id,
                     'charge_id' => $charge->id,
@@ -195,14 +195,14 @@ class DatabaseSeeder extends Seeder
                     'total' => $chargeTotal,
                     'created_at' => Carbon::now()->subDays(rand(1, 30)),
                 ]);
-                
+
                 $totalCharges += $chargeTotal;
             }
 
             // Create payments
             $paymentStatus = $booking->payment_status;
             $totalWithCharges = $booking->total_amount + $totalCharges;
-            
+
             if ($paymentStatus === 'paid') {
                 // Full payment
                 Payment::create([
@@ -215,7 +215,7 @@ class DatabaseSeeder extends Seeder
             } elseif ($paymentStatus === 'partial') {
                 // Partial payment (50-70% of total)
                 $partialAmount = $totalWithCharges * (rand(50, 70) / 100);
-                
+
                 // Downpayment
                 Payment::create([
                     'booking_id' => $booking->id,
@@ -230,7 +230,7 @@ class DatabaseSeeder extends Seeder
             if ($booking->status === 'checked_out' && $paymentStatus === 'partial') {
                 $totalPaid = Payment::where('booking_id', $booking->id)->sum('amount');
                 $remainingBalance = $totalWithCharges - $totalPaid;
-                
+
                 if ($remainingBalance > 0) {
                     Payment::create([
                         'booking_id' => $booking->id,
@@ -250,10 +250,10 @@ class DatabaseSeeder extends Seeder
     private function updateRoomStatuses()
     {
         $now = Carbon::now();
-        
+
         // Get all rooms
         $rooms = Room::all();
-        
+
         foreach ($rooms as $room) {
             // Check if room has active booking
             $activeBooking = Booking::where('room_id', $room->id)
@@ -262,7 +262,7 @@ class DatabaseSeeder extends Seeder
                 ->where('check_in', '<=', $now)
                 ->where('check_out', '>=', $now)
                 ->first();
-            
+
             if ($activeBooking) {
                 $room->status = 'Occupied';
             } else {
@@ -271,10 +271,10 @@ class DatabaseSeeder extends Seeder
                     ->where('status', 'confirmed')
                     ->where('check_in', '>', $now)
                     ->exists();
-                
+
                 $room->status = $futureBooking ? 'Reserved' : 'Available';
             }
-            
+
             $room->save();
         }
     }

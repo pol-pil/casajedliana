@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Inertia\Inertia;
-use App\Models\Room;
 use App\Models\Booking;
+use App\Models\Room;
 use App\Models\RoomCleaningLog;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class AccommodationController extends Controller
 {
@@ -37,7 +37,6 @@ class AccommodationController extends Controller
         )->get();
 
         $roomsTransformed = $rooms->map(function ($room) use ($start, $end) {
-
             /*
         |----------------------------------------------------------
         | Get booking overlapping the selected range
@@ -65,24 +64,18 @@ class AccommodationController extends Controller
 | Available
 */
             if ($room->status === 'maintenance') {
-
                 $finalStatus = 'Maintenance';
             } elseif ($booking) {
-
                 $bookingStatus = strtolower($booking->status);
 
                 if ($bookingStatus === 'checked_in') {
-
                     $finalStatus = 'Occupied';
                 } elseif (in_array($bookingStatus, ['reserved', 'pencil'])) {
-
                     $finalStatus = 'Reserved';
                 } else {
-
                     $finalStatus = 'Available';
                 }
             } else {
-
                 $finalStatus = 'Available';
             }
 
@@ -104,7 +97,6 @@ class AccommodationController extends Controller
         ]);
     }
 
-
     /*
     |--------------------------------------------------------------------------
     | OPERATIONAL STATUS ONLY (available / cleaning / maintenance)
@@ -113,7 +105,7 @@ class AccommodationController extends Controller
     public function updateStatus(Request $request, Room $room)
     {
         $request->validate([
-            'status' => 'required|in:available,cleaning,maintenance'
+            'status' => 'required|in:available,cleaning,maintenance',
         ]);
 
         $status = strtolower($request->status);
@@ -207,7 +199,6 @@ class AccommodationController extends Controller
 
         return back()->with('success', 'Room updated successfully.');
     }
-
 
     /*
 |--------------------------------------------------------------------------

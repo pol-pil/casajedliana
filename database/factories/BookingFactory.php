@@ -2,13 +2,13 @@
 
 namespace Database\Factories;
 
-use App\Models\Client;
-use App\Models\Room;
-use App\Models\Rate;
 use App\Models\BookingType;
+use App\Models\Client;
+use App\Models\Rate;
+use App\Models\Room;
 use App\Models\User;
-use Illuminate\Database\Eloquent\Factories\Factory;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Factories\Factory;
 
 class BookingFactory extends Factory
 {
@@ -30,7 +30,7 @@ class BookingFactory extends Factory
                 'Leisure',
                 'Business/Corporate',
                 'Events/Social',
-                'Government Event'
+                'Government Event',
             ]),
             'guest_count' => $this->faker->numberBetween(1, 4),
             'total_amount' => 0, // Will be calculated in seeder
@@ -41,7 +41,7 @@ class BookingFactory extends Factory
                 'checked_in',
                 'checked_out',
                 'no_show',
-                'cancelled'
+                'cancelled',
             ]),
         ];
     }

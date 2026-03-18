@@ -1,14 +1,14 @@
 <?php
 
 use App\Http\Controllers\AccommodationController;
+use App\Http\Controllers\BookingChargesController;
+use App\Http\Controllers\BookingsController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\PaymentsController;
+use App\Http\Controllers\RatesController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
-use App\Http\Controllers\BookingsController;
-use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\RatesController;
-use App\Http\Controllers\PaymentsController;
-use App\Http\Controllers\BookingChargesController;
 
 Route::get('/', function () {
     return Inertia::render('welcome', [
@@ -54,7 +54,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     )->name('rooms.confirmCleaning');
 
     Route::prefix('reports')->group(function () {
-
         Route::get('/charts', function () {
             return Inertia::render('reports/charts');
         })->name('reports.charts');
@@ -63,8 +62,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
             return Inertia::render('reports/history');
         })->name('reports.history');
     });
-
-
 
     Route::get('/bookings', [BookingsController::class, 'index'])->name('bookings.index');
     Route::post('/bookings', [BookingsController::class, 'store'])->name('bookings.store');

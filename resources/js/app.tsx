@@ -9,25 +9,21 @@ import { Toaster } from 'sonner';
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
 createInertiaApp({
-    title: (title) => (title ? `${title} - ${appName}` : appName),
-    resolve: (name) =>
-        resolvePageComponent(
-            `./pages/${name}.tsx`,
-            import.meta.glob('./pages/**/*.tsx'),
-        ),
-    setup({ el, App, props }) {
-        const root = createRoot(el);
+	title: (title) => (title ? `${title} - ${appName}` : appName),
+	resolve: (name) => resolvePageComponent(`./pages/${name}.tsx`, import.meta.glob('./pages/**/*.tsx')),
+	setup({ el, App, props }) {
+		const root = createRoot(el);
 
-        root.render(
-            <StrictMode>
-                <Toaster position="bottom-right" expand={true} visibleToasts={10}/>
-                <App {...props} />
-            </StrictMode>,
-        );
-    },
-    progress: {
-        color: '#4b634b',
-    },
+		root.render(
+			<StrictMode>
+				<Toaster position='bottom-right' expand={true} visibleToasts={10} />
+				<App {...props} />
+			</StrictMode>,
+		);
+	},
+	progress: {
+		color: '#4b634b',
+	},
 });
 
 // This will set light / dark mode on load...

@@ -2,10 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use App\Models\Payment;
 use App\Models\Booking;
-use Inertia\Inertia;
+use App\Models\Payment;
+use Illuminate\Http\Request;
 
 class PaymentsController extends Controller
 {

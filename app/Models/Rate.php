@@ -16,7 +16,7 @@ class Rate extends Model
         'is_active',
     ];
 
-        protected $casts = [
+    protected $casts = [
         'value' => 'decimal:2',
     ];
 

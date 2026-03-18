@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Booking;
 use App\Models\Room;
-use Inertia\Inertia;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class DashboardController extends Controller
 {
@@ -22,23 +22,11 @@ class DashboardController extends Controller
 
         $rooms = Room::all();
 
-        /*
-    |----------------------------------------------------------
-    | BOOKINGS OVERLAPPING SELECTED RANGE
-    |----------------------------------------------------------
-    */
-
         $bookings = Booking::with(['client', 'room', 'payments'])
             ->whereDate('check_in', '<=', $end)
             ->whereDate('check_out', '>', $start)
             ->whereNotIn('status', ['cancelled', 'checked_out'])
             ->get();
-
-        /*
-    |----------------------------------------------------------
-    | ARRIVALS / DEPARTURES
-    |----------------------------------------------------------
-    */
 
         $checkIns = Booking::with(['client', 'room', 'payments'])
             ->whereBetween('check_in', [$start, $end])
@@ -48,32 +36,20 @@ class DashboardController extends Controller
             ->whereBetween('check_out', [$start, $end])
             ->get();
 
-        /*
-|----------------------------------------------------------
-| ROOM STATUS COMPUTATION (Same Logic as Room Page)
-|----------------------------------------------------------
-*/
-
         $roomsTransformed = $rooms->map(function ($room) use ($bookings) {
-
             $booking = $bookings->firstWhere('room_id', $room->id);
 
             if ($room->status === 'maintenance') {
-
                 $computedStatus = 'Maintenance';
             } elseif ($booking) {
-
                 $bookingStatus = strtolower($booking->status);
 
                 if ($bookingStatus === 'checked_in') {
-
                     $computedStatus = 'Occupied';
                 } else {
-
                     $computedStatus = 'Reserved';
                 }
             } else {
-
                 $computedStatus = 'Available';
             }
 
@@ -85,15 +61,7 @@ class DashboardController extends Controller
             ];
         });
 
-
-        /*
-|----------------------------------------------------------
-| PAYMENT STATUS COMPUTATION
-|----------------------------------------------------------
-*/
-
         $computePaymentStatus = function ($booking) {
-
             $totalPaid = $booking->payments->sum('amount');
 
             if ($totalPaid <= 0) {
@@ -110,13 +78,6 @@ class DashboardController extends Controller
         $bookings = $bookings->map($computePaymentStatus);
         $checkIns = $checkIns->map($computePaymentStatus);
         $checkOuts = $checkOuts->map($computePaymentStatus);
-
-
-        /*
-|----------------------------------------------------------
-| RETURN DASHBOARD DATA
-|----------------------------------------------------------
-*/
 
         return Inertia::render('Dashboard/Index', [
             'startDate' => $start,

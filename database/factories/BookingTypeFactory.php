@@ -17,7 +17,7 @@ class BookingTypeFactory extends Factory
                 'Facebook',
                 'Instagram',
                 'Phone Call',
-                'Walk-In'
+                'Walk-In',
             ]),
             'is_active' => true,
         ];
