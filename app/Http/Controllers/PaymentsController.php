@@ -25,6 +25,16 @@ class PaymentsController extends Controller
 
         $requiredDownpayment = $booking->total_amount * 0.50;
 
+        if ($totalPaid > 1) {
+            $booking->payment_status = 'partial';
+            $booking->save();
+        }
+
+        if ($totalPaid >= $booking->total_amount) {
+            $booking->payment_status = 'paid';
+            $booking->save();
+        }
+
         if ($totalPaid >= $requiredDownpayment) {
             $booking->status = 'confirmed';
             $booking->save();

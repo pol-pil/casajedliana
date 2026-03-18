@@ -78,7 +78,7 @@ class BookingsController extends Controller
 
         // Create or find client
         $client = Client::firstOrCreate(
-            ['email' => $validated['client']['email']],
+            ['contact_number' => $validated['client']['contact_number']],
             $validated['client']
         );
 
@@ -95,6 +95,7 @@ class BookingsController extends Controller
             'booking_type_id' => $validated['booking_type_id'],
             'total_amount' => $validated['total_amount'],
             'remarks' => $validated['remarks'] ?? '',
+            'payment_status' => ! empty($validated['downpayment']) ? 'partial' : 'unpaid',
             'status' => 'pencil',
         ]);
 
@@ -111,6 +112,11 @@ class BookingsController extends Controller
 
             if ($totalPaid >= $requiredDownpayment) {
                 $booking->status = 'confirmed';
+                $booking->save();
+            }
+
+            if ($totalPaid >= $booking->total_amount) {
+                $booking->payment_status = 'paid';
                 $booking->save();
             }
         }
