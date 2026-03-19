@@ -151,8 +151,8 @@ class DatabaseSeeder extends Seeder
             $rate = $rates->random();
             $bookingType = $bookingTypes->random();
 
-            $checkIn = Carbon::now()->subDays(rand(1, 60))->addHours(rand(0, 23));
-            $checkOut = (clone $checkIn)->addDays(rand(1, 5));
+            $checkIn = Carbon::now()->subDays(rand(1, 5))->addHours(rand(0, 23));
+            $checkOut = (clone $checkIn)->addDays(rand(1, 10))->addHours(rand(0, 23));
             $nights = $checkIn->diffInDays($checkOut);
 
             // Calculate total amount: room price * nights * (100 - rate%) / 100

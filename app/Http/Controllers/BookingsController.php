@@ -10,12 +10,16 @@ use App\Models\Payment;
 use App\Models\Rate;
 use App\Models\Room;
 use Illuminate\Http\Request;
+use Carbon\Carbon;
 use Inertia\Inertia;
 
 class BookingsController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $start = $request->input('start', Carbon::today()->toDateString());
+        $end = $request->input('end', Carbon::today()->toDateString());
+
         $bookings = Booking::with([
             'client',
             'room',
@@ -24,11 +28,18 @@ class BookingsController extends Controller
             'bookingCharges.charge',
             'rate',
         ])
+            ->whereDate('check_in', '<=', $end)
+            ->whereDate('check_out', '>', $start)
+            ->whereNotIn('status', ['cancelled', 'checked_out', 'no_show'])
             ->orderBy('created_at', 'desc')
-            ->paginate(10);
+            ->paginate(10)
+            ->withQueryString();
 
         $stats = [
-            'totalBookings' => Booking::count(),
+            'totalBookings' => Booking::whereDate('check_in', '<=', $end)
+                ->whereDate('check_out', '>', $start)
+                ->whereNotIn('status', ['cancelled', 'checked_out', 'no_show'])
+                ->count(),
             'activeGuests' => Booking::where('status', 'checked_in')->count(),
             'pencilBookings' => Booking::where('status', 'pencil')->count(),
             'totalRevenue' => Booking::sum('total_amount'),

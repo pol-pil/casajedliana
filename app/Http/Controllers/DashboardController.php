@@ -41,7 +41,7 @@ class DashboardController extends Controller
         $bookings = Booking::with(['client', 'room', 'payments'])
             ->whereDate('check_in', '<=', $end)
             ->whereDate('check_out', '>', $start)
-            ->whereNotIn('status', ['cancelled', 'checked_out'])
+            ->whereNotIn('status', ['cancelled', 'checked_out', 'no_show'])
             ->get();
 
         $checkIns = Booking::with(['client', 'room', 'payments'])
