@@ -7,7 +7,6 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PaymentsController;
 use App\Http\Controllers\RatesController;
 use App\Http\Middleware\FrontdeskMiddleware;
-use App\Http\Controllers\TestController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
@@ -31,6 +30,31 @@ Route::middleware(['auth', 'verified'])->group(function () {
             '/rooms/{room}/status',
             [AccommodationController::class, 'updateStatus']
         )->name('rooms.updateStatus');
+
+        Route::post(
+            '/rooms/{room}/check-in',
+            [AccommodationController::class, 'checkIn']
+        )->name('rooms.checkIn');
+
+        Route::post(
+            '/rooms/{room}/check-out',
+            [AccommodationController::class, 'checkOut']
+        )->name('rooms.checkOut');
+
+        Route::post(
+            '/rooms/{room}/cancel-booking',
+            [AccommodationController::class, 'cancelBooking']
+        )->name('rooms.cancelBooking');
+
+        Route::post(
+            '/rooms/{room}/mark-paid',
+            [AccommodationController::class, 'markPaid']
+        )->name('rooms.markPaid');
+
+        Route::post(
+            '/rooms/{room}/confirm-cleaning',
+            [AccommodationController::class, 'confirmCleaning']
+        )->name('rooms.confirmCleaning');
 
         Route::prefix('reports')->group(function () {
             Route::get('/charts', function () {
@@ -72,7 +96,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // Print SOA
         Route::get('/bookings/{booking}/print', [BookingsController::class, 'printSOA'])->name('bookings.printSOA');
 
-    
+        
     });
 });
 
