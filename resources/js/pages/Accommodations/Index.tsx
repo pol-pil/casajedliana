@@ -104,7 +104,16 @@ export default function Index() {
 				? r.amenities
 				: (mockAmenities[r.room_type ?? r.category ?? 'Standard'] ?? []);
 
-		const status: Status = ['Available', 'Occupied', 'Reserved', 'Maintenance'].includes(r.status) ? r.status : 'Available';
+		const normalizeStatus = (status: string): Status => {
+			const s = status?.toLowerCase();
+			
+			if (s === 'maintenance') return 'Maintenance';
+			if (s === 'occupied') return 'Occupied';
+			if (s === 'reserved') return 'Reserved';
+			return 'Available';
+		};
+
+		const status: Status = normalizeStatus(r.status);
 
 		return {
 			id,
@@ -282,7 +291,7 @@ export default function Index() {
 															onClick={() => {
 																router.patch(
 																	`/rooms/${room.id}/status`,
-																	{ status: 'maintenance' },
+																	{ status: 'Maintenance' },
 																	{
 																		preserveScroll: true,
 																		onSuccess: () => {
@@ -305,7 +314,7 @@ export default function Index() {
 															onClick={() => {
 																router.patch(
 																	`/rooms/${room.id}/status`,
-																	{ status: 'available' },
+																	{ status: 'Available' },
 																	{
 																		preserveScroll: true,
 																		onSuccess: () => {
