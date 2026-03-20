@@ -30,6 +30,16 @@ class Booking extends Model
         'check_out' => 'datetime',
     ];
 
+    //history
+
+    protected $appends = [
+    'guest',
+    'contact',
+    'room_display',
+    'amount',
+    'balance',
+];
+
     public function client()
     {
         return $this->belongsTo(Client::class);
@@ -70,13 +80,45 @@ class Booking extends Model
         return $this->payments()->sum('amount');
     }
 
-    public function getBalanceAttribute()
-    {
-        return $this->total_amount - $this->total_paid;
-    }
-
     public function getDurationAttribute()
     {
         return $this->check_in->diffInDays($this->check_out);
+    }
+
+    // history 
+
+    public function getGuestAttribute()
+    {
+        return $this->client->first_name . ' ' . $this->client->last_name;
+    }
+
+    public function getContactAttribute()
+    {
+        return $this->client->contact_number;
+    }
+
+    public function getRoomDisplayAttribute()
+    {
+        return $this->room->room_number . ' - ' . $this->room->room_type;
+    }
+
+    public function getChargesTotalAttribute()
+    {
+        return $this->bookingCharges->sum('total');
+    }
+
+    public function getPaymentsTotalAttribute()
+    {
+        return $this->payments->sum('amount');
+    }
+
+    public function getAmountAttribute()
+    {
+        return $this->total_amount + $this->charges_total;
+    }
+
+    public function getBalanceAttribute()
+    {
+        return $this->amount - $this->payments_total;
     }
 }
