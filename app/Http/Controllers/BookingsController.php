@@ -14,6 +14,25 @@ use Inertia\Inertia;
 
 class BookingsController extends Controller
 {
+
+    private function syncRoomStatus(Booking $booking)
+    {
+        $room = $booking->room;
+
+        if (!$room) return;
+
+        $status = strtolower($booking->status);
+
+        if (in_array($status, ['pencil', 'confirmed', 'reserved'])) {
+            $room->status = 'Reserved';
+        } elseif ($status === 'checked_in') {
+            $room->status = 'Occupied';
+        } elseif (in_array($status, ['checked_out', 'cancelled', 'no_show'])) {
+            $room->status = 'Available';
+        }
+
+        $room->save();
+    }
     public function index()
     {
         $bookings = Booking::with([
@@ -97,6 +116,8 @@ class BookingsController extends Controller
             'status' => 'pencil',
         ]);
 
+        $this->syncRoomStatus($booking);
+
         if (! empty($validated['downpayment'])) {
             $booking->payments()->create([
                 'amount' => $validated['downpayment'],
@@ -110,6 +131,8 @@ class BookingsController extends Controller
             if ($totalPaid >= $requiredDownpayment) {
                 $booking->status = 'confirmed';
                 $booking->save();
+
+                $this->syncRoomStatus($booking);
             }
 
             if ($totalPaid >= $booking->total_amount) {
@@ -173,6 +196,8 @@ class BookingsController extends Controller
 
         $booking->save();
 
+        $this->syncRoomStatus($booking);
+
         return redirect()->route('bookings.index')
             ->with('success', 'Booking updated successfully.');
     }
@@ -182,6 +207,11 @@ class BookingsController extends Controller
         $request->validate([
             'status' => 'required|in:pencil,confirmed,reserved,checked_in,checked_out,cancelled,no_show',
         ]);
+
+         $booking->status = $request->status;
+        $booking->save();
+
+        $this->syncRoomStatus($booking);
 
         $booking->update([
             'status' => $request->status,
