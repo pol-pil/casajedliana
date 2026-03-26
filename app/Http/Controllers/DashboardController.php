@@ -20,23 +20,47 @@ class DashboardController extends Controller
             ? Carbon::parse($request->get('end'))->toDateString()
             : Carbon::today()->addDay()->toDateString();
 
-            $rooms = Room::select(
-                'id',
-                'room_number',
-                'room_type',
-                'capacity',
-                'price',
-                'description',
-                'status'
-            )
-            ->with([
-                'bookings'=> function ($query) use ($start, $end) {
+        $rooms = Room::select(
+            'id',
+            'room_number',
+            'room_type',
+            'capacity',
+            'price',
+            'description',
+            'status'
+        )
+            ->withCount([
+                // Count RESERVED-type bookings
+                'bookings as reserved_count' => function ($query) use ($start, $end) {
                     $query->whereDate('check_in', '<=', $end)
                         ->whereDate('check_out', '>', $start)
-                        ->whereNotIn('status', ['cancelled', 'checked_out', 'no_show'])
-                        ->orderByDesc('created_at');
+                        ->whereIn('status', ['pencil', 'confirmed', 'reserved']);
+                },
+
+                // Count OCCUPIED bookings
+                'bookings as occupied_count' => function ($query) use ($start, $end) {
+                    $query->whereDate('check_in', '<=', $end)
+                        ->whereDate('check_out', '>', $start)
+                        ->where('status', 'checked_in');
                 }
-                ])->get();
+            ])
+            ->get();
+
+        foreach ($rooms as $room) {
+
+            if (strtolower($room->status) === 'maintenance') {
+                continue;
+            }
+
+            // PRIORITY: Occupied > Reserved > Available
+            if ($room->occupied_count > 0) {
+                $room->status = 'Occupied';
+            } elseif ($room->reserved_count > 0) {
+                $room->status = 'Reserved';
+            } else {
+                $room->status = 'Available';
+            }
+        }
 
         $bookings = Booking::with(['client', 'room', 'payments'])
             ->whereDate('check_in', '<=', $end)

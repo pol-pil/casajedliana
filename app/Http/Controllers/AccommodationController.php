@@ -29,15 +29,27 @@ class AccommodationController extends Controller
             'description',
             'status'
         )
-            ->with([
-                'bookings' => function ($query) use ($start, $end) {
+            ->withCount([
+                'bookings as active_bookings_count' => function ($query) use ($start, $end) {
                     $query->whereDate('check_in', '<=', $end)
                         ->whereDate('check_out', '>', $start)
-                        ->whereNotIn('status', ['cancelled', 'checked_out', 'no_show'])
-                        ->orderByDesc('created_at');
+                        ->whereNotIn('status', ['cancelled', 'checked_out', 'no_show']);
                 }
-            ])->get();
+            ])
+            ->get();
 
+        foreach ($rooms as $room) {
+
+            if (strtolower($room->status) === 'maintenance') {
+                continue; 
+            }
+
+            if ($room->active_bookings_count > 0) {
+                $room->status = 'Reserved'; 
+            } else {
+                $room->status = 'Available';
+            }
+        }
         // $roomsTransformed = $rooms->map(function ($room) use ($start, $end) {
 
         //     $booking = Booking::where('room_id', $room->id)
