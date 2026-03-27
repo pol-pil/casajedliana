@@ -28,7 +28,6 @@ type Status = 'Available' | 'Occupied' | 'Reserved' | 'Maintenance';
 
 type Category = 'Standard' | 'Suite' | 'Quadro' | 'Family' | 'Penthouse' | 'Rest House';
 
-
 const mockAmenities: Record<string, string[]> = {
 	Standard: ['Air Conditioning', 'Private Bathroom', '32" Smart TV', 'Wi-Fi', 'Wardrobe', 'Work Desk'],
 	Suite: ['Living Area', 'Mini Refrigerator', '50" Smart TV', 'Sofa Lounge', 'Coffee Table', 'Wi-Fi'],
@@ -121,7 +120,10 @@ export default function Index() {
 
 	const filteredRooms = useMemo(() => {
 		return normalizedRooms.filter((room) => {
-			const matchSearch = room.roomNumber.toLowerCase().includes(search.toLowerCase());
+			const keyword = search.toLowerCase().trim();
+			const normalizedKeyword = keyword.replace(/room/g, '').trim();
+
+			const matchSearch = room.roomNumber.toLowerCase().includes(normalizedKeyword) || room.category.toLowerCase().includes(keyword);
 			const matchStatus = activeStatus === 'All' || room.status === activeStatus;
 			const matchCategory = activeCategory === 'All' || room.category === activeCategory;
 			return matchSearch && matchStatus && matchCategory;
@@ -230,11 +232,11 @@ export default function Index() {
 
 							<SelectContent>
 								<SelectItem value='All'>All Types</SelectItem>
-								<SelectItem value='Standard Room'>Standard</SelectItem>
-								<SelectItem value='Suite Room'>Suite</SelectItem>
-								<SelectItem value='Quadro Room'>Quadro</SelectItem>
-								<SelectItem value='Family Room'>Family</SelectItem>
-								<SelectItem value='Penthouse'>Penthouse</SelectItem>
+								<SelectItem value='Standard'>Standard</SelectItem>
+								<SelectItem value='Suite'>Suite</SelectItem>
+								<SelectItem value='Quadro'>Quadro</SelectItem>
+								<SelectItem value='Family'>Family</SelectItem>
+								<SelectItem value='Pent House'>Pent House</SelectItem>
 								<SelectItem value='Rest House'>Rest House</SelectItem>
 							</SelectContent>
 						</Select>
@@ -309,7 +311,7 @@ export default function Index() {
 										<SelectItem value='Suite Room'>Suite</SelectItem>
 										<SelectItem value='Quadro Room'>Quadro</SelectItem>
 										<SelectItem value='Family Room'>Family</SelectItem>
-										<SelectItem value='Penthouse'>Penthouse</SelectItem>
+										<SelectItem value='Pent House'>Pent House</SelectItem>
 										<SelectItem value='Rest House'>Rest House</SelectItem>
 									</SelectContent>
 								</Select>
@@ -419,7 +421,7 @@ export default function Index() {
 										<SelectItem value='Suite Room'>Suite</SelectItem>
 										<SelectItem value='Quadro Room'>Quadro</SelectItem>
 										<SelectItem value='Family Room'>Family</SelectItem>
-										<SelectItem value='Penthouse'>Penthouse</SelectItem>
+										<SelectItem value='Pent House'>Pent House</SelectItem>
 										<SelectItem value='Rest House'>Rest House</SelectItem>
 									</SelectContent>
 								</Select>
