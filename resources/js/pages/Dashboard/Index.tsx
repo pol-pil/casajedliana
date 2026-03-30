@@ -256,28 +256,29 @@ export default function Dashboard() {
 
 					{/* ARRIVAL TABLE */}
 					<Card>
-						<CardHeader className='flex justify-between '>
+						<CardHeader className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
 							<CardTitle>Arrival / Departure</CardTitle>
 							<Input
 								placeholder='Search guest...'
-								className='w-48'
+								className='w-full sm:w-48'
 								value={search}
 								onChange={(e) => setSearch(e.target.value)}
 							/>
 						</CardHeader>
 
 						<CardContent>
-							<table className='w-full text-sm'>
+							 <div className="w-full overflow-x-auto">
+							<table className='w-full min-w-[900px] text-sm border-separate border-spacing-y-1'>
 								<thead>
 									<tr className='border-b text-left'>
-										<th className='py-2'>Check-in Date</th>
-										<th>Check-in Time</th>
-										<th>Check-out Date</th>
-										<th>Check-out Time</th>
-										<th>Guest</th>
-										<th>Room</th>
-										<th>Booking Status</th>
-										<th>Payment Status</th>
+										<th className='py-2 whitespace-nowrap'>Check-in Date</th>
+										<th className='py-2 whitespace-nowrap'>Check-in Time</th>
+										<th className='py-2 whitespace-nowrap'>Check-out Date</th>
+										<th className='py-2 whitespace-nowrap'>Check-out Time</th>
+										<th className='py-2 whitespace-nowrap'>Guest</th>
+										<th className='py-2 whitespace-nowrap'>Room</th>
+										<th className='py-2 whitespace-nowrap'>Booking Status</th>
+										<th className='py-2 whitespace-nowrap'>Payment Status</th>
 									</tr>
 								</thead>
 
@@ -364,6 +365,7 @@ export default function Dashboard() {
 									})}
 								</tbody>
 							</table>
+							</div>
 						</CardContent>
 					</Card>
 				</div>
@@ -377,12 +379,12 @@ export default function Dashboard() {
 									<Button variant='outline' className='w-full justify-start'>
 										<CalendarDays className='mr-2 h-4 w-4' />
 										{range?.from && range?.to
-											? `${format(range.from, 'MMM dd')} - ${format(range.to, 'MMM dd')} Summary`
-											: 'Summary'}
+											? `${format(range.from, 'MMM dd')} - ${format(range.to, 'MMM dd')}`
+											: 'Select Dates'}
 									</Button>
 								</PopoverTrigger>
 
-								<PopoverContent className='w-[650px] overflow-visible p-4'>
+								<PopoverContent className='w-full max-w-[650px] p-4'>
 									<Calendar
 										mode='range'
 										selected={range}

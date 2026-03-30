@@ -29,15 +29,27 @@ class AccommodationController extends Controller
             'description',
             'status'
         )
-        ->with([
-            'bookings'=> function ($query) use ($start, $end) {
-                $query->whereDate('check_in', '<=', $end)
-                    ->whereDate('check_out', '>', $start)
-                    ->whereNotIn('status', ['cancelled', 'checked_out', 'no_show'])
-                    ->orderByDesc('created_at');
-            }
-            ])->get();
+            ->withCount([
+                'bookings as active_bookings_count' => function ($query) use ($start, $end) {
+                    $query->whereDate('check_in', '<=', $end)
+                        ->whereDate('check_out', '>', $start)
+                        ->whereNotIn('status', ['cancelled', 'checked_out', 'no_show']);
+                }
+            ])
+            ->get();
 
+        foreach ($rooms as $room) {
+
+            if (strtolower($room->status) === 'maintenance') {
+                continue; 
+            }
+
+            if ($room->active_bookings_count > 0) {
+                $room->status = 'Reserved'; 
+            } else {
+                $room->status = 'Available';
+            }
+        }
         // $roomsTransformed = $rooms->map(function ($room) use ($start, $end) {
 
         //     $booking = Booking::where('room_id', $room->id)
@@ -87,14 +99,16 @@ class AccommodationController extends Controller
             'status' => 'required|in:Available,Maintenance',
         ]);
 
-        $status = strtolower($request->status);
+        $status = $request->status;
 
         $activeBooking = Booking::where('room_id', $room->id)
             ->whereIn('status', ['confirmed', 'checked_in'])
             ->exists();
 
         if ($activeBooking && $status === 'Maintenance') {
-            return back()->withErrors('Room has an active booking.');
+            return back()->withErrors([
+                'status' => 'Room has an active booking.'
+            ]);
         }
 
         $room->status = $status;
@@ -128,7 +142,7 @@ class AccommodationController extends Controller
     public function update(Request $request, Room $room)
     {
         $request->validate([
-            'room_number' => 'required|string|max:50|unique:rooms,room_number,'.$room->id,
+            'room_number' => 'required|string|max:50|unique:rooms,room_number,' . $room->id,
             'room_type' => 'required|string|max:255',
             'capacity' => 'required|integer|min:1',
             'price' => 'required|numeric|min:0',

@@ -410,7 +410,6 @@ export default function Index() {
 												setIsBookingInfoDialogOpen(true);
 											}}
 										>
-											{/* <TableCell className="font-medium">#{booking.id.toString().padStart(6, '0')}</TableCell> */}
 											<TableCell>
 												<div>
 													<div className='font-medium'>

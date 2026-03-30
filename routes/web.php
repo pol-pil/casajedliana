@@ -7,7 +7,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PaymentsController;
 use App\Http\Controllers\RatesController;
 use App\Http\Middleware\FrontdeskMiddleware;
-use App\Http\Controllers\TestController;
+use App\Http\Controllers\HistoryController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
@@ -62,9 +62,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
                 return Inertia::render('reports/charts');
             })->name('reports.charts');
 
-            Route::get('/history', function () {
-                return Inertia::render('reports/history');
-            })->name('reports.history');
+            Route::get('/history', [HistoryController::class, 'index'])
+    ->name('reports.history');
         });
 
         Route::get('/bookings', [BookingsController::class, 'index'])->name('bookings.index');
@@ -97,7 +96,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // Print SOA
         Route::get('/bookings/{booking}/print', [BookingsController::class, 'printSOA'])->name('bookings.printSOA');
 
-        Route::get('/test', [TestController::class, 'index'])->name('test.index');
+        
     });
 });
 

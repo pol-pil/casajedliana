@@ -4,12 +4,8 @@ import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 import { Head, usePage, router } from '@inertiajs/react';
 import { format } from 'date-fns';
-import { Pencil } from 'lucide-react';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
-/* UI */
-import { Card } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle} from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,6 +14,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { CalendarDays } from 'lucide-react';
 import { DateRange } from 'react-day-picker';
 import { toast } from 'sonner';
+
+import RoomCard from '@/components/rooms/RoomCard';
+import { Room } from '@/types/room';
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Rooms', href: '/rooms' }];
 
@@ -28,18 +27,6 @@ const breadcrumbs: BreadcrumbItem[] = [{ title: 'Rooms', href: '/rooms' }];
 type Status = 'Available' | 'Occupied' | 'Reserved' | 'Maintenance';
 
 type Category = 'Standard' | 'Suite' | 'Quadro' | 'Family' | 'Penthouse' | 'Rest House';
-
-type Item = {
-	id: number;
-	roomNumber: string;
-	category: Category;
-	capacity: number;
-	beds: string;
-	amenities: string[];
-	status: Status;
-	price?: number;
-	bookings?: any[];
-};
 
 const mockAmenities: Record<string, string[]> = {
 	Standard: ['Air Conditioning', 'Private Bathroom', '32" Smart TV', 'Wi-Fi', 'Wardrobe', 'Work Desk'],
@@ -80,7 +67,7 @@ export default function Index() {
 
 	const [editRoomOpen, setEditRoomOpen] = useState(false);
 	const [deleteRoomOpen, setDeleteRoomOpen] = useState(false);
-	const [selectedRoom, setSelectedRoom] = useState<Item | null>(null);
+	const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
 
 	const { props } = usePage() as any;
 	const rawRooms = props.rooms ?? [];
@@ -93,7 +80,7 @@ export default function Index() {
 		to: serverEndDate ? new Date(serverEndDate) : new Date(),
 	});
 
-	const normalizedRooms: Item[] = rawRooms.map((r: any) => {
+	const normalizedRooms: Room[] = rawRooms.map((r: any) => {
 		const id = r.id;
 		const roomNumber = r.roomNumber ?? r.room_number ?? String(id);
 		const category = (r.category ?? r.room_type ?? 'Standard') as Category;
@@ -104,7 +91,16 @@ export default function Index() {
 				? r.amenities
 				: (mockAmenities[r.room_type ?? r.category ?? 'Standard'] ?? []);
 
-		const status: Status = ['Available', 'Occupied', 'Reserved', 'Maintenance'].includes(r.status) ? r.status : 'Available';
+		const normalizeStatus = (status: string): Status => {
+			const s = status?.toLowerCase();
+
+			if (s === 'maintenance') return 'Maintenance';
+			if (s === 'occupied') return 'Occupied';
+			if (s === 'reserved') return 'Reserved';
+			return 'Available';
+		};
+
+		const status: Status = normalizeStatus(r.status);
 
 		return {
 			id,
@@ -124,7 +120,10 @@ export default function Index() {
 
 	const filteredRooms = useMemo(() => {
 		return normalizedRooms.filter((room) => {
-			const matchSearch = room.roomNumber.toLowerCase().includes(search.toLowerCase());
+			const keyword = search.toLowerCase().trim();
+			const normalizedKeyword = keyword.replace(/room/g, '').trim();
+
+			const matchSearch = room.roomNumber.toLowerCase().includes(normalizedKeyword) || room.category.toLowerCase().includes(keyword);
 			const matchStatus = activeStatus === 'All' || room.status === activeStatus;
 			const matchCategory = activeCategory === 'All' || room.category === activeCategory;
 			return matchSearch && matchStatus && matchCategory;
@@ -133,7 +132,7 @@ export default function Index() {
 
 	const groupedRooms = useMemo(() => {
 		return Object.entries(
-			filteredRooms.reduce((acc: Record<string, Item[]>, room) => {
+			filteredRooms.reduce((acc: Record<string, Room[]>, room) => {
 				if (!acc[room.category]) acc[room.category] = [];
 				acc[room.category].push(room);
 				return acc;
@@ -233,11 +232,11 @@ export default function Index() {
 
 							<SelectContent>
 								<SelectItem value='All'>All Types</SelectItem>
-								<SelectItem value='Standard Room'>Standard</SelectItem>
-								<SelectItem value='Suite Room'>Suite</SelectItem>
-								<SelectItem value='Quadro Room'>Quadro</SelectItem>
-								<SelectItem value='Family Room'>Family</SelectItem>
-								<SelectItem value='Penthouse'>Penthouse</SelectItem>
+								<SelectItem value='Standard'>Standard</SelectItem>
+								<SelectItem value='Suite'>Suite</SelectItem>
+								<SelectItem value='Quadro'>Quadro</SelectItem>
+								<SelectItem value='Family'>Family</SelectItem>
+								<SelectItem value='Pent House'>Pent House</SelectItem>
 								<SelectItem value='Rest House'>Rest House</SelectItem>
 							</SelectContent>
 						</Select>
@@ -257,153 +256,31 @@ export default function Index() {
 					</div>
 				</div>
 
-				{groupedRooms.map(([category, rooms]) => (
+				{groupedRooms.map(([category, categoryRooms]) => (
 					<div key={category} className='space-y-6'>
 						<h2 className='border-b pb-3 text-xl font-semibold'>{category}</h2>
 
 						<div className='grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'>
-							{rooms.map((room) => (
-								<Dialog key={room.id}>
-									<Card className='relative flex h-48 flex-col justify-between p-6 text-center transition hover:shadow-lg'>
-										<div className='absolute top-4 right-4 z-10'>
-											<DropdownMenu>
-												<DropdownMenuTrigger asChild>
-													<button
-														className='rounded-full p-2 transition hover:bg-muted'
-														aria-label='Room actions'
-													>
-														<Pencil size={18} />
-													</button>
-												</DropdownMenuTrigger>
-												<DropdownMenuContent align='end' className='w-48'>
-													{/* SET MAINTENANCE / AVAILABLE */}
-													{room.status === 'Available' && (
-														<DropdownMenuItem
-															onClick={() => {
-																router.patch(
-																	`/rooms/${room.id}/status`,
-																	{ status: 'maintenance' },
-																	{
-																		preserveScroll: true,
-																		onSuccess: () => {
-																			toast.success(`Room ${room.roomNumber} set to Maintenance`);
-																			refreshRooms();
-																		},
-																		onError: () => {
-																			toast.error('Failed to update room status');
-																		},
-																	},
-																);
-															}}
-														>
-															Set Maintenance
-														</DropdownMenuItem>
-													)}
-
-													{room.status === 'Maintenance' && (
-														<DropdownMenuItem
-															onClick={() => {
-																router.patch(
-																	`/rooms/${room.id}/status`,
-																	{ status: 'available' },
-																	{
-																		preserveScroll: true,
-																		onSuccess: () => {
-																			toast.success(`Room ${room.roomNumber} is now Available`);
-																			refreshRooms();
-																		},
-																		onError: () => {
-																			toast.error('Failed to update room status');
-																		},
-																	},
-																);
-															}}
-														>
-															Set Available
-														</DropdownMenuItem>
-													)}
-
-													{/* EDIT ROOM */}
-													<DropdownMenuItem
-														onClick={() => {
-															setSelectedRoom(room);
-															setRoomNumber(room.roomNumber);
-															setRoomType(room.category);
-															setCapacity(room.capacity);
-															setPrice(room.price ?? 0);
-															setDescription(room.beds ?? '');
-															setEditRoomOpen(true);
-														}}
-													>
-														Edit Room
-													</DropdownMenuItem>
-
-													{/* DELETE ROOM */}
-													<DropdownMenuItem
-														className='text-red-500'
-														onClick={() => {
-															setSelectedRoom(room);
-															setDeleteRoomOpen(true);
-														}}
-													>
-														Delete Room
-													</DropdownMenuItem>
-												</DropdownMenuContent>
-											</DropdownMenu>
-										</div>
-
-										<DialogTrigger asChild>
-											<div className='flex h-full cursor-pointer flex-col justify-between'>
-												<div>
-													<h3 className='text-lg font-semibold'>Room {room.roomNumber}</h3>
-													{room.price !== undefined && (
-														<p className='text-xs text-muted-foreground'>₱{room.price}</p>
-													)}
-													<p className='text-sm text-muted-foreground'>{room.category}</p>
-													<p className='text-sm text-muted-foreground'>Capacity: {room.capacity} Pax</p>
-												</div>
-
-												<div className='mt-4 flex justify-center'>
-													<span
-														className={`rounded-full px-4 py-2 text-sm font-medium ${statusColor(room.status)}`}
-													>
-														{room.status}
-													</span>
-												</div>
-											</div>
-										</DialogTrigger>
-									</Card>
-
-									<DialogContent>
-										<DialogHeader>
-											<DialogTitle>Room {room.roomNumber}</DialogTitle>
-											<p className='text-muted-foreground'>{room.category}</p>
-
-											<div className='mt-4 space-y-3 text-sm'>
-												<p>
-													<strong>Capacity:</strong> {room.capacity} Pax
-												</p>
-												<p>
-													<strong>Beds:</strong> {room.beds}
-												</p>
-
-												<div>
-													<h3 className='mb-2 font-medium'>Amenities</h3>
-													<div className='flex flex-wrap gap-2'>
-														{(room.amenities || []).map((amenity, index) => (
-															<span
-																key={index}
-																className='rounded-full bg-teal-500/10 px-3 py-1 text-xs text-teal-400'
-															>
-																{amenity}
-															</span>
-														))}
-													</div>
-												</div>
-											</div>
-										</DialogHeader>
-									</DialogContent>
-								</Dialog>
+							{categoryRooms.map((room) => (
+								<RoomCard
+									key={room.id}
+									room={room}
+									statusColor={statusColor}
+									refreshRooms={refreshRooms}
+									onEdit={(room) => {
+										setSelectedRoom(room);
+										setRoomNumber(room.roomNumber);
+										setRoomType(room.category);
+										setCapacity(room.capacity);
+										setPrice(room.price ?? 0);
+										setDescription(room.beds ?? '');
+										setEditRoomOpen(true);
+									}}
+									onDelete={(room) => {
+										setSelectedRoom(room);
+										setDeleteRoomOpen(true);
+									}}
+								/>
 							))}
 						</div>
 					</div>
@@ -434,7 +311,7 @@ export default function Index() {
 										<SelectItem value='Suite Room'>Suite</SelectItem>
 										<SelectItem value='Quadro Room'>Quadro</SelectItem>
 										<SelectItem value='Family Room'>Family</SelectItem>
-										<SelectItem value='Penthouse'>Penthouse</SelectItem>
+										<SelectItem value='Pent House'>Pent House</SelectItem>
 										<SelectItem value='Rest House'>Rest House</SelectItem>
 									</SelectContent>
 								</Select>
@@ -544,7 +421,7 @@ export default function Index() {
 										<SelectItem value='Suite Room'>Suite</SelectItem>
 										<SelectItem value='Quadro Room'>Quadro</SelectItem>
 										<SelectItem value='Family Room'>Family</SelectItem>
-										<SelectItem value='Penthouse'>Penthouse</SelectItem>
+										<SelectItem value='Pent House'>Pent House</SelectItem>
 										<SelectItem value='Rest House'>Rest House</SelectItem>
 									</SelectContent>
 								</Select>

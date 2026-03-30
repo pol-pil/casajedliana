@@ -1,15 +1,18 @@
-import { Head } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 import { useState, useMemo } from 'react';
-
+import {
+	CheckCircleIcon,
+	XCircleIcon,
+	ClockIcon,
+	AlertCircle,
+	EyeOff,
+} from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 import { Eye, Printer } from 'lucide-react';
 
@@ -18,256 +21,193 @@ const breadcrumbs: BreadcrumbItem[] = [
 	{ title: 'History', href: '/reports/history' },
 ];
 
-/* ================= MOCK DATA ================s= */
+type Booking = {
+	id: number;
+	guest: string;
+	contact: string;
+	room_display: string;
+	check_in: string;
+	check_out: string;
+	status: string;
+	amount: number;
+};
 
-/* HOTEL BOOKINGS */
-const hotelBookings = Array.from({ length: 12 }, (_, i) => ({
-	id: i + 1,
-	date: `2026-02-${(i + 1).toString().padStart(2, '0')}`,
-	guest: `Guest ${i + 1}`,
-	room: `${100 + i} - Deluxe`,
-	checkIn: `2026-02-${(i + 1).toString().padStart(2, '0')}`,
-	checkOut: `2026-02-${(i + 2).toString().padStart(2, '0')}`,
-	payment: i % 2 === 0 ? 'Paid' : 'Pending',
-	status: i % 3 === 0 ? 'Checked Out' : 'Checked In',
-}));
+const statusConfig = {
+	checked_out: {
+		label: 'Checked Out',
+		variant: 'outline' as const,
+		icon: CheckCircleIcon,
+		color: 'bg-gray-100 text-gray-800 dark:bg-gray-950 dark:text-gray-300',
+	},
+	cancelled: {
+		label: 'Cancelled',
+		variant: 'destructive' as const,
+		icon: XCircleIcon,
+		color: 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300',
+	},
+	no_show: {
+		label: 'No Show',
+		variant: 'default' as const,
+		icon: EyeOff,
+		color: 'bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-300',
+	},
+};
 
-/* EVENT BOOKINGS */
-const eventBookings = Array.from({ length: 12 }, (_, i) => ({
-	id: i + 1,
-	date: `2026-03-${(i + 1).toString().padStart(2, '0')}`,
-	guest: `Organizer ${i + 1}`,
-	venue: i % 2 === 0 ? 'Grand Ballroom' : 'Sky Lounge',
-	purpose: i % 3 === 0 ? 'Wedding' : i % 3 === 1 ? 'Corporate Meeting' : 'Birthday',
-	eventDate: `2026-03-${(i + 1).toString().padStart(2, '0')}`,
-	payment: i % 2 === 0 ? 'Paid' : 'Pending',
-	status: i % 3 === 0 ? 'Completed' : 'Reserved',
-}));
+const StatusBadge = ({ status }: { status: keyof typeof statusConfig }) => {
+	const config = statusConfig[status] ?? {
+		label: status,
+		variant: 'secondary' as const,
+		icon: AlertCircle,
+		color: 'bg-gray-100 text-gray-800',
+	};
 
-/* ================= COMPONENT ================= */
+	const Icon = config.icon;
+
+	return (
+		<Badge variant={config.variant} className={`flex items-center gap-1 ${config.color}`}>
+			<Icon className="h-3 w-3" />
+			{config.label}
+		</Badge>
+	);
+};
 
 export default function History() {
+	const { bookings } = usePage<{ bookings: Booking[] }>().props;
+
 	const rowsPerPage = 5;
-
-	/* SEARCH STATES */
-	const [searchHotel, setSearchHotel] = useState('');
-	const [searchEvent, setSearchEvent] = useState('');
-
-	/* PAGINATION */
-	const [hotelPage, setHotelPage] = useState(1);
-	const [eventPage, setEventPage] = useState(1);
-
-	/* HELPERS */
-
-	type HotelBooking = {
-		id: number;
-		date: string;
-		guest: string;
-		room: string;
-		checkIn: string;
-		checkOut: string;
-		payment: string;
-		status: string;
-	};
-
-	type EventBooking = {
-		id: number;
-		date: string;
-		guest: string;
-		venue: string;
-		purpose: string;
-		eventDate: string;
-		payment: string;
-		status: string;
-	};
+	const [search, setSearch] = useState('');
+	const [page, setPage] = useState(1);
 
 	const paginate = <T,>(data: T[], page: number) => {
 		const start = (page - 1) * rowsPerPage;
 		return data.slice(start, start + rowsPerPage);
 	};
 
-	function filterData<T>(data: T[], search: string, key: keyof T) {
-	return data.filter((item) =>
-		String(item[key] ?? '')
-			.toLowerCase()
-			.includes(search.toLowerCase()),
-	)
-}
-	/* FILTERED DATA */
-
-	const filteredHotels = useMemo(() => filterData(hotelBookings, searchHotel, 'guest'), [searchHotel]);
-
-	const filteredEvents = useMemo(() => filterData(eventBookings, searchEvent, 'guest'), [searchEvent]);
-
-	/* PAGINATION UI */
-
-	const renderPagination = (page: number, setPage: any, totalItems: number) => {
-		const totalPages = Math.ceil(totalItems / rowsPerPage);
-
-		return (
-			<div className='flex items-center justify-between pt-4'>
-				<p className='text-sm text-muted-foreground'>
-					Page {page} of {totalPages}
-				</p>
-
-				<div className='flex gap-2'>
-					<Button variant='outline' disabled={page === 1} onClick={() => setPage(page - 1)}>
-						Previous
-					</Button>
-
-					<Button variant='outline' disabled={page === totalPages} onClick={() => setPage(page + 1)}>
-						Next{' '}
-					</Button>
-				</div>
-			</div>
-		);
+	const formatStatus = (status: string) => {
+		return status.replace('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 	};
 
-	/* TABLE HELPERS */
+	const filteredBookings = useMemo(() => {
+		return bookings.filter((b) =>
+			b.guest.toLowerCase().includes(search.toLowerCase())
+		);
+	}, [bookings, search]);
 
-	const TableWrapper = ({ children }: any) => (
-		<div className='overflow-x-auto rounded-lg border'>
-			<table className='w-full text-sm'>{children}</table>
-		</div>
-	);
-
-	const TableHead = ({ headers }: any) => (
-		<thead className='border-b bg-muted/40'>
-			<tr>
-				{headers.map((h: string) => (
-					<th key={h} className='px-4 py-3 text-left font-medium'>
-						{h}
-					</th>
-				))}
-			</tr>
-		</thead>
-	);
-
-	const Td = ({ children }: any) => <td className='px-4 py-3'>{children}</td>;
-
-	/* ================= UI ================= */
+	const totalPages = Math.ceil(filteredBookings.length / rowsPerPage);
 
 	return (
 		<AppLayout breadcrumbs={breadcrumbs}>
-			<Head title='Reports History' />
+			<Head title="Reports History" />
 
-			<div className='space-y-6 p-6'>
+			<div className="space-y-6 p-6">
 				<Card>
 					<CardHeader>
 						<CardTitle>Booking History Reports</CardTitle>
 					</CardHeader>
 
 					<CardContent>
-						<Tabs defaultValue='hotel'>
-							<TabsList className='mb-4'>
-								<TabsTrigger value='hotel'>Hotel Bookings</TabsTrigger>
+						<Input
+							placeholder="Search guest name..."
+							value={search}
+							onChange={(e) => {
+								setSearch(e.target.value);
+								setPage(1);
+							}}
+							className="mb-4 w-64"
+						/>
 
-								<TabsTrigger value='events'>Event Bookings</TabsTrigger>
-							</TabsList>
-
-							{/* ================= HOTEL BOOKINGS ================= */}
-
-							<TabsContent value='hotel'>
-								<Input
-									placeholder='Search guest name...'
-									value={searchHotel}
-									onChange={(e) => {
-										setSearchHotel(e.target.value);
-										setHotelPage(1);
-									}}
-									className='mb-4 w-64'
-								/>
-
-								<TableWrapper>
-									<TableHead
-										headers={['Date', 'Guest Name', 'Room', 'Check-In', 'Check-Out', 'Payment', 'Status', 'Actions']}
-									/>
-									<tbody>
-										{paginate(filteredHotels, hotelPage).map((b) => (
-											<tr key={b.id} className='border-b hover:bg-muted/40'>
-												<Td>{b.date}</Td>
-												<Td>{b.guest}</Td>
-												<Td>{b.room}</Td>
-												<Td>{b.checkIn}</Td>
-												<Td>{b.checkOut}</Td>
-
-												<Td>
-													<Badge variant={b.payment === 'Paid' ? 'default' : 'secondary'}>{b.payment}</Badge>
-												</Td>
-
-												<Td>{b.status}</Td>
-
-												<Td className='flex items-center gap-2'>
-													<Button size='icon' variant='outline'>
-														<Eye className='h-4 w-4' />
-													</Button>
-
-													<Button size='icon' variant='outline'>
-														<Printer className='h-4 w-4' />
-													</Button>
-												</Td>
-											</tr>
+						<div className="overflow-x-auto rounded-lg border">
+							<table className="w-full text-sm">
+								<thead className="border-b bg-muted/40">
+									<tr>
+										{[
+											'Guest',
+											'Contact',
+											'Room',
+											'Check-In',
+											'Check-Out',
+											'Status',
+											'Amount',
+											'Actions',
+										].map((h) => (
+											<th key={h} className="px-4 py-3 text-left font-medium">
+												{h}
+											</th>
 										))}
-									</tbody>
-								</TableWrapper>
+									</tr>
+								</thead>
 
-								{renderPagination(hotelPage, setHotelPage, filteredHotels.length)}
-							</TabsContent>
+								<tbody>
+									{filteredBookings.length === 0 && (
+										<tr>
+											<td colSpan={8} className="py-6 text-center text-muted-foreground">
+												No history records found.
+											</td>
+										</tr>
+									)}
 
-							{/* ================= EVENT BOOKINGS ================= */}
+									{paginate(filteredBookings, page).map((b) => (
+										<tr key={b.id} className="border-b hover:bg-muted/40">
+											<td className="px-4 py-3">{b.guest}</td>
+											<td className="px-4 py-3">{b.contact}</td>
+											<td className="px-4 py-3">{b.room_display}</td>
+											<td className="px-4 py-3">
+												{new Date(b.check_in).toLocaleString()}
+											</td>
+											<td className="px-4 py-3">
+												{new Date(b.check_out).toLocaleString()}
+											</td>
 
-							<TabsContent value='events'>
-								<Input
-									placeholder='Search organizer...'
-									value={searchEvent}	
-									onChange={(e) => {
-										setSearchEvent(e.target.value);
-										setEventPage(1);
-									}}
-									className='mb-4 w-64'
-								/>
+											<td className="px-4 py-3">
+												<StatusBadge status={b.status as keyof typeof statusConfig} />
+											</td>
 
-								<TableWrapper>
-									<TableHead
-										headers={['Date', 'Organizer', 'Venue', 'Purpose', 'Event Date', 'Payment', 'Status', 'Actions']}
-									/>
+											<td className="px-4 py-3">
+												₱ {Number(b.amount).toFixed(2)}
+											</td>
 
-									<tbody>
-										{paginate(filteredEvents, eventPage).map((e) => (
-											<tr key={e.id} className='border-b hover:bg-muted/40'>
-												<Td>{e.date}</Td>
+											<td className="px-4 py-3 flex items-center gap-2">
+												<Button
+													size="icon"
+													variant="outline"
+													onClick={() => {
+														window.open(`/bookings/${b.id}/print`, '_blank');
+													}}
+												>
+													<Printer className="h-4 w-4" />
+												</Button>
+											</td>
+										</tr>
+									))}
+								</tbody>
+							</table>
+						</div>
 
-												<Td>{e.guest}</Td>
+						{totalPages > 1 && (
+							<div className="flex items-center justify-between pt-4">
+								<p className="text-sm text-muted-foreground">
+									Page {page} of {totalPages}
+								</p>
 
-												<Td>{e.venue}</Td>
+								<div className="flex gap-2">
+									<Button
+										variant="outline"
+										disabled={page === 1}
+										onClick={() => setPage(page - 1)}
+									>
+										Previous
+									</Button>
 
-												<Td>{e.purpose}</Td>
-
-												<Td>{e.eventDate}</Td>
-
-												<Td>
-													<Badge variant={e.payment === 'Paid' ? 'default' : 'secondary'}>{e.payment}</Badge>
-												</Td>
-
-												<Td>{e.status}</Td>
-
-												<Td className='flex items-center gap-2'>
-													<Button size='icon' variant='outline'>
-														<Eye className='h-4 w-4' />
-													</Button>
-
-													<Button size='icon' variant='outline'>
-														<Printer className='h-4 w-4' />
-													</Button>
-												</Td>
-											</tr>
-										))}
-									</tbody>
-								</TableWrapper>
-
-								{renderPagination(eventPage, setEventPage, filteredEvents.length)}
-							</TabsContent>
-						</Tabs>
+									<Button
+										variant="outline"
+										disabled={page === totalPages}
+										onClick={() => setPage(page + 1)}
+									>
+										Next
+									</Button>
+								</div>
+							</div>
+						)}
 					</CardContent>
 				</Card>
 			</div>
