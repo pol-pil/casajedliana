@@ -28,17 +28,13 @@ class BookingsController extends Controller
             'bookingCharges.charge',
             'rate',
         ])
-            ->whereDate('check_in', '<=', $end)
-            ->whereDate('check_out', '>', $start)
             ->whereNotIn('status', ['cancelled', 'checked_out', 'no_show'])
             ->orderBy('created_at', 'desc')
             ->paginate(10)
             ->withQueryString();
 
         $stats = [
-            'totalBookings' => Booking::whereDate('check_in', '<=', $end)
-                ->whereDate('check_out', '>', $start)
-                ->whereNotIn('status', ['cancelled', 'checked_out', 'no_show'])
+            'totalBookings' => Booking::whereNotIn('status', ['cancelled', 'checked_out', 'no_show'])
                 ->count(),
             'activeGuests' => Booking::where('status', 'checked_in')->count(),
             'pencilBookings' => Booking::where('status', 'pencil')->count(),
@@ -46,11 +42,20 @@ class BookingsController extends Controller
         ];
 
         $rooms = Room::all();
-        $rates = Rate::all();
-        $charges = Charge::all();
+        $rates = Rate::where('is_active', true)->get();
+        $charges = Charge::where('is_active', true)->get();
         $clients = Client::all();
         $payments = Payment::all();
         $bookingTypes = BookingType::where('is_active', true)->get();
+
+        $roomBlockedDates = Booking::whereIn('status', ['confirmed', 'pencil', 'checked_in', 'reserved'])
+    ->get(['room_id', 'check_in', 'check_out', 'id'])
+    ->groupBy('room_id')
+    ->map(fn($bookings) => $bookings->map(fn($b) => [
+        'from' => Carbon::parse($b->check_in)->toDateString(),
+        'to'   => Carbon::parse($b->check_out)->toDateString(),
+        'booking_id' => $b->id,
+    ])->values());
 
         return Inertia::render('Bookings/Index', [
             'bookings' => $bookings,
@@ -60,6 +65,7 @@ class BookingsController extends Controller
             'charges' => $charges,
             'bookingTypes' => $bookingTypes,
             'clients' => $clients,
+            'roomBlockedDates' => $roomBlockedDates,
         ]);
     }
 
@@ -83,7 +89,7 @@ class BookingsController extends Controller
             'booking_type_id' => 'required|exists:booking_types,id',
             'total_amount' => 'required|numeric|min:0',
             'downpayment' => 'nullable|numeric|min:0',
-            'payment_method' => 'nullable|string',
+            'payment_method' => 'nullable|required_with:downpayment|string',
             'remarks' => 'nullable|string',
         ]);
 
@@ -120,13 +126,17 @@ class BookingsController extends Controller
 
             if ($totalPaid >= $requiredDownpayment) {
                 $booking->status = 'confirmed';
-                $booking->save();
             }
-
+            
             if ($totalPaid >= $booking->total_amount) {
                 $booking->payment_status = 'paid';
-                $booking->save();
+            } elseif ($totalPaid > 0) {
+                $booking->payment_status = 'partial';
+            } else {
+                $booking->payment_status = 'unpaid';
             }
+
+        $booking->save();
         }
 
         return redirect()->route('bookings.index')
@@ -174,12 +184,20 @@ class BookingsController extends Controller
 
         // Recompute payment totals
         $totalPaid = $booking->payments()->sum('amount');
-        $requiredDownpayment = $booking->total_amount * 0.30;
+        $requiredDownpayment = $booking->total_amount * 0.50;
 
         if ($totalPaid >= $requiredDownpayment) {
             $booking->status = 'confirmed';
         } else {
             $booking->status = 'pencil';
+        }
+
+        if ($totalPaid >= $booking->total_amount) {
+            $booking->payment_status = 'paid';
+        } elseif ($totalPaid > 0) {
+            $booking->payment_status = 'partial';
+        } else {
+            $booking->payment_status = 'unpaid';
         }
 
         $booking->save();
@@ -199,14 +217,6 @@ class BookingsController extends Controller
         ]);
 
         return back()->with('success', 'Booking status updated.');
-    }
-
-    public function find(Request $request)
-    {
-        return Client::where('first_name', $request->first_name)
-            ->where('last_name', $request->last_name)
-            ->orWhere('contact_number', $request->contact_number)
-            ->first();
     }
 
     public function printSOA(Booking $booking)

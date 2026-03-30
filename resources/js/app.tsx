@@ -16,7 +16,7 @@ createInertiaApp({
 
 		root.render(
 			<StrictMode>
-				<Toaster position='bottom-right' expand={true} visibleToasts={10} />
+				<Toaster position='bottom-right'/>
 				<App {...props} />
 			</StrictMode>,
 		);
