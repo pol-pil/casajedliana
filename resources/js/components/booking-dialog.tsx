@@ -12,6 +12,7 @@ import SelectComponent from '@/components/select-component';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Calendar } from './ui/calendar';
 import { PopoverClose } from '@radix-ui/react-popover';
+import { cn } from '@/lib/utils';
 
 type Booking = {
 	id: number;
@@ -623,7 +624,10 @@ export default function BookingFormDialog({
 														<Button
 															variant='outline'
 															id='date-picker-range'
-															className='w-full justify-start px-2.5 font-normal'
+															className={cn(
+																'w-full justify-start px-2.5 font-normal',
+																errors.check_in && 'border-red-500',
+															)}
 														>
 															<CalendarIcon className='mr-2 h-4 w-4' />
 															{dateRange.from
@@ -680,7 +684,7 @@ export default function BookingFormDialog({
 														</FieldGroup>
 													</PopoverContent>
 												</Popover>
-												{errors.check_in && <p className='text-sm text-destructive'>{errors.check_in}</p>}
+												{errors.check_in && <p className='-mt-2 text-xs text-red-500'>{errors.check_in}</p>}
 											</Field>
 
 											<SelectComponent
