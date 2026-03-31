@@ -8,6 +8,7 @@ use App\Http\Controllers\PaymentsController;
 use App\Http\Controllers\RatesController;
 use App\Http\Middleware\FrontdeskMiddleware;
 use App\Http\Controllers\HistoryController;
+use App\Http\Controllers\ChartController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
@@ -58,12 +59,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         )->name('rooms.confirmCleaning');
 
         Route::prefix('reports')->group(function () {
-            Route::get('/charts', function () {
-                return Inertia::render('reports/charts');
-            })->name('reports.charts');
+            Route::get('/charts', [ChartController::class, 'index'])
+                ->name('reports.charts');
 
             Route::get('/history', [HistoryController::class, 'index'])
-    ->name('reports.history');
+                ->name('reports.history');
         });
 
         Route::get('/bookings', [BookingsController::class, 'index'])->name('bookings.index');
@@ -95,9 +95,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('/rooms/{room}', [AccommodationController::class, 'destroy'])->name('rooms.destroy');
         // Print SOA
         Route::get('/bookings/{booking}/print', [BookingsController::class, 'printSOA'])->name('bookings.printSOA');
-
-        
     });
 });
 
-require __DIR__.'/settings.php';
+require __DIR__ . '/settings.php';

@@ -9,18 +9,29 @@ class HistoryController extends Controller
 {
     public function index()
     {
+        $search = request('search');
+
         $bookings = Booking::with([
             'client',
             'room',
             'payments',
             'bookingCharges',
         ])
-            ->whereIn('status', ['checked_out', 'no_show', 'cancelled'])
+            ->when($search, function ($query, $search) {
+                $query->whereHas('client', function ($q) use ($search) {
+                    $q->where('first_name', 'like', "%{$search}%")
+                        ->orWhere('last_name', 'like', "%{$search}%");
+                });
+            })
             ->orderBy('created_at', 'desc')
-            ->get();
+            ->paginate(10)
+            ->withQueryString();
 
         return Inertia::render('reports/history', [
             'bookings' => $bookings,
+            'filters' => [
+                'search' => $search,
+            ],
         ]);
     }
 }
