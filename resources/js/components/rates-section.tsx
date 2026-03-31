@@ -1,11 +1,7 @@
-import { useState, useEffect } from 'react';
-import { useForm, router } from '@inertiajs/react';
-import { Plus, EditIcon, TrashIcon, MoreHorizontalIcon } from 'lucide-react';
+import { useState } from 'react';
+import { router } from '@inertiajs/react';
+import { EditIcon, TrashIcon, MoreHorizontalIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogClose, DialogContent, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
-import { Field, FieldGroup, FieldLabel, FieldLegend, FieldSeparator, FieldSet } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
@@ -31,43 +27,6 @@ type RatesSectionProps = {
 export default function RatesSection({ rates }: RatesSectionProps) {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingRate, setEditingRate] = useState<Rate | null>(null);
-
-    const { data, setData, post, put, processing, reset, errors } = useForm({
-        name: '',
-        value: '',
-        type: 'fixed' as 'fixed' | 'percentage',
-    });
-
-    useEffect(() => {
-        if (editingRate) {
-            setData({
-                name: editingRate.name,
-                value: editingRate.value.toString(),
-                type: editingRate.type,
-            });
-        }
-    }, [editingRate]);
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-
-        if (editingRate) {
-            put(`/rates/${editingRate.id}`, {
-                onSuccess: () => {
-                    setIsDialogOpen(false);
-                    setEditingRate(null);
-                    reset();
-                },
-            });
-        } else {
-            post('/rates', {
-                onSuccess: () => {
-                    setIsDialogOpen(false);
-                    reset();
-                },
-            });
-        }
-    };
 
     const handleDelete = (rateId: number) => {
         if (confirm('Are you sure you want to delete this rate?')) {

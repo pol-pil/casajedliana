@@ -6,7 +6,6 @@ import { Field, FieldGroup, FieldLabel, FieldLegend, FieldSeparator, FieldSet } 
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from './ui/select';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
-import { Plus } from 'lucide-react';
 import ChargeSectionDialog from './charge-section-dialog';
 
 type AddChargeDialogProps = {

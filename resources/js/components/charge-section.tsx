@@ -1,8 +1,4 @@
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogClose, DialogContent, DialogFooter, DialogTrigger } from '@/components/ui/dialog';
-import { Field, FieldGroup, FieldLabel, FieldLegend, FieldSeparator, FieldSet } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -13,9 +9,8 @@ import {
 import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { useForm } from '@inertiajs/react';
-import { useState, useEffect } from 'react';
-import { Plus, EditIcon, TrashIcon, MoreHorizontalIcon } from 'lucide-react';
+import { useState } from 'react';
+import { EditIcon, TrashIcon, MoreHorizontalIcon } from 'lucide-react';
 import { router } from '@inertiajs/react';
 import ChargeSectionDialog from './charge-section-dialog';
 
@@ -40,50 +35,6 @@ const formatCurrency = (value: number) =>
 export default function AddChargeDialog({ charges }: AddChargeSectionProps) {
 	const [isChargeDialogOpen, setIsChargeDialogOpen] = useState(false);
 	const [editingCharge, setEditingCharge] = useState<Charge | null>(null);
-
-	const {
-		data: chargeData,
-		setData: setChargeData,
-		post: postCharge,
-		put: putCharge,
-		processing: chargeProcessing,
-		reset: resetChargeForm,
-	} = useForm({
-		name: '',
-		value: '',
-		type: 'amenity',
-	});
-
-	useEffect(() => {
-		if (editingCharge) {
-			setChargeData({
-				name: editingCharge.name,
-				value: editingCharge.value.toString(),
-				type: editingCharge.type,
-			});
-		}
-	}, [editingCharge]);
-
-	const handleChargeSubmit = (e: React.FormEvent) => {
-		e.preventDefault();
-
-		if (editingCharge) {
-			putCharge(`/charges/${editingCharge.id}`, {
-				onSuccess: () => {
-					setIsChargeDialogOpen(false);
-					setEditingCharge(null);
-					resetChargeForm();
-				},
-			});
-		} else {
-			postCharge(`/charges`, {
-				onSuccess: () => {
-					setIsChargeDialogOpen(false);
-					resetChargeForm();
-				},
-			});
-		}
-	};
 
 	const handleDeleteCharge = (chargeId: number) => {
 		if (confirm('Are you sure you want to delete this charge?')) {
