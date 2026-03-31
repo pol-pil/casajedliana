@@ -534,9 +534,10 @@ export default function Index() {
 				}}
 				selectedBooking={selectedBooking}
 				onEdit={(booking) => {
-					setIsBookingInfoDialogOpen(false);
-					setIsDialogOpen(true);
 					setIsEditMode(true);
+					setIsBookingInfoDialogOpen(false);
+					
+					
 					setEditingBookingId(booking.id);
 					setSelectedRoomId(booking.room.id.toString());
 					setSelectedRateId(booking.rate?.id?.toString() || '');
@@ -567,6 +568,7 @@ export default function Index() {
 						payment_method: '',
 						remarks: booking.remarks || '',
 					});
+					setIsDialogOpen(true);
 				}}
 			/>
 		</AppLayout>
