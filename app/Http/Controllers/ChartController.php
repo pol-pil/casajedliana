@@ -12,7 +12,7 @@ class ChartController extends Controller
     {
         // Monthly revenue
         $monthly = Booking::select(
-            DB::raw('MONTH(check_in) as month'),
+            DB::raw("strftime('%m', check_in) as month"),
             DB::raw('SUM(total_amount) as revenue')
         )
             ->whereYear('check_in', now()->year)
@@ -20,20 +20,20 @@ class ChartController extends Controller
             ->orderBy('month')
             ->get()
             ->map(fn($item) => [
-                'label' => date('M', mktime(0, 0, 0, $item->month, 1)),
+                'label' => date('M', mktime(0, 0, 0, (int) $item->month, 1)),
                 'revenue' => (float) $item->revenue,
             ]);
 
         // Yearly revenue
         $yearly = Booking::select(
-            DB::raw('YEAR(check_in) as year'),
+            DB::raw("strftime('%Y', check_in) as year"),
             DB::raw('SUM(total_amount) as revenue')
         )
             ->groupBy('year')
             ->orderBy('year')
             ->get()
             ->map(fn($item) => [
-                'label' => (string) $item->year,
+                'label' => $item->year,
                 'revenue' => (float) $item->revenue,
             ]);
 

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm, usePage } from '@inertiajs/react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogFooter } from './ui/dialog';
@@ -6,6 +6,8 @@ import { Field, FieldGroup, FieldLabel, FieldLegend, FieldSeparator, FieldSet } 
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from './ui/select';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
+import { Plus } from 'lucide-react';
+import ChargeSectionDialog from './charge-section-dialog';
 
 type AddChargeDialogProps = {
 	open: boolean;
@@ -13,12 +15,17 @@ type AddChargeDialogProps = {
 	bookingId: number | string | null;
 };
 
-export default function AddChargeDialog({
-	open,
-	onOpenChange,
-	bookingId,
-}: AddChargeDialogProps) {
+type Charge = {
+	id: number;
+	name: string;
+	value: number;
+	type: 'amenity' | 'damage';
+};
+
+export default function AddChargeDialog({ open, onOpenChange, bookingId }: AddChargeDialogProps) {
 	const { charges } = usePage().props as any;
+	const [isChargeDialogOpen, setIsChargeDialogOpen] = useState(false);
+	const [editingCharge, setEditingCharge] = useState<Charge | null>(null);
 
 	const { data, setData, post, processing, reset } = useForm({
 		booking_id: bookingId || '',
@@ -35,8 +42,7 @@ export default function AddChargeDialog({
 		}
 	}, [bookingId]);
 
-	const totalAmount =
-		(parseFloat(data.value) || 0) * (parseInt(data.quantity) || 0);
+	const totalAmount = (parseFloat(data.value) || 0) * (parseInt(data.quantity) || 0);
 
 	const handleSubmit = (e: React.FormEvent) => {
 		e.preventDefault();
@@ -61,7 +67,7 @@ export default function AddChargeDialog({
 				onOpenChange(isOpen);
 			}}
 		>
-			<DialogContent className="max-h-[90vh] min-w-[90vw] overflow-y-auto lg:min-w-md">
+			<DialogContent className='max-h-[90vh] min-w-[90vw] overflow-y-auto lg:min-w-md'>
 				<form onSubmit={handleSubmit}>
 					<FieldGroup>
 						<FieldSet>
@@ -76,9 +82,7 @@ export default function AddChargeDialog({
 									onValueChange={(value) => {
 										setData('charge_id', value);
 
-										const selected = charges.find(
-											(c: any) => c.id.toString() === value
-										);
+										const selected = charges.find((c: any) => c.id.toString() === value);
 
 										if (selected) {
 											setData('value', selected.value.toString());
@@ -86,91 +90,78 @@ export default function AddChargeDialog({
 									}}
 								>
 									<SelectTrigger>
-										<SelectValue placeholder="Select Charge" />
+										<SelectValue placeholder='Select Charge' />
 									</SelectTrigger>
 
 									<SelectContent>
 										{/* Amenity */}
 										<SelectGroup>
-											<SelectLabel className="text-xs text-gray-400">
-												Amenity
-											</SelectLabel>
+											<SelectLabel className='text-xs text-gray-400'>Amenity</SelectLabel>
 											{charges
 												.filter((c: any) => c.type === 'amenity')
 												.map((c: any) => (
 													<SelectItem key={c.id} value={c.id.toString()}>
 														<span>{c.name}</span>
-														<span className="text-muted-foreground">
-															₱{c.value}
-														</span>
+														<span className='text-muted-foreground'>₱{c.value}</span>
 													</SelectItem>
 												))}
 										</SelectGroup>
 
 										{/* Damage */}
 										<SelectGroup>
-											<SelectLabel className="pt-4 text-xs text-gray-400">
-												Damage
-											</SelectLabel>
+											<SelectLabel className='pt-4 text-xs text-gray-400'>Damage</SelectLabel>
 											{charges
 												.filter((c: any) => c.type === 'damage')
 												.map((c: any) => (
 													<SelectItem key={c.id} value={c.id.toString()}>
 														<span>{c.name}</span>
-														<span className="text-muted-foreground">
-															₱{c.value}
-														</span>
+														<span className='text-muted-foreground'>₱{c.value}</span>
 													</SelectItem>
 												))}
 										</SelectGroup>
+										<div className='flex justify-center'>
+										<ChargeSectionDialog
+											open={isChargeDialogOpen}
+											onOpenChange={(open) => {
+												setIsChargeDialogOpen(open);
+												if (!open) setIsChargeDialogOpen(false);
+											}}
+											editingCharge={editingCharge}
+										/>
+										</div>
 									</SelectContent>
 								</Select>
 							</Field>
 
 							{/* Quantity + Total */}
-							<FieldGroup className="grid grid-cols-2 gap-4">
+							<FieldGroup className='grid grid-cols-2 gap-4'>
 								<Field>
 									<FieldLabel>Quantity</FieldLabel>
 									<Input
-										type="number"
-										min="1"
+										type='number'
+										min='1'
 										value={data.quantity}
-										onChange={(e) =>
-											setData('quantity', e.target.value)
-										}
+										onChange={(e) => setData('quantity', e.target.value)}
 										required
 									/>
 								</Field>
 
 								<Field>
 									<FieldLabel>Total</FieldLabel>
-									<Input
-										value={totalAmount.toFixed(2)}
-										readOnly
-									/>
+									<Input value={totalAmount.toFixed(2)} readOnly />
 								</Field>
 							</FieldGroup>
 						</FieldSet>
 					</FieldGroup>
 
-					<FieldSeparator className="py-6" />
+					<FieldSeparator className='py-6' />
 
 					<DialogFooter>
-						<Button
-							type="button"
-							variant="outline"
-							onClick={() => onOpenChange(false)}
-						>
+						<Button type='button' variant='outline' onClick={() => onOpenChange(false)}>
 							Cancel
 						</Button>
 
-						<Button
-							type="submit"
-							disabled={processing}
-							onClick={() =>
-								setData('total', totalAmount.toString())
-							}
-						>
+						<Button type='submit' disabled={processing} onClick={() => setData('total', totalAmount.toString())}>
 							{processing ? 'Adding...' : 'Add Charge'}
 						</Button>
 					</DialogFooter>

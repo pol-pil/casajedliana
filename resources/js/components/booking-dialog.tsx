@@ -368,42 +368,37 @@ export default function BookingFormDialog({
 	}, [dateRange, checkInTime, checkOutTime, selectedRoomId, selectedRateId, rooms, rates, setData]);
 
 	const roomOptions = rooms
-		.filter((room) => {
-			if (!dateRange.from || !dateRange.to) {
-				return !['Maintenance'].includes(room.status);
-			}
+		// .filter((room) => {
+		// 	if (!dateRange.from || !dateRange.to) {
+		// 		return !['Maintenance'].includes(room.status);
+		// 	}
 
-			const selectedFrom = new Date(dateRange.from);
-			const selectedTo = new Date(dateRange.to);
-			selectedFrom.setHours(0, 0, 0, 0);
-			selectedTo.setHours(0, 0, 0, 0);
+		// 	const selectedFrom = new Date(dateRange.from);
+		// 	const selectedTo = new Date(dateRange.to);
+		// 	selectedFrom.setHours(0, 0, 0, 0);
+		// 	selectedTo.setHours(0, 0, 0, 0);
 
-			if (['Maintenance'].includes(room.status)) return false;
+		// 	if (['Maintenance'].includes(room.status)) return false;
 
-			const blocked = roomBlockedDates[room.id.toString()] ?? [];
-			const hasConflict = blocked.some(({ from, to, booking_id }) => {
-				if (isEditMode && selectedBooking && booking_id === selectedBooking.id) return false;
+		// 	const blocked = roomBlockedDates[room.id.toString()] ?? [];
+		// 	const hasConflict = blocked.some(({ from, to, booking_id }) => {
+		// 		if (isEditMode && selectedBooking && booking_id === selectedBooking.id) return false;
 
-				const blockedFrom = new Date(from);
-				const blockedTo = new Date(to);
-				blockedFrom.setHours(0, 0, 0, 0);
-				blockedTo.setHours(0, 0, 0, 0);
+		// 		const blockedFrom = new Date(from);
+		// 		const blockedTo = new Date(to);
+		// 		blockedFrom.setHours(0, 0, 0, 0);
+		// 		blockedTo.setHours(0, 0, 0, 0);
 
-				return selectedFrom <= blockedTo && selectedTo >= blockedFrom;
-			});
+		// 		return selectedFrom <= blockedTo && selectedTo >= blockedFrom;
+		// 	});
 
-			return !hasConflict;
-		})
+		// 	return !hasConflict;
+		// })
 		.map((room) => ({
 			value: room.id.toString(),
 			label: `${room.room_number} - ${room.room_type} (₱${room.price})`,
 		}));
-
-	const guestNumberOptions = Array.from({ length: 10 }, (_, i) => ({
-		value: (i + 1).toString(),
-		label: (i + 1).toString(),
-	}));
-
+		
 	const purposeOptions = ['Leisure', 'Business/Corporate', 'Event/Social', 'Government Event'].map((purpose) => ({
 		value: purpose,
 		label: purpose,
@@ -701,16 +696,16 @@ export default function BookingFormDialog({
 											/>
 
 											<FieldGroup className='grid grid-cols-2 gap-4'>
-												<SelectComponent
-													id='guest_count'
+												<InputComponent
 													label='Number of Guests'
-													placeholder='Select Guest Count'
+													id='guest_count'
+													type='number'
+													placeholder='Enter a Number'
 													value={guestCount}
-													onChange={(value) => {
-														setGuestCount(value);
-														setData('guest_count', Number(value));
+													onChange={(e) => {
+														setGuestCount(e.target.value);
+														setData('guest_count', Number(e.target.value));
 													}}
-													options={guestNumberOptions}
 													error={errors.guest_count}
 												/>
 
