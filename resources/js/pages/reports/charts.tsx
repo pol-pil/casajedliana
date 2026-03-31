@@ -210,7 +210,7 @@ export default function Charts() {
                             <CardHeader>
                                 <CardTitle className="text-xs text-muted-foreground">
                                     RevPAR
-                                </CardTitle>
+                                </CardTitle>                
                             </CardHeader>
                             <CardContent>
                                 <p className="text-lg font-bold">
