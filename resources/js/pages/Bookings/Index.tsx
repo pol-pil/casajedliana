@@ -294,6 +294,13 @@ export default function Index() {
 		);
 	};
 
+	useEffect(() => {
+		if (selectedBooking) {
+			const fresh = bookings.data.find((b) => b.id === selectedBooking.id);
+			if (fresh) setSelectedBooking(fresh);
+		}
+	}, [bookings]);
+
 	return (
 		<AppLayout breadcrumbs={breadcrumbs}>
 			<div className='p-6'>
@@ -430,11 +437,11 @@ export default function Index() {
 												</div>
 											</TableCell>
 											<TableCell>
-                                                <div>
-                                                    <div className='font-medium'>{booking.room.room_number}</div>
-                                                    <div className='text-sm text-muted-foreground'>{booking.room.room_type}</div>
-                                                </div>
-                                            </TableCell>
+												<div>
+													<div className='font-medium'>{booking.room.room_number}</div>
+													<div className='text-sm text-muted-foreground'>{booking.room.room_type}</div>
+												</div>
+											</TableCell>
 											<TableCell>
 												<div>
 													<div className='font-medium'>{formatDate(booking.check_in)}</div>
@@ -536,8 +543,7 @@ export default function Index() {
 				onEdit={(booking) => {
 					setIsEditMode(true);
 					setIsBookingInfoDialogOpen(false);
-					
-					
+
 					setEditingBookingId(booking.id);
 					setSelectedRoomId(booking.room.id.toString());
 					setSelectedRateId(booking.rate?.id?.toString() || '');

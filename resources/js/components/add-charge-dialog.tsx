@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useForm, usePage } from '@inertiajs/react';
+import { router, useForm, usePage } from '@inertiajs/react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogFooter } from './ui/dialog';
 import { Field, FieldGroup, FieldLabel, FieldLegend, FieldSeparator, FieldSet } from './ui/field';
@@ -118,15 +118,14 @@ export default function AddChargeDialog({ open, onOpenChange, bookingId }: AddCh
 													</SelectItem>
 												))}
 										</SelectGroup>
-										<div className='flex justify-center'>
-										<ChargeSectionDialog
-											open={isChargeDialogOpen}
-											onOpenChange={(open) => {
-												setIsChargeDialogOpen(open);
-												if (!open) setIsChargeDialogOpen(false);
-											}}
-											editingCharge={editingCharge}
-										/>
+										<div className='flex justify-end p-1'>
+											<Button
+												type='button'
+												className='text-sm'
+												onClick={() => {router.visit('/rates'); setIsChargeDialogOpen(false);}}
+											>
+												+ Add New Charge
+											</Button>
 										</div>
 									</SelectContent>
 								</Select>
