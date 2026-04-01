@@ -12,7 +12,7 @@ import {
 	EyeOff,
 	MailIcon,
 	PhoneIcon,
-	Printer, // ✅ NEW
+	Printer, 
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useState, useEffect } from 'react';
@@ -110,7 +110,7 @@ export default function History() {
 
 	const [search, setSearch] = useState(filters.search || '');
 
-	// ✅ Debounced search
+	
 	useEffect(() => {
 		const delay = setTimeout(() => {
 			router.get(
@@ -139,7 +139,7 @@ export default function History() {
 			minute: '2-digit',
 		});
 
-	// ✅ PRINT FUNCTION
+
 	const handlePrintSOA = (id: number) => {
 		window.open(`/bookings/${id}/print`, '_blank');
 	};
