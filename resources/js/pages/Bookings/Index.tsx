@@ -75,27 +75,6 @@ type Booking = {
 	}>;
 };
 
-type Room = {
-	id: number;
-	room_number: string;
-	room_type: string;
-	capacity: number;
-	price: number;
-	status: string;
-};
-
-type Rate = {
-	id: number;
-	name: string;
-	value: number;
-	type: 'exact' | 'percentage';
-};
-
-type BookingType = {
-	id: number;
-	name: string;
-};
-
 type PageProps = {
 	bookings: {
 		data: Booking[];
@@ -109,9 +88,6 @@ type PageProps = {
 		pencilBookings: number;
 		totalRevenue: number;
 	};
-	rooms: Room[];
-	rates: Rate[];
-	bookingTypes: BookingType[];
 	auth?: {
 		user: any;
 	};
@@ -205,7 +181,7 @@ export default function Index() {
 	const { data, setData, post, put, processing, errors, clearErrors, reset } = useForm(emptyForm);
 
 	// Use the PageProps type
-	const { bookings, stats, rooms, rates, bookingTypes, charges, payments } = usePage<PageProps>().props;
+	const { bookings, stats } = usePage<PageProps>().props;
 
 	const resetForm = () => {
 		setIsDialogOpen(false);
@@ -222,10 +198,6 @@ export default function Index() {
 		clearErrors();
 		reset();
 	};
-
-	useEffect(() => {
-		setData('guest_count', parseInt(guestCount) || 1);
-	}, [guestCount, setData]);
 
 	const handleErrors = (errors: Record<string, string>, action: 'create' | 'update') => {
 		toast.error(`Failed to ${action} booking`);
