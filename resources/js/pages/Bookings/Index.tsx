@@ -21,6 +21,7 @@ import { Table, TableHead, TableHeader, TableRow, TableBody, TableCell } from '@
 import { toast } from 'sonner';
 import BookingFormDialog from '@/components/booking-dialog';
 import BookingInfoDialog from '@/components/booking-info-dialog';
+import { Input } from '@/components/ui/input';
 
 type Booking = {
 	id: number;
@@ -92,6 +93,9 @@ type PageProps = {
 		user: any;
 	};
 	errors?: Record<string, string>;
+	filters: {
+		search?: string;
+	};
 };
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -181,7 +185,24 @@ export default function Index() {
 	const { data, setData, post, put, processing, errors, clearErrors, reset } = useForm(emptyForm);
 
 	// Use the PageProps type
-	const { bookings, stats } = usePage<PageProps>().props;
+	const { bookings, stats, filters } = usePage<PageProps>().props;
+
+	const [search, setSearch] = useState(filters.search || '');
+
+	useEffect(() => {
+		const delay = setTimeout(() => {
+			router.get(
+				'/bookings',
+				{ search },
+				{
+					preserveState: true,
+					replace: true,
+				},
+			);
+		}, 300);
+
+		return () => clearTimeout(delay);
+	}, [search]);
 
 	const resetForm = () => {
 		setIsDialogOpen(false);
@@ -331,7 +352,15 @@ export default function Index() {
 				{/* Bookings table */}
 				<div className='rounded-lg border'>
 					<div className='flex flex-row items-center justify-between border-b p-4'>
-						<h2 className='text-lg font-semibold'>Recent Bookings</h2>
+						<div className='flex flex-row items-center gap-8'>
+							<h2 className='text-lg font-semibold'>Recent Bookings</h2>
+							<Input
+								placeholder='Search guest...'
+								value={search}
+								onChange={(e) => setSearch(e.target.value)}
+								className='w-64'
+							/>
+						</div>
 						<BookingFormDialog
 							data={data}
 							setData={setData}

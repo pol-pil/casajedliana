@@ -39,6 +39,7 @@ class BookingsController extends Controller
     {
         $start = $request->input('start', Carbon::today()->toDateString());
         $end = $request->input('end', Carbon::today()->toDateString());
+        $search = request('search');
 
         $bookings = Booking::with([
             'client',
@@ -48,6 +49,12 @@ class BookingsController extends Controller
             'bookingCharges.charge',
             'rate',
         ])
+            ->when($search, function ($query, $search) {
+                $query->whereHas('client', function ($q) use ($search) {
+                    $q->where('first_name', 'like', "%{$search}%")
+                        ->orWhere('last_name', 'like', "%{$search}%");
+                });
+            })
             ->whereNotIn('status', ['cancelled', 'checked_out', 'no_show'])
             ->orderBy('created_at', 'desc')
             ->paginate(10)
@@ -86,6 +93,9 @@ class BookingsController extends Controller
             'bookingTypes' => $bookingTypes,
             'clients' => $clients,
             'roomBlockedDates' => $roomBlockedDates,
+            'filters' => [
+                'search' => $search,
+            ],
         ]);
     }
 

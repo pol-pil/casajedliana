@@ -23,7 +23,7 @@ class HistoryController extends Controller
                         ->orWhere('last_name', 'like', "%{$search}%");
                 });
             })
-            ->orderBy('created_at', 'desc')
+            ->orderBy('updated_at', 'desc')
             ->paginate(10)
             ->withQueryString();
 

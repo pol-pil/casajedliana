@@ -368,32 +368,6 @@ export default function BookingFormDialog({
 	}, [dateRange, checkInTime, checkOutTime, selectedRoomId, selectedRateId, rooms, rates, setData]);
 
 	const roomOptions = rooms
-		// .filter((room) => {
-		// 	if (!dateRange.from || !dateRange.to) {
-		// 		return !['Maintenance'].includes(room.status);
-		// 	}
-
-		// 	const selectedFrom = new Date(dateRange.from);
-		// 	const selectedTo = new Date(dateRange.to);
-		// 	selectedFrom.setHours(0, 0, 0, 0);
-		// 	selectedTo.setHours(0, 0, 0, 0);
-
-		// 	if (['Maintenance'].includes(room.status)) return false;
-
-		// 	const blocked = roomBlockedDates[room.id.toString()] ?? [];
-		// 	const hasConflict = blocked.some(({ from, to, booking_id }) => {
-		// 		if (isEditMode && selectedBooking && booking_id === selectedBooking.id) return false;
-
-		// 		const blockedFrom = new Date(from);
-		// 		const blockedTo = new Date(to);
-		// 		blockedFrom.setHours(0, 0, 0, 0);
-		// 		blockedTo.setHours(0, 0, 0, 0);
-
-		// 		return selectedFrom <= blockedTo && selectedTo >= blockedFrom;
-		// 	});
-
-		// 	return !hasConflict;
-		// })
 		.map((room) => ({
 			value: room.id.toString(),
 			label: `${room.room_number} - ${room.room_type} (₱${room.price})`,

@@ -63,6 +63,7 @@ class DatabaseSeeder extends Seeder
             ['name' => 'Shampoo', 'value' => 10.00, 'type' => 'amenity'],
             ['name' => 'Dental Kit', 'value' => 25.00, 'type' => 'amenity'],
             ['name' => 'Soap', 'value' => 10.00, 'type' => 'amenity'],
+            ['name' => 'Late Checkout', 'value' => 0.00, 'type' => 'amenity'],
         ];
 
         $damages = [
