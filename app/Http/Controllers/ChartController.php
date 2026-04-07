@@ -10,9 +10,9 @@ class ChartController extends Controller
 {
     public function index()
     {
-        // Monthly revenue
+
         $monthly = Booking::select(
-            DB::raw("strftime('%m', check_in) as month"),
+            DB::raw("MONTH(check_in) as month"),
             DB::raw('SUM(total_amount) as revenue')
         )
             ->whereYear('check_in', now()->year)
@@ -24,9 +24,8 @@ class ChartController extends Controller
                 'revenue' => (float) $item->revenue,
             ]);
 
-        // Yearly revenue
         $yearly = Booking::select(
-            DB::raw("strftime('%Y', check_in) as year"),
+            DB::raw("YEAR(check_in) as year"),
             DB::raw('SUM(total_amount) as revenue')
         )
             ->groupBy('year')
