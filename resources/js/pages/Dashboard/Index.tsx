@@ -18,6 +18,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DoorOpen, LogOut, Lock, Check, CalendarDays } from 'lucide-react';
 
 import { DateRange } from 'react-day-picker';
+import { useDateRange } from '@/contexts/date-range-context';
 
 
 
@@ -104,10 +105,7 @@ export default function Dashboard() {
 	const [search, setSearch] = useState('');
 	const [isDateOpen, setIsDateOpen] = useState(false);
 
-	const [range, setRange] = useState<DateRange | undefined>({
-		from: startDate ? new Date(startDate) : new Date(),
-		to: endDate ? new Date(endDate) : new Date(),
-	});
+	const { range, setRange } = useDateRange()
 
 	const mapBookingStatus = (status?: string) => {
 		const s = (status ?? '').toString().trim().toLowerCase();
@@ -170,8 +168,6 @@ export default function Dashboard() {
 		},
 	];
 
-
-
 	const combinedArrivals = [
 		...(checkIns ?? []).map((b) => ({ ...b, type: 'arrival' })),
 		...(checkOuts ?? []).map((b) => ({ ...b, type: 'departure' })),
@@ -186,7 +182,7 @@ export default function Dashboard() {
 
 
 	return (
-		<AppLayout breadcrumbs={breadcrumbs}>
+		<AppLayout breadcrumbs={breadcrumbs} showDatePicker>
 			<Head title='Dashboard' />
 
 			<div className='grid grid-cols-1 gap-6 px-6 pb-10 lg:grid-cols-4 mt-10'>
@@ -370,59 +366,7 @@ export default function Dashboard() {
 					</Card>
 				</div>
 
-				{/* RIGHT CALENDAR */}
-				<div className='space-y-4 lg:col-span-1 mt-10'>
-					<Card className='overflow-hidden'>
-						<CardHeader className='pb-2'>
-							<Popover open={isDateOpen} onOpenChange={setIsDateOpen}>
-								<PopoverTrigger asChild>
-									<Button variant='outline' className='w-full justify-start'>
-										<CalendarDays className='mr-2 h-4 w-4' />
-										{range?.from && range?.to
-											? `${format(range.from, 'MMM dd')} - ${format(range.to, 'MMM dd')}`
-											: 'Select Dates'}
-									</Button>
-								</PopoverTrigger>
-
-								<PopoverContent className='w-full max-w-[650px] p-4'>
-									<Calendar
-										mode='range'
-										selected={range}
-										onSelect={setRange}
-										numberOfMonths={2}
-										pagedNavigation
-										className='w-full rounded-md border'
-									/>
-
-									<div className='flex justify-end pt-2'>
-										<Button
-											size='sm'
-											onClick={() => {
-												if (!range?.from || !range?.to) return;
-
-												router.get(
-													'/dashboard',
-													{
-														start: format(range.from, 'yyyy-MM-dd'),
-														end: format(range.to, 'yyyy-MM-dd'),
-													},
-													{
-														preserveState: true,
-														replace: true,
-													},
-												);
-
-												setIsDateOpen(false);
-											}}
-										>
-											Apply
-										</Button>
-									</div>
-								</PopoverContent>
-							</Popover>
-						</CardHeader>
-					</Card>
-				</div>
+				
 			</div>
 		</AppLayout>
 	);

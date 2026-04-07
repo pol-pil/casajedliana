@@ -4,18 +4,11 @@ import type { BreadcrumbItem } from '@/types';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableHead, TableHeader, TableRow, TableBody, TableCell } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
-import {
-	CheckCircleIcon,
-	XCircleIcon,
-	ClockIcon,
-	AlertCircle,
-	EyeOff,
-	MailIcon,
-	PhoneIcon,
-	Printer, 
-} from 'lucide-react';
+import { CheckCircleIcon, XCircleIcon, ClockIcon, AlertCircle, EyeOff, MailIcon, PhoneIcon, Printer } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useState, useEffect } from 'react';
+import { useDateRange } from '@/contexts/date-range-context';
+import { format } from 'date-fns';
 
 const breadcrumbs: BreadcrumbItem[] = [
 	{ title: 'Reports', href: '/reports/history' },
@@ -52,6 +45,8 @@ type PageProps = {
 	};
 	filters: {
 		search?: string;
+		start?: string;
+		end?: string;
 	};
 };
 
@@ -107,10 +102,9 @@ const StatusBadge = ({ status }: { status: keyof typeof statusConfig }) => {
 
 export default function History() {
 	const { bookings, filters } = usePage<PageProps>().props;
-
+	const { range, setRange } = useDateRange();
 	const [search, setSearch] = useState(filters.search || '');
 
-	
 	useEffect(() => {
 		const delay = setTimeout(() => {
 			router.get(
@@ -139,13 +133,39 @@ export default function History() {
 			minute: '2-digit',
 		});
 
-
 	const handlePrintSOA = (id: number) => {
 		window.open(`/bookings/${id}/print`, '_blank');
 	};
 
+	// Sync on load
+	useEffect(() => {
+		if (filters.start && filters.end) {
+			setRange({
+				from: new Date(filters.start),
+				to: new Date(filters.end),
+			});
+		}
+	}, [filters.start, filters.end]);
+
+	// React to header date picker changes
+	useEffect(() => {
+		const delay = setTimeout(() => {
+			router.get(
+				'/reports/history',
+				{
+					search,
+					start: range?.from ? format(range.from, 'yyyy-MM-dd') : undefined,
+					end: range?.to ? format(range.to, 'yyyy-MM-dd') : undefined,
+				},
+				{ preserveState: true, replace: true },
+			);
+		}, 300);
+	
+		return () => clearTimeout(delay);
+	}, [search]);
+
 	return (
-		<AppLayout breadcrumbs={breadcrumbs}>
+		<AppLayout breadcrumbs={breadcrumbs} showDatePicker>
 			<Head title='History' />
 
 			<div className='p-6'>

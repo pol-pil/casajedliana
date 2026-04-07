@@ -73,8 +73,7 @@ export default function Index() {
 	const rawRooms = props.rooms ?? [];
 	const serverStartDate = props.startDate;
 	const serverEndDate = props.endDate;
-
-	const [isDateOpen, setIsDateOpen] = useState(false);
+	
 	const [range, setRange] = useState<DateRange | undefined>({
 		from: serverStartDate ? new Date(serverStartDate) : new Date(),
 		to: serverEndDate ? new Date(serverEndDate) : new Date(),
@@ -140,27 +139,6 @@ export default function Index() {
 		);
 	}, [filteredRooms]);
 
-	function applyRange() {
-		if (!range?.from || !range?.to) return;
-
-		const start = format(range.from, 'yyyy-MM-dd');
-		const end = format(range.to, 'yyyy-MM-dd');
-
-		router.get(
-			'/rooms',
-			{
-				start,
-				end,
-			},
-			{
-				preserveState: true,
-				replace: true,
-			},
-		);
-
-		setIsDateOpen(false);
-	}
-
 	function refreshRooms() {
 		router.get(
 			'/rooms',
@@ -173,7 +151,7 @@ export default function Index() {
 	}
 
 	return (
-		<AppLayout breadcrumbs={breadcrumbs}>
+		<AppLayout breadcrumbs={breadcrumbs} showDatePicker>
 			<Head title='Rooms' />
 
 			<div className='space-y-6 p-6'>
@@ -190,36 +168,6 @@ export default function Index() {
 						/>
 
 						<Button onClick={() => setAddRoomOpen(true)}>+ Add Room</Button>
-
-						<Popover open={isDateOpen} onOpenChange={setIsDateOpen}>
-							<PopoverTrigger asChild>
-								<Button variant='outline' className='justify-start'>
-									<CalendarDays className='mr-2 h-4 w-4' />
-									{range?.from && range?.to
-										? `${format(range.from, 'MMM dd')} - ${format(range.to, 'MMM dd')}`
-										: 'Select Dates'}
-								</Button>
-							</PopoverTrigger>
-
-							<PopoverContent className='w-[650px] max-w-full p-3'>
-								<div className='w-full'>
-									<Calendar
-										mode='range'
-										selected={range}
-										onSelect={setRange}
-										numberOfMonths={2}
-										pagedNavigation
-										className='w-full rounded-md border'
-									/>
-								</div>
-
-								<div className='flex justify-end pt-2'>
-									<Button size='sm' onClick={applyRange}>
-										Apply
-									</Button>
-								</div>
-							</PopoverContent>
-						</Popover>
 					</div>
 				</div>
 

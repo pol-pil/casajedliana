@@ -10,7 +10,9 @@ class HistoryController extends Controller
     public function index()
     {
         $search = request('search');
-
+        $start  = request('start', now()->toDateString());
+        $end    = request('end', now()->toDateString());
+    
         $bookings = Booking::with([
             'client',
             'room',
@@ -23,14 +25,24 @@ class HistoryController extends Controller
                         ->orWhere('last_name', 'like', "%{$search}%");
                 });
             })
+            ->where(function ($query) use ($start, $end) {
+    $query->whereBetween('check_in', [$start . ' 00:00:00', $end . ' 23:59:59'])
+          ->orWhereBetween('check_out', [$start . ' 00:00:00', $end . ' 23:59:59'])
+          ->orWhere(function ($q) use ($start, $end) {
+              $q->where('check_in', '<=', $start . ' 00:00:00')
+                ->where('check_out', '>=', $end . ' 23:59:59');
+          });
+})
             ->orderBy('updated_at', 'desc')
             ->paginate(10)
             ->withQueryString();
-
+    
         return Inertia::render('reports/history', [
             'bookings' => $bookings,
             'filters' => [
                 'search' => $search,
+                'start'  => $start,
+                'end'    => $end,
             ],
         ]);
     }
