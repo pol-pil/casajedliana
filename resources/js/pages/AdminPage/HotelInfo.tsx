@@ -61,9 +61,6 @@ export default function HotelInfo() {
                     </CardContent>
                 </Card>
 
-                {/* ==============================
-                   CHECK-IN / CHECK-OUT
-                ============================== */}
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
@@ -104,9 +101,6 @@ export default function HotelInfo() {
                     </CardContent>
                 </Card>
 
-                {/* ==============================
-                   LOCATION
-                ============================== */}
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
@@ -147,9 +141,6 @@ export default function HotelInfo() {
                     </CardContent>
                 </Card>
 
-                {/* ==============================
-                   BACKUP & RESTORE (MERGED)
-                ============================== */}
                 <Card>
                     <CardHeader>
                         <CardTitle>Backup & Restore</CardTitle>
@@ -185,9 +176,6 @@ export default function HotelInfo() {
                     </CardContent>
                 </Card>
 
-                {/* ==============================
-                   ACTIONS
-                ============================== */}
                 <div className="flex justify-end gap-2">
                     <Button variant="outline">Cancel</Button>
                     <Button className="bg-green-500 hover:bg-green-600">

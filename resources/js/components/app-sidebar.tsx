@@ -8,8 +8,8 @@ import {
 	Columns3Cog,
 	History,
 	Hotel,
-	LayoutDashboard,
-	LayoutGrid,
+	ShieldUser,
+	UserCog,
 	Settings,
 } from 'lucide-react';
 
@@ -62,12 +62,12 @@ const mainNavItems: NavItem[] = [
 	{
 		title: 'Admin',
 		href: '/admin',
-		icon: LayoutDashboard,
+		icon: ShieldUser,
 	},
 	{
 		title: 'Users',
 		href: '/admin/users',
-		icon: LayoutGrid,
+		icon: UserCog,
 	},
 
 	{
