@@ -14,8 +14,8 @@ class RatesController extends Controller
     public function index()
     {
         return Inertia::render('Rates/Index', [
-            'rates' => Rate::withCount('bookings')->orderBy('created_at', 'desc')->get(),
-            'charges' => Charge::orderBy('created_at', 'desc')->get(),
+            'rates' => Rate::withCount('bookings')->orderBy('value')->get(),
+            'charges' => Charge::orderBy('value')->get(),
             'bookingTypes' => BookingType::orderBy('name')->get(),
             'stats' => [
                 'totalBookings' => Booking::count(),

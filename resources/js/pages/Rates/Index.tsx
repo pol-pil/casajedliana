@@ -54,22 +54,31 @@ export default function Index() {
 
 	return (
 		<AppLayout breadcrumbs={breadcrumbs}>
-			<div className='h-full xl:flex'>
-				<div className='flex flex-1 gap-4 px-8 py-4'>
-					<Head title='Configurations' />
+			<div className='px-8 py-4 xl:overflow-hidden'>
+				<Head title='Configurations' />
 
-					<div className='flex-1 flex-col space-y-4'>
+				<div className='grid h-full gap-4 xl:grid-cols-3'>
+					{/* Column 1 */}
+					<div className='flex h-full flex-col space-y-4 overflow-hidden'>
 						<RatesChart rates={rates} totalBookings={stats.totalBookings} />
-						<RatesSection rates={rates} />
+						<div className='flex-1'>
+							<RatesSection rates={rates} />
+						</div>
 					</div>
 
-					<div className='flex flex-1 flex-col gap-4'>
+					{/* Column 2 */}
+					<div className='flex h-full flex-col space-y-4 overflow-hidden'>
 						<ChargesChart />
-						<BookingTypesSection bookingTypes={bookingTypes} />
+						<div className='flex-1'>
+							<BookingTypesSection bookingTypes={bookingTypes} />
+						</div>
 					</div>
 
-					<div className='flex flex-1 flex-col gap-6'>
-						<ChargesSection charges={charges} />
+					{/* Column 3 */}
+					<div className='flex h-full flex-col gap-6 overflow-hidden'>
+						<div className='flex-1'>
+							<ChargesSection charges={charges} />
+						</div>
 					</div>
 				</div>
 			</div>

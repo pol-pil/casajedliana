@@ -359,20 +359,55 @@ export default function BookingFormDialog({
 
 			if (!selectedRoomId) return;
 
-			const isStillAvailable = roomOptions.some((r) => r.value === selectedRoomId);
-			if (!isStillAvailable) {
+			const isStillAvailable = roomOptions.some((r) => r.value === selectedRoomId && !r.disabled);
+			if (!isStillAvailable && !isEditMode) {
 				setSelectedRoomId('');
 				setData('room_id', '');
 			}
 		}
 	}, [dateRange, checkInTime, checkOutTime, selectedRoomId, selectedRateId, rooms, rates, setData]);
 
-	const roomOptions = rooms
-		.map((room) => ({
+	const getBlockedRoomIds = (): Set<string> => {
+		// In edit mode, never disable any rooms in the select
+		if (isEditMode) return new Set();
+
+		const blocked = new Set<string>();
+		rooms.forEach((room) => {
+			// Block rooms with unavailable status
+			if (['maintenance', 'reserved'].includes(room.status)) {
+				blocked.add(room.id.toString());
+				return;
+			}
+
+			// Block rooms whose date ranges overlap the selected date range
+			if (dateRange.from && dateRange.to) {
+				const ranges = roomBlockedDates[room.id.toString()] ?? [];
+				const from = new Date(dateRange.from);
+				const to = new Date(dateRange.to);
+				from.setHours(0, 0, 0, 0);
+				to.setHours(0, 0, 0, 0);
+				const isBlocked = ranges.some(({ from: f, to: t }) => {
+					const fd = new Date(f); fd.setHours(0, 0, 0, 0);
+					const td = new Date(t); td.setHours(0, 0, 0, 0);
+					return from <= td && to >= fd;
+				});
+				if (isBlocked) blocked.add(room.id.toString());
+			}
+		});
+		return blocked;
+	};
+
+	const blockedRoomIds = getBlockedRoomIds();
+
+	const roomOptions = rooms.map((room) => {
+		const isUnavailable = blockedRoomIds.has(room.id.toString());
+		return {
 			value: room.id.toString(),
-			label: `${room.room_number} - ${room.room_type} (₱${room.price})`,
-		}));
-		
+			label: `${room.room_number} - ${room.room_type} (₱${room.price})${isUnavailable ? " [Unavailable]": ''}`,
+			disabled: isUnavailable,
+		};
+	});
+
 	const purposeOptions = ['Leisure', 'Business/Corporate', 'Event/Social', 'Government Event'].map((purpose) => ({
 		value: purpose,
 		label: purpose,

@@ -68,7 +68,7 @@ class BookingsController extends Controller
             'totalRevenue' => Booking::sum('total_amount'),
         ];
 
-        $rooms = Room::all();
+        $rooms = Room::orderBy('room_number')->get();
         $rates = Rate::where('is_active', true)->get();
         $charges = Charge::where('is_active', true)->get();
         $clients = Client::all();

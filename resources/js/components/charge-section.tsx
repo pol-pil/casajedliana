@@ -48,7 +48,7 @@ export default function AddChargeDialog({ charges }: AddChargeSectionProps) {
 			.map((charge) => (
 				<TableRow key={charge.id}>
 					<TableCell className='w-full font-medium break-words whitespace-normal'>{charge.name}</TableCell>
-					<TableCell className='text-right'>{formatCurrency(charge.value)}</TableCell>
+					<TableCell className='text-right font-semibold'>{formatCurrency(charge.value)}</TableCell>
 					<TableCell className='flex justify-end'>
 						<DropdownMenu>
 							<DropdownMenuTrigger asChild>

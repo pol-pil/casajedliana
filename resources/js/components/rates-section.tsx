@@ -65,7 +65,7 @@ export default function RatesSection({ rates }: RatesSectionProps) {
                                     <TableCell className='w-full font-medium break-words whitespace-normal'>
                                         {rate.name}
                                     </TableCell>
-                                    <TableCell className='text-right'>
+                                    <TableCell className='text-right font-semibold'>
                                         {rate.type === 'fixed' ? formatCurrency(rate.value) : `${rate.value}%`}
                                     </TableCell>
                                     <TableCell className='flex justify-end'>

@@ -11,6 +11,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import BookingTypesSectionDialog from './booking-types-section-dialog';
+import { ScrollArea } from './ui/scroll-area';
 
 type BookingType = {
     id: number;
@@ -32,7 +33,7 @@ export default function BookingTypesSection({ bookingTypes }: BookingTypesSectio
     };
 
     return (
-        <div className='h-132 rounded-lg border'>
+        <div className='rounded-lg border'>
             <div className='flex flex-row items-center justify-between border-b p-4'>
                 <h2 className='text-lg font-semibold'>Booking Types ({bookingTypes.length})</h2>
 
@@ -46,9 +47,10 @@ export default function BookingTypesSection({ bookingTypes }: BookingTypesSectio
                 />
             </div>
 
-            <div className='overflow-auto px-2'>
+            <div className='h-full overflow-auto px-2'>
                 <Table>
                     <TableBody>
+                        <ScrollArea className='h-115'>
                         {bookingTypes.map((bookingType) => (
                             <TableRow key={bookingType.id}>
                                 <TableCell className='w-full font-medium break-words whitespace-normal'>
@@ -92,6 +94,7 @@ export default function BookingTypesSection({ bookingTypes }: BookingTypesSectio
                                 </TableCell>
                             </TableRow>
                         )}
+                        </ScrollArea>
                     </TableBody>
                 </Table>
             </div>
