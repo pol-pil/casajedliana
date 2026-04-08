@@ -1,15 +1,11 @@
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
-
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Download, Upload, Building2, Clock, Globe } from 'lucide-react';
+import { Download, Upload, Building2} from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Hotel Info', href: '/admin/hotel-info' }];
 
 export default function HotelInfo() {
@@ -18,7 +14,7 @@ export default function HotelInfo() {
 			<Head title='Hotel Info' />
 
 			<div className='max-w-5xl space-y-6 p-6'>
-				<Card className='mx-auto w-full max-w-xl'>
+				<Card className='mx-auto w-full max-w-2xl'>
 					<CardHeader>
 						<CardTitle className='flex items-center gap-2 text-lg'>
 							<Building2 className='h-5 w-5' />
@@ -31,6 +27,11 @@ export default function HotelInfo() {
 					</CardHeader>
 
 					<CardContent className='space-y-6'>
+						<div className='space-y-2'>
+							<Label>Hotel Name</Label>
+							<Input placeholder='Enter hotel name' />
+						</div>
+
 						{/* LOGO UPLOAD */}
 						<div className='space-y-2'>
 							<Label>Hotel Logo</Label>
@@ -47,16 +48,10 @@ export default function HotelInfo() {
 								</div>
 							</div>
 						</div>
-
-						<div className='space-y-2'>
-							<Label>Hotel Name</Label>
-							<Input placeholder='Enter hotel name' />
-						</div>
-
 					</CardContent>
 				</Card>
 
-			<Card className='mx-auto w-full max-w-xl'>
+				<Card className='mx-auto w-full max-w-2xl'>
 					<CardHeader>
 						<CardTitle>Backup & Restore</CardTitle>
 						<p className='text-sm text-muted-foreground'>Manage system backups and restore data when needed</p>

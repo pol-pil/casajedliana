@@ -1,9 +1,8 @@
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
-import { Users, BedDouble, Home, Pencil } from 'lucide-react';
+import { Users, Home,} from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -24,7 +23,7 @@ export default function Index() {
 				</div>
 
 				{/* STATS */}
-				<div className='grid w-full min-w-0 gap-4 md:grid-cols-3'>
+				<div className="grid w-full gap-4 md:grid-cols-2 max-w-3xl mx-auto">
 					{/* USERS */}
 					<Card className='transition hover:shadow-md'>
 						<CardContent className='flex items-center justify-between p-5'>
@@ -35,20 +34,6 @@ export default function Index() {
 
 							<div className='flex h-20 w-20 items-center justify-center rounded-full bg-blue-100'>
 								<Users className='h-10 w-10 text-blue-600' />
-							</div>
-						</CardContent>
-					</Card>
-
-					{/* ROOMS */}
-					<Card className='transition hover:shadow-md'>
-						<CardContent className='flex items-center justify-between p-5'>
-							<div className='text-center'>
-								<h2 className='text-3xl font-bold'>10</h2>
-								<p className='text-sm text-muted-foreground'>Total Rooms</p>
-							</div>
-
-							<div className='flex h-20 w-20 items-center justify-center rounded-full bg-green-100'>
-								<BedDouble className='h-10 w-10 text-green-600' />
 							</div>
 						</CardContent>
 					</Card>
