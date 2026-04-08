@@ -15,10 +15,10 @@ class FrontdeskMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (! $request->user()->isFrontdesk()) {
+        if (! $request->user()->isFrontdesk() && ! $request->user()->isAdmin()) {
             abort(403, 'Unauthorized');
         }
-
+    
         return $next($request);
     }
 }
