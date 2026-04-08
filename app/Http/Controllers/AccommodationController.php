@@ -30,10 +30,16 @@ class AccommodationController extends Controller
             'status'
         )
             ->withCount([
-                'bookings as active_bookings_count' => function ($query) use ($start, $end) {
+                'bookings as reserved_count' => function ($query) use ($start, $end) {
                     $query->whereDate('check_in', '<=', $end)
                         ->whereDate('check_out', '>', $start)
-                        ->whereNotIn('status', ['cancelled', 'checked_out', 'no_show']);
+                        ->whereIn('status', ['pencil', 'confirmed', 'reserved']);
+                },
+
+                'bookings as occupied_count' => function ($query) use ($start, $end) {
+                    $query->whereDate('check_in', '<=', $end)
+                        ->whereDate('check_out', '>', $start)
+                        ->where('status', 'checked_in');
                 }
             ])
             ->get();
@@ -41,11 +47,14 @@ class AccommodationController extends Controller
         foreach ($rooms as $room) {
 
             if (strtolower($room->status) === 'maintenance') {
-                continue; 
+                $room->status = 'Maintenance';
+                continue;
             }
 
-            if ($room->active_bookings_count > 0) {
-                $room->status = 'Reserved'; 
+            if ($room->occupied_count > 0) {
+                $room->status = 'Occupied';
+            } elseif ($room->reserved_count > 0) {
+                $room->status = 'Reserved';
             } else {
                 $room->status = 'Available';
             }
