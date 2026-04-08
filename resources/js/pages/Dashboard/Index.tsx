@@ -75,7 +75,7 @@ const bookingStatusBadge: Record<string, string> = {
 const summaryIconStyle: Record<string, string> = {
 	'Check-ins': 'bg-blue-100 text-blue-600',
 	'Check-outs': 'bg-orange-100 text-orange-600',
-	Occupied: 'bg-red-100 text-red-600',
+	Unavailable: 'bg-red-100 text-red-600',
 	Available: 'bg-green-100 text-green-600',
 };
 
@@ -157,7 +157,7 @@ export default function Dashboard() {
 		{ label: 'Check-ins', value: checkIns?.length ?? 0, icon: DoorOpen },
 		{ label: 'Check-outs', value: checkOuts?.length ?? 0, icon: LogOut },
 		{
-			label: 'Occupied',
+			label: 'Unavailable',
 			value: occupiedRoomIds.length,
 			icon: Lock,
 		},
@@ -198,7 +198,7 @@ export default function Dashboard() {
 						<div className='grid grid-cols-2 gap-4 md:grid-cols-4'>
 							{summary.map((item) => (
 								<Card key={item.label}>
-									<CardContent className='flex items-center justify-between p-4 text-center'>
+									<CardContent className='flex items-center justify-between p-4'>
 										
 										<div>
 											<p className='text-sm text-muted-foreground'>{item.label}</p>
