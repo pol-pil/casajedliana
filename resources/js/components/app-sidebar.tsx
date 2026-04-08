@@ -35,9 +35,7 @@ import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/component
 
 import { useState } from 'react';
 
-// ==============================
-// MAIN NAV ITEMS (CLEAN)
-// ==============================
+
 const mainNavItems: NavItem[] = [
 	{
 		title: 'Dashboard',

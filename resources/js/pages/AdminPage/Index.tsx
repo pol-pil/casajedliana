@@ -115,46 +115,6 @@ export default function Index() {
 						</div>
 					</CardContent>
 				</Card>
-
-				<div className='rounded-xl border p-4'>
-					<h2 className='mb-4 font-medium'>Room Management</h2>
-
-					<div className='grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4'>
-						{[
-							{ name: '101-102', type: 'Family Room' },
-							{ name: '103-104', type: 'Family Room' },
-							{ name: '105', type: 'Rest House' },
-							{ name: '201', type: 'Suite Room' },
-							{ name: '202', type: 'Suite Room' },
-							{ name: '203', type: 'Standard Room' },
-							{ name: '204', type: 'Standard Room' },
-							{ name: '205', type: 'Standard Room' },
-							{ name: '206', type: 'Standard Room' },
-							{ name: '207', type: 'Quadro Room' },
-							{ name: '208', type: 'Quadro Room' },
-							{ name: 'JEDIDIA', type: 'Jedidia Hall' },
-							{ name: 'EDIANE', type: 'Ediane Hall' },
-							{ name: 'ELIANA', type: 'Eliana Hall' },
-							{ name: 'GARDEN', type: 'Garden' },
-							{ name: 'ROOF DECK', type: 'Roof Deck Venue' },
-							{ name: 'KTV', type: 'KTV' },
-							{ name: 'BILLIARDS AND GYM', type: 'Billiards and Gym' },
-						].map((room, i) => (
-							<Card key={i} className='relative transition hover:shadow-md'>
-								<CardContent className='p-4'>
-									<Button size='icon' variant='ghost' className='absolute top-2 right-2 h-6 w-6'>
-										<Pencil className='h-4 w-4' />
-									</Button>
-
-									<div className='flex flex-col gap-1'>
-										<span className='text-lg font-semibold'>{room.name}</span>
-										<span className='text-sm text-muted-foreground'>{room.type}</span>
-									</div>
-								</CardContent>
-							</Card>
-						))}
-					</div>
-				</div>
 			</div>
 		</AppLayout>
 	);
