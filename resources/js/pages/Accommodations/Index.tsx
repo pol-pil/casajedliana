@@ -5,13 +5,10 @@ import type { BreadcrumbItem } from '@/types';
 import { Head, usePage, router } from '@inertiajs/react';
 import { format } from 'date-fns';
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarDays } from 'lucide-react';
 import { DateRange } from 'react-day-picker';
 import { toast } from 'sonner';
 
@@ -20,9 +17,6 @@ import { Room } from '@/types/room';
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Rooms', href: '/rooms' }];
 
-/* ====================== */
-/* Types */
-/* ====================== */
 
 type Status = 'Available' | 'Occupied' | 'Reserved' | 'Maintenance';
 
@@ -73,7 +67,7 @@ export default function Index() {
 	const rawRooms = props.rooms ?? [];
 	const serverStartDate = props.startDate;
 	const serverEndDate = props.endDate;
-	
+
 	const [range, setRange] = useState<DateRange | undefined>({
 		from: serverStartDate ? new Date(serverStartDate) : new Date(),
 		to: serverEndDate ? new Date(serverEndDate) : new Date(),
@@ -189,18 +183,22 @@ export default function Index() {
 							</SelectContent>
 						</Select>
 					</div>
+					<div className='inline-flex items-center rounded-xl border bg-muted p-1'>
+						{(['All', 'Available', 'Occupied', 'Reserved', 'Maintenance'] as const).map((status) => {
+							const isActive = activeStatus === status;
 
-					<div className='flex flex-wrap gap-2'>
-						{(['All', 'Available', 'Occupied', 'Reserved', 'Maintenance'] as const).map((status) => (
-							<Button
-								key={status}
-								size='sm'
-								variant={activeStatus === status ? 'default' : 'outline'}
-								onClick={() => setActiveStatus(status)}
-							>
-								{status}
-							</Button>
-						))}
+							return (
+								<button
+									key={status}
+									onClick={() => setActiveStatus(status)}
+									className={`rounded-lg px-4 py-1.5 text-sm font-medium transition ${
+										isActive ? 'shadow-sm' : 'text-muted-foreground hover:text-foreground'
+									} `}
+								>
+									{status}
+								</button>
+							);
+						})}
 					</div>
 				</div>
 
