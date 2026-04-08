@@ -42,34 +42,34 @@ class UpdateBookingStatuses extends Command
             });
 
         // 3. Checked In → Late Checkout charge (1 hour past check_out)
-        $lateCharge = Charge::where('name', 'Late Checkout')
-            ->where('is_active', true)
-            ->first();
+        // $lateCharge = Charge::where('name', 'Late Checkout')
+        //     ->where('is_active', true)
+        //     ->first();
 
-        if ($lateCharge) {
-            Booking::where('status', 'checked_in')
-            ->where('check_out', '<=', $now->copy()->subHour())
-            ->with('room')
-            ->each(function ($booking) use ($lateCharge) {
-                $alreadyCharged = $booking->bookingCharges()
-                    ->where('charge_id', $lateCharge->id)
-                    ->exists();
+        // if ($lateCharge) {
+        //     Booking::where('status', 'checked_in')
+        //     ->where('check_out', '<=', $now->copy()->subHour())
+        //     ->with('room')
+        //     ->each(function ($booking) use ($lateCharge) {
+        //         $alreadyCharged = $booking->bookingCharges()
+        //             ->where('charge_id', $lateCharge->id)
+        //             ->exists();
         
-                if (!$alreadyCharged) {
-                    $roomPrice = $booking->room->price ?? 0;
-                    $lateAmount = $roomPrice * 0.10;
+        //         if (!$alreadyCharged) {
+        //             $roomPrice = $booking->room->price ?? 0;
+        //             $lateAmount = $roomPrice * 0.10;
         
-                    $booking->bookingCharges()->create([
-                        'charge_id' => $lateCharge->id,
-                        'quantity'  => 1,
-                        'value'     => $lateAmount,
-                        'total'     => $lateAmount,
-                    ]);
+        //             $booking->bookingCharges()->create([
+        //                 'charge_id' => $lateCharge->id,
+        //                 'quantity'  => 1,
+        //                 'value'     => $lateAmount,
+        //                 'total'     => $lateAmount,
+        //             ]);
         
-                    $this->info("Late checkout ₱{$lateAmount} charged on booking #{$booking->id}");
-                }
-            });
-        }
+        //             $this->info("Late checkout ₱{$lateAmount} charged on booking #{$booking->id}");
+        //         }
+        //     });
+        // }
 
         // 4. Confirmed → Pencil (payment dropped below 50% of total amount)
         Booking::where('status', 'confirmed')
