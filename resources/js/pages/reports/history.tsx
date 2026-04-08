@@ -147,6 +147,9 @@ export default function History() {
 		{ value: 'pencil', label: 'Pencil' },
 		{ value: 'confirmed', label: 'Confirmed' },
 		{ value: 'checked_in', label: 'Checked In' },
+		{ value: 'checked_out', label: 'Checked Out' },
+		{ value: 'no_show', label: 'No Show' },
+		{ value: 'cancelled', label: 'Cancelled' },
 	];
 
 	const filteredBookings = activeTab === 'all' ? bookings.data : bookings.data.filter((b) => b.status === activeTab);
