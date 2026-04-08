@@ -60,6 +60,9 @@ class BookingsController extends Controller
                         ->orWhere('last_name', 'like', "%{$search}%");
                 });
             })
+            ->when($request->status && $request->status !== 'all', function ($query) use ($request) {
+                $query->where('status', $request->status);
+            })
             ->whereNotIn('status', ['cancelled', 'checked_out', 'no_show'])
             ->orderBy('created_at', 'desc')
             ->paginate(10)

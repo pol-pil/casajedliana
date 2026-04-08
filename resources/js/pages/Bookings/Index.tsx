@@ -302,16 +302,13 @@ export default function Index() {
 	}, [bookings]);
 
 	const tabs = [
-		{ value: 'all', label: 'All'},
+		{ value: 'all', label: 'All' },
 		{ value: 'pencil', label: 'Pencil' },
-		{ value: 'confirmed', label: 'Confirmed'},
+		{ value: 'confirmed', label: 'Confirmed' },
 		{ value: 'checked_in', label: 'Checked In' },
 	];
 
-	const filteredBookings =
-	activeTab === 'all'
-		? bookings.data
-		: bookings.data.filter((b) => b.status === activeTab);
+	const filteredBookings = activeTab === 'all' ? bookings.data : bookings.data.filter((b) => b.status === activeTab);
 
 	return (
 		<AppLayout breadcrumbs={breadcrumbs}>
@@ -368,7 +365,14 @@ export default function Index() {
 					</div>
 				</div>
 
-				<Tabs className='mb-2' value={activeTab} onValueChange={(value) => setActiveTab(value as any)}>
+				<Tabs
+					className='mb-2'
+					value={activeTab}
+					onValueChange={(value) => {
+						setActiveTab(value as any);
+						router.get('/bookings', { status: value }, { preserveState: true });
+					}}
+				>
 					<TabsList>
 						{tabs.map((tab) => {
 							return (

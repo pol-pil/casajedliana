@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { useState, useEffect } from 'react';
 import { useDateRange } from '@/contexts/date-range-context';
 import { format } from 'date-fns';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const breadcrumbs: BreadcrumbItem[] = [
 	{ title: 'Reports', href: '/reports/history' },
@@ -104,21 +105,8 @@ export default function History() {
 	const { bookings, filters } = usePage<PageProps>().props;
 	const { range, setRange } = useDateRange();
 	const [search, setSearch] = useState(filters.search || '');
-
-	useEffect(() => {
-		const delay = setTimeout(() => {
-			router.get(
-				'/reports/history',
-				{ search },
-				{
-					preserveState: true,
-					replace: true,
-				},
-			);
-		}, 300);
-
-		return () => clearTimeout(delay);
-	}, [search]);
+	const [activeTab, setActiveTab] = useState<'all' | 'pencil' | 'confirmed' | 'checked_in'>('all');
+	const [hasInitialized, setHasInitialized] = useState(false);
 
 	const formatDate = (date: string) =>
 		new Date(date).toLocaleDateString('en-US', {
@@ -137,46 +125,77 @@ export default function History() {
 		window.open(`/bookings/${id}/print`, '_blank');
 	};
 
-	// Sync on load
-	useEffect(() => {
-		if (filters.start && filters.end) {
-			setRange({
-				from: new Date(filters.start),
-				to: new Date(filters.end),
-			});
-		}
-	}, [filters.start, filters.end]);
-
-	// React to header date picker changes
 	useEffect(() => {
 		const delay = setTimeout(() => {
 			router.get(
 				'/reports/history',
 				{
 					search,
+					status: activeTab,
 					start: range?.from ? format(range.from, 'yyyy-MM-dd') : undefined,
 					end: range?.to ? format(range.to, 'yyyy-MM-dd') : undefined,
 				},
 				{ preserveState: true, replace: true },
 			);
 		}, 300);
-	
+
 		return () => clearTimeout(delay);
-	}, [search]);
+	}, [search, range, activeTab]);
+
+	const tabs = [
+		{ value: 'all', label: 'All' },
+		{ value: 'pencil', label: 'Pencil' },
+		{ value: 'confirmed', label: 'Confirmed' },
+		{ value: 'checked_in', label: 'Checked In' },
+	];
+
+	const filteredBookings = activeTab === 'all' ? bookings.data : bookings.data.filter((b) => b.status === activeTab);
 
 	return (
 		<AppLayout breadcrumbs={breadcrumbs} showDatePicker>
 			<Head title='History' />
 
 			<div className='p-6'>
-				<div className='rounded-lg border'>
-					<div className='border-b p-4'>
-						<h2 className='text-lg font-semibold'>Booking History</h2>
-					</div>
+				<Tabs
+					className='mb-2'
+					value={activeTab}
+					onValueChange={(value) => {
+						setActiveTab(value as any);
 
-					{/* Search */}
-					<div className='flex justify-between p-4'>
-						<Input placeholder='Search guest...' value={search} onChange={(e) => setSearch(e.target.value)} className='w-64' />
+						router.get(
+							'/reports/history',
+							{
+								status: value,
+								search,
+								start: range?.from ? format(range.from, 'yyyy-MM-dd') : undefined,
+								end: range?.to ? format(range.to, 'yyyy-MM-dd') : undefined,
+							},
+							{ preserveState: true, replace: true },
+						);
+					}}
+				>
+					<TabsList>
+						{tabs.map((tab) => {
+							return (
+								<TabsTrigger className='px-4' key={tab.value} value={tab.value}>
+									{tab.label}
+								</TabsTrigger>
+							);
+						})}
+					</TabsList>
+				</Tabs>
+
+				<div className='rounded-lg border'>
+					<div className='flex flex-row items-center gap-8 border-b p-4'>
+						<h2 className='text-lg font-semibold'>Booking History</h2>
+						<div className='flex justify-between'>
+							<Input
+								placeholder='Search guest...'
+								value={search}
+								onChange={(e) => setSearch(e.target.value)}
+								className='w-64'
+							/>
+						</div>
 					</div>
 
 					<div className='overflow-auto px-2'>
@@ -203,7 +222,7 @@ export default function History() {
 									</TableRow>
 								)}
 
-								{bookings.data.map((booking) => {
+								{filteredBookings.map((booking) => {
 									const total =
 										Number(booking.total_amount ?? 0) +
 										(booking.booking_charges ?? []).reduce((sum, c) => sum + Number(c.total ?? 0), 0);

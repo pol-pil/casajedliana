@@ -12,6 +12,7 @@ class HistoryController extends Controller
         $search = request('search');
         $start  = request('start', now()->toDateString());
         $end    = request('end', now()->toDateString());
+        $status = request('status');
     
         $bookings = Booking::with([
             'client',
@@ -24,6 +25,9 @@ class HistoryController extends Controller
                     $q->where('first_name', 'like', "%{$search}%")
                         ->orWhere('last_name', 'like', "%{$search}%");
                 });
+            })
+            ->when($status && $status !== 'all', function ($query) use ($status) {
+                $query->where('status', $status);
             })
             ->where(function ($query) use ($start, $end) {
     $query->whereBetween('check_in', [$start . ' 00:00:00', $end . ' 23:59:59'])
@@ -43,6 +47,7 @@ class HistoryController extends Controller
                 'search' => $search,
                 'start'  => $start,
                 'end'    => $end,
+                'status' => $status,
             ],
         ]);
     }
