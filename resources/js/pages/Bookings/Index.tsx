@@ -15,6 +15,10 @@ import {
 	Plus,
 	AlertCircle,
 	EyeOff,
+	AppWindowIcon,
+	CodeIcon,
+	Clock,
+	CheckCircle,
 } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import { Table, TableHead, TableHeader, TableRow, TableBody, TableCell } from '@/components/ui/table';
@@ -22,6 +26,7 @@ import { toast } from 'sonner';
 import BookingFormDialog from '@/components/booking-dialog';
 import BookingInfoDialog from '@/components/booking-info-dialog';
 import { Input } from '@/components/ui/input';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 type Booking = {
 	id: number;
@@ -87,7 +92,8 @@ type PageProps = {
 		totalBookings: number;
 		activeGuests: number;
 		pencilBookings: number;
-		totalRevenue: number;
+		// totalRevenue: number;
+		outstandingBalance: number;
 	};
 	auth?: {
 		user: any;
@@ -159,6 +165,7 @@ export default function Index() {
 
 	const [isEditMode, setIsEditMode] = useState(false);
 	const [editingBookingId, setEditingBookingId] = useState<number | null>(null);
+	const [activeTab, setActiveTab] = useState<'all' | 'pencil' | 'confirmed' | 'checked_in'>('all');
 
 	const emptyForm = {
 		client: {
@@ -294,13 +301,25 @@ export default function Index() {
 		}
 	}, [bookings]);
 
+	const tabs = [
+		{ value: 'all', label: 'All'},
+		{ value: 'pencil', label: 'Pencil' },
+		{ value: 'confirmed', label: 'Confirmed'},
+		{ value: 'checked_in', label: 'Checked In' },
+	];
+
+	const filteredBookings =
+	activeTab === 'all'
+		? bookings.data
+		: bookings.data.filter((b) => b.status === activeTab);
+
 	return (
 		<AppLayout breadcrumbs={breadcrumbs}>
-			<div className='p-6'>
+			<div className='space-y-4 p-6'>
 				<Head title='Bookings' />
 
 				{/* Stats overview */}
-				<div className='flex-row gap-4 pb-4 lg:flex'>
+				<div className='flex-row gap-4 lg:flex'>
 					<div className='flex-1 rounded-lg border bg-card p-4'>
 						<div className='flex items-center justify-between'>
 							<div>
@@ -337,9 +356,9 @@ export default function Index() {
 					<div className='flex-1 rounded-lg border bg-card p-4'>
 						<div className='flex items-center justify-between'>
 							<div>
-								<p className='text-sm font-medium text-muted-foreground'>Total Revenue</p>
+								<p className='text-sm font-medium text-muted-foreground'>Outstanding Balance</p>
 								<p className='text-2xl font-bold'>
-									₱{stats.totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+									₱{stats.outstandingBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
 								</p>
 							</div>
 							<div className='rounded-full bg-green-100 p-3 dark:bg-green-950'>
@@ -348,6 +367,18 @@ export default function Index() {
 						</div>
 					</div>
 				</div>
+
+				<Tabs className='mb-2' value={activeTab} onValueChange={(value) => setActiveTab(value as any)}>
+					<TabsList>
+						{tabs.map((tab) => {
+							return (
+								<TabsTrigger className='px-4' key={tab.value} value={tab.value}>
+									{tab.label}
+								</TabsTrigger>
+							);
+						})}
+					</TabsList>
+				</Tabs>
 
 				{/* Bookings table */}
 				<div className='rounded-lg border'>
@@ -409,7 +440,7 @@ export default function Index() {
 								</TableRow>
 							</TableHeader>
 							<TableBody>
-								{bookings.data.map((booking) => {
+								{filteredBookings.map((booking) => {
 									return (
 										<TableRow
 											key={booking.id}

@@ -41,6 +41,11 @@ class BookingsController extends Controller
         $end = $request->input('end', Carbon::today()->toDateString());
         $search = request('search');
 
+        // Fetch all active bookings once for stats (payments + charges eager-loaded to avoid N+1)
+        $allActiveBookings = Booking::whereNotIn('status', ['cancelled', 'checked_out', 'no_show'])
+            ->with(['payments', 'bookingCharges'])
+            ->get();
+
         $bookings = Booking::with([
             'client',
             'room',
@@ -61,11 +66,15 @@ class BookingsController extends Controller
             ->withQueryString();
 
         $stats = [
-            'totalBookings' => Booking::whereNotIn('status', ['cancelled', 'checked_out', 'no_show'])
-                ->count(),
-            'activeGuests' => Booking::where('status', 'checked_in')->count(),
-            'pencilBookings' => Booking::where('status', 'pencil')->count(),
-            'totalRevenue' => Booking::sum('total_amount'),
+            'totalBookings'      => $allActiveBookings->count(),
+            'activeGuests'       => $allActiveBookings->where('status', 'checked_in')->count(),
+            'pencilBookings'     => $allActiveBookings->where('status', 'pencil')->count(),
+            // 'totalRevenue'    => $allActiveBookings->sum('total_amount'),
+            'outstandingBalance' => $allActiveBookings->sum(function ($b) {
+                $paid         = $b->payments->sum('amount');
+                $extraCharges = $b->bookingCharges->sum('total');
+                return max(($b->total_amount + $extraCharges) - $paid, 0);
+            }),
         ];
 
         $rooms = Room::orderBy('room_number')->get();
@@ -76,13 +85,13 @@ class BookingsController extends Controller
         $bookingTypes = BookingType::where('is_active', true)->get();
 
         $roomBlockedDates = Booking::whereIn('status', ['confirmed', 'pencil', 'checked_in', 'reserved'])
-    ->get(['room_id', 'check_in', 'check_out', 'id'])
-    ->groupBy('room_id')
-    ->map(fn($bookings) => $bookings->map(fn($b) => [
-        'from' => Carbon::parse($b->check_in)->toDateString(),
-        'to'   => Carbon::parse($b->check_out)->toDateString(),
-        'booking_id' => $b->id,
-    ])->values());
+            ->get(['room_id', 'check_in', 'check_out', 'id'])
+            ->groupBy('room_id')
+            ->map(fn($bookings) => $bookings->map(fn($b) => [
+                'from' => Carbon::parse($b->check_in)->toDateString(),
+                'to'   => Carbon::parse($b->check_out)->toDateString(),
+                'booking_id' => $b->id,
+            ])->values());
 
         return Inertia::render('Bookings/Index', [
             'bookings' => $bookings,
@@ -249,7 +258,7 @@ class BookingsController extends Controller
             'status' => 'required|in:pencil,confirmed,reserved,checked_in,checked_out,cancelled,no_show',
         ]);
 
-         $booking->status = $request->status;
+        $booking->status = $request->status;
         $booking->save();
 
         $this->syncRoomStatus($booking);
