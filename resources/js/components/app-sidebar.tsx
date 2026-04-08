@@ -35,53 +35,45 @@ import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/component
 
 import { useState } from 'react';
 
-
-const mainNavItems: NavItem[] = [
-	{
-		title: 'Dashboard',
-		href: '/dashboard',
-		icon: Hotel,
-	},
-	{
-		title: 'Bookings',
-		href: '/bookings',
-		icon: CalendarRange,
-	},
-	{
-		title: 'Rooms',
-		href: '/rooms',
-		icon: BedDouble,
-	},
-	{
-		title: 'Configurations',
-		href: '/rates',
-		icon: Columns3Cog,
-	},
-	{
-		title: 'Admin',
-		href: '/admin',
-		icon: ShieldUser,
-	},
-	{
-		title: 'Users',
-		href: '/admin/users',
-		icon: UserCog,
-	},
-
-	{
-		title: 'Hotel Info',
-		href: '/admin/hotel-info',
-		icon: Settings,
-	},
-];
-
-const footerNavItems: NavItem[] = [];
-
 export function AppSidebar() {
-	const { url } = usePage();
+	const { url, props } = usePage();
+	const user = (props.auth as any)?.user;
+	const isAdmin = user?.role === 'admin';
 
 	const isReportsActive = url.startsWith('/reports');
 	const [openReports, setOpenReports] = useState(isReportsActive);
+
+	const mainNavItems: NavItem[] = [
+		{
+			title: 'Dashboard',
+			href: '/dashboard',
+			icon: Hotel,
+		},
+		{
+			title: 'Bookings',
+			href: '/bookings',
+			icon: CalendarRange,
+		},
+		{
+			title: 'Rooms',
+			href: '/rooms',
+			icon: BedDouble,
+		},
+		{
+			title: 'Configurations',
+			href: '/rates',
+			icon: Columns3Cog,
+		},
+		...(isAdmin
+			? ([
+					{ title: 'Admin', href: '/admin', icon: ShieldUser },
+					{ title: 'Users', href: '/admin/users', icon: UserCog },
+					{ title: 'Hotel Info', href: '/admin/hotel-info', icon: Settings },
+				] as NavItem[])
+			: []),
+	];
+
+	const footerNavItems: NavItem[] = [];
 
 	return (
 		<Sidebar collapsible='icon' variant='inset'>
