@@ -1,58 +1,231 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SOA</title>
-</head>
-<body>
-<h1 style="font-family: DejaVu Sans;">Casa Jedliana</h1>
-    <p>Purok 1, Barangay Tagpos, Santa Rosa, Nueva Ecija</p>
-    <p>Facebook Page: Casa Jedliana Hotel and Resort</p>
-    <h2>STATEMENT OF ACCOUNT</h2>
-    <p>Billed to: {{ $booking->client->first_name}} {{ $booking->client->last_name}}</p>
-    <p>Address: {{ $booking->client->address}}</p>
-    <p>Arrival Date: {{ $booking->check_in}}</p>
-    <p>Departure Date: {{ $booking->check_out}}</p>
-    <p>Transaction Ref#: {{ $booking->id}}</p>
-    <br/>
-    <p>Room No.: {{ $booking->room->room_number}}</p>
-    <p>Room Type: {{ $booking->room->room_type}}</p>
-    <p>Room Rate: {{ $booking->room->price}}</p>
-    <p>No. of Guest: {{ $booking->guest_count}}</p>
-    <p>Purpose of Stay: {{ $booking->purpose}}</p>
-    <p>Booking Type: {{ $booking->bookingType->name}}</p>
-    <p>Rate Type: {{ $booking->rate->name}}</p>
-    <p>Total Amount: {{ number_format($booking->total_amount, 2) }}</p>
-    <br/>
-    @if($booking->bookingCharges->count())
-    @foreach($booking->bookingCharges as $charge)
-        <p>{{ $charge->quantity }} {{ $charge->charge->name }} {{ $charge->value }} = {{ $charge->total }}</p>
-    @endforeach
-    @endif
-    <br/>
-    @if($booking->payments->count())
-    @foreach($booking->payments as $payment)
-        <p>#{{ $payment->id }} {{ $payment->payment_type }} {{ $payment->amount }} {{ $payment->payment_method }}</p>
-    @endforeach
-    @endif
-    <br/>
-    <table style="width:100%; margin-top:40px;">
-    <tr>
-        <td style="width:50%; vertical-align:top;">
-            <p>Prepared by:</p>
-            <p>{{ $booking->receptionist->name }}</p>
-            <hr style="width:60%; margin-left:0;">
-            <p>Signature over printed name</p>
-        </td>
+	<head>
+		<meta charset="UTF-8" />
+		<title>Statement of Account</title>
 
-        <td style="width:50%; vertical-align:top;">
-            <p>Guest's Name:</p>
-            <p>{{ $booking->client->first_name }} {{ $booking->client->last_name }}</p>
-            <hr style="width:60%; margin-left:0;">
-            <p>Signature over printed name</p>
-        </td>
-    </tr>
-</table>
-</body>
+		<style>
+			@page {
+				margin: 0;
+			}
+
+			body {
+				font-family:
+					DejaVu Sans,
+					sans-serif;
+				font-size: 11px;
+				color: #000;
+				background-color: #faf8eb;
+			}
+
+			.container {
+				width: 100%;
+				border: 1px solid #ccc;
+			}
+
+			.details-container {
+				padding: 20px;
+			}
+
+			/* HEADER */
+			.header {
+				background: #c68a00;
+				color: #fff;
+				padding: 10px;
+			}
+
+			.header table {
+				width: 100%;
+			}
+
+			.title {
+				text-align: center;
+				font-size: 18px;
+				font-weight: bold;
+				letter-spacing: 5px;
+				border-top: 2px solid #000;
+				border-bottom: 2px solid #000;
+				padding: 8px 0;
+				margin: 0 0 10px 0;
+			}
+
+			/* INFO */
+			.info {
+				width: 100%;
+				margin-bottom: 10px;
+			}
+
+			.info td {
+				vertical-align: top;
+				padding: 5px;
+			}
+
+			/* MAIN TABLE */
+			.soa-table {
+				width: 100%;
+				border-collapse: collapse;
+				margin-top: 10px;
+			}
+
+			.soa-table th,
+			.soa-table td {
+				border: 1px solid #787878;
+				padding: 6px;
+			}
+
+			.soa-table th {
+				background: #ffffff10;
+			}
+
+			.total-row td {
+				font-weight: bold;
+				background: #ffffff10;
+			}
+
+			/* SIGNATURE */
+			.signature {
+				width: 80%;
+				margin-top: 40px;
+			}
+
+			.signature td {
+				width: 50%;
+				vertical-align: top;
+			}
+
+			.line {
+				border-top: 1px solid #000;
+				width: 80%;
+			}
+
+			.by {
+				margin-top: 30px;
+				margin-right: 70px;
+				text-align: center;
+			}
+		</style>
+	</head>
+
+	<body>
+		<div class="container">
+			<!-- HEADER -->
+			<div class="header">
+				<table>
+					<tr>
+						<td><strong style="font-size: 40px">Casa Jedliana</strong><br /></td>
+						<td align="right">
+							<p>Casa Jedliana Hotel and Resort</p>
+							<p>Purok 1, Barangay Tagpos, Santa Rosa, Nueva Ecija</p>
+						</td>
+					</tr>
+				</table>
+			</div>
+
+			<!-- TITLE -->
+			<div class="details-container">
+				<div class="title">STATEMENT OF ACCOUNT</div>
+
+				<!-- INFO -->
+				<table class="info">
+					<tr>
+						<td>
+							<strong>Billed to:</strong> {{ $booking->client->first_name }} {{ $booking->client->last_name }}<br />
+							<strong>Address:</strong> {{ $booking->client->address }}<br />
+							<strong>Arrival Date:</strong> {{ $booking->check_in }}<br />
+							<strong>Departure Date:</strong> {{ $booking->check_out }}
+						</td>
+
+						<td align="right">
+							<strong>Transaction Ref No.:</strong> {{ $booking->id }}<br />
+							<strong>Reservation No.:</strong> RES-{{ $booking->id }}
+						</td>
+					</tr>
+				</table>
+
+				<!-- DETAILS TABLE -->
+				<table class="soa-table">
+					<tr>
+						<th>Description</th>
+						<th>Value</th>
+						<th>Description</th>
+						<th>Value</th>
+					</tr>
+
+					<tr>
+						<td>Room No.</td>
+						<td>{{ $booking->room->room_number }}</td>
+						<td>Purpose of Stay</td>
+						<td>{{ $booking->purpose }}</td>
+					</tr>
+
+					<tr>
+						<td>Room Type</td>
+						<td>{{ $booking->room->room_type }}</td>
+						<td>Rate Type</td>
+						<td>{{ $booking->rate->name }}</td>
+					</tr>
+
+					<tr>
+						<td>Booking Type</td>
+						<td>{{ $booking->bookingType->name }}</td>
+						<td>Room Rate</td>
+						<td>₱ {{ number_format($booking->room->price, 2) }}</td>
+					</tr>
+
+					@php
+						$nights = \Carbon\Carbon::parse($booking->check_in)->diffInDays(\Carbon\Carbon::parse($booking->check_out));
+					@endphp
+					<tr>
+						<td>No. of Guests</td>
+						<td>{{ $booking->guest_count }}</td>
+						<td>No. of Nights</td>
+						<td>{{ number_format($nights, 0) }}</td>
+					</tr>
+
+					<tr>
+						@php $addons = $booking->bookingCharges->sum('total'); @endphp
+						<td colspan="2">Additional Charges</td>
+						<td colspan="2">₱ {{ number_format($addons, 2) }}</td>
+					</tr>
+
+					@php $grandTotal = $booking->total_amount + $addons + ($booking->damage_fee ?? 0); $amountPaid =
+					$booking->payments->sum('amount'); $balance = $grandTotal - $amountPaid; @endphp
+
+					<tr class="total-row">
+						<td colspan="2">GRAND TOTAL</td>
+						<td colspan="2">₱ {{ number_format($grandTotal, 2) }}</td>
+					</tr>
+
+					<tr>
+						<td colspan="2">Amount Paid</td>
+						<td colspan="2">₱ {{ number_format($amountPaid, 2) }}</td>
+					</tr>
+
+					<tr class="total-row">
+						<td colspan="2">OUTSTANDING BALANCE</td>
+						<td colspan="2">₱ {{ number_format($balance, 2) }}</td>
+					</tr>
+				</table>
+
+				<!-- SIGNATURE -->
+				<table class="signature">
+					<tr>
+						<td>
+							Prepared by:
+							<div class="by">{{ $booking->receptionist->name }}</div>
+							<div class="line"></div>
+							Signature over printed name
+						</td>
+
+						<td>
+							Customer's Name:
+							<div class="by">{{ $booking->client->first_name }} {{ $booking->client->last_name }}</div>
+							<div class="line"></div>
+							Signature over printed name
+						</td>
+					</tr>
+				</table>
+			</div>
+		</div>
+	</body>
 </html>
