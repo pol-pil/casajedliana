@@ -562,8 +562,8 @@ export default function BookingFormDialog({
 										<FieldGroup className='-space-y-2'>
 											<SelectComponent
 												id='rate_id'
-												label='Rate Type'
-												placeholder='Select rate type'
+												label='Discount'
+												placeholder='Select discount'
 												value={selectedRateId}
 												onChange={(value) => {
 													setSelectedRateId(value);

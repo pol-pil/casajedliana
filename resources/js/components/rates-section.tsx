@@ -44,7 +44,7 @@ export default function RatesSection({ rates }: RatesSectionProps) {
     return (
         <div className='rounded-lg border'>
             <div className='flex flex-row items-center justify-between border-b p-4'>
-                <h2 className='text-lg font-semibold'>Rates ({rates.length})</h2>
+                <h2 className='text-lg font-semibold'>Discount ({rates.length})</h2>
 
                 <RatesSectionDialog
                     open={isDialogOpen}

@@ -161,7 +161,7 @@
 					<tr>
 						<td>Room Type</td>
 						<td>{{ $booking->room->room_type }}</td>
-						<td>Rate Type</td>
+						<td>Discount</td>
 						<td>{{ $booking->rate->name }}</td>
 					</tr>
 
@@ -172,11 +172,22 @@
 						<td>₱ {{ number_format($booking->room->price, 2) }}</td>
 					</tr>
 
+					@php
+						$nights = \Carbon\Carbon::parse($booking->check_in)->diffInDays(\Carbon\Carbon::parse($booking->check_out));
+					@endphp
 					<tr>
 						<td>No. of Guests</td>
 						<td>{{ $booking->guest_count }}</td>
-						<td>No. of Nights</td>
-						<td>{{ $booking->nights }}</td>
+						<td>No. of  Nights</td>
+						<td>{{ number_format($nights, 0) }}</td>
+					</tr>
+
+					@php $total = $booking->room->price * round($nights, 0); @endphp
+
+					<tr>
+						@php $addons = $booking->bookingCharges->sum('total'); @endphp
+						<td colspan="2">Total</td>
+						<td colspan="2">₱ {{ number_format($total, 2) }}</td>
 					</tr>
 
 					<tr>

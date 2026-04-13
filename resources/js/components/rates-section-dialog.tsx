@@ -68,7 +68,7 @@ export default function RateDialog({ open, onOpenChange, editingRate }: RatesSec
             <DialogTrigger asChild>
                 <Button className='flex items-center'>
                     <Plus className='size-4' />
-                    Add Rate
+                    Add Discount
                 </Button>
             </DialogTrigger>
 
@@ -76,11 +76,11 @@ export default function RateDialog({ open, onOpenChange, editingRate }: RatesSec
                 <form onSubmit={handleSubmit}>
                     <FieldGroup>
                         <FieldSet>
-                            <FieldLegend>{editingRate ? 'Edit Rate' : 'New Rate'}</FieldLegend>
+                            <FieldLegend>{editingRate ? 'Edit Discount' : 'New Discount'}</FieldLegend>
                             <FieldSeparator />
 
                             <Field>
-                                <FieldLabel htmlFor='rate-name'>Rate Name</FieldLabel>
+                                <FieldLabel htmlFor='rate-name'>Discount Name</FieldLabel>
                                 <Input
                                     id='rate-name'
                                     type='text'
@@ -137,7 +137,7 @@ export default function RateDialog({ open, onOpenChange, editingRate }: RatesSec
                             </Button>
                         </DialogClose>
                         <Button type='submit' disabled={processing}>
-                            {processing ? 'Saving...' : editingRate ? 'Update Rate' : 'Add Rate'}
+                            {processing ? 'Saving...' : editingRate ? 'Update Discount' : 'Add Discount'}
                         </Button>
                     </DialogFooter>
                 </form>

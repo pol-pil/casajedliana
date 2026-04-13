@@ -103,6 +103,10 @@
 				margin-right: 70px;
 				text-align: center;
 			}
+
+			.negative {
+				color: #828282;
+			}
 		</style>
 	</head>
 
@@ -161,7 +165,7 @@
 					<tr>
 						<td>Room Type</td>
 						<td>{{ $booking->room->room_type }}</td>
-						<td>Rate Type</td>
+						<td>Discount Type</td>
 						<td>{{ $booking->rate->name }}</td>
 					</tr>
 
@@ -178,14 +182,31 @@
 					<tr>
 						<td>No. of Guests</td>
 						<td>{{ $booking->guest_count }}</td>
-						<td>No. of Nights</td>
+						<td>No. of  Nights</td>
 						<td>{{ number_format($nights, 0) }}</td>
 					</tr>
 
+					@php $total = $booking->room->price * round($nights, 0); @endphp
+
 					<tr>
-						@php $addons = $booking->bookingCharges->sum('total'); @endphp
+						<td colspan="2">Total</td>
+						<td colspan="2">₱ {{ number_format($total, 2) }}</td>
+					</tr>
+
+					@php $addons = $booking->bookingCharges->sum('total'); @endphp
+
+					<tr>
 						<td colspan="2">Additional Charges</td>
 						<td colspan="2">₱ {{ number_format($addons, 2) }}</td>
+					</tr>
+
+					@php
+						$discountAmount = $total * ($booking->rate->value / 100);
+					@endphp
+
+					<tr>
+						<td colspan="2">Discount</td>
+						<td colspan="2">₱ <span class="negative">-</span> {{ number_format($discountAmount, 2) }}</td>
 					</tr>
 
 					@php $grandTotal = $booking->total_amount + $addons + ($booking->damage_fee ?? 0); $amountPaid =
