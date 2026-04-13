@@ -40,6 +40,7 @@ class BookingsController extends Controller
         $start = $request->input('start', Carbon::today()->toDateString());
         $end = $request->input('end', Carbon::today()->toDateString());
         $search = request('search');
+        $searchName = request('searchName');
 
         // Fetch all active bookings once for stats (payments + charges eager-loaded to avoid N+1)
         $allActiveBookings = Booking::whereNotIn('status', ['cancelled', 'checked_out', 'no_show'])
@@ -83,7 +84,12 @@ class BookingsController extends Controller
         $rooms = Room::orderBy('room_number')->get();
         $rates = Rate::where('is_active', true)->get();
         $charges = Charge::where('is_active', true)->get();
-        $clients = Client::all();
+        $clients = Client::when($searchName, function ($query, $searchName) {
+            $query->where('first_name', 'like', "%{$searchName}%")
+                  ->orWhere('last_name', 'like', "%{$searchName}%");
+        })
+        ->orderBy('first_name')
+        ->get();
         $payments = Payment::all();
         $bookingTypes = BookingType::where('is_active', true)->get();
 
@@ -107,6 +113,7 @@ class BookingsController extends Controller
             'roomBlockedDates' => $roomBlockedDates,
             'filters' => [
                 'search' => $search,
+                'searchName' => $searchName,
             ],
         ]);
     }
@@ -244,7 +251,7 @@ class BookingsController extends Controller
         } elseif ($totalPaid > 0) {
             $booking->payment_status = 'partial';
         } else {
-            $booking->payment_status = 'unpaid';
+            $booking->payment_status = 'unpaid'; 
         }
 
         $booking->save();
@@ -285,7 +292,7 @@ class BookingsController extends Controller
         ]);
 
         $pdf = \PDF::loadView('pdfs.booking_soa', compact('booking'))
-            ->setPaper('legal', 'portrait');
+            ->setPaper('a4', 'portrait');
 
         return $pdf->stream('booking_soa.pdf');
     }

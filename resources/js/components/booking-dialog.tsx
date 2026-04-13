@@ -2,7 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Field, FieldGroup, FieldLabel, FieldLegend, FieldSeparator, FieldSet } from './ui/field';
 import { Button } from './ui/button';
 import { ScrollArea } from './ui/scroll-area';
-import { useForm, usePage } from '@inertiajs/react';
+import { router, useForm, usePage } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import { CalendarIcon, UserSearch } from 'lucide-react';
 import InputComponent from '@/components/input-component';
@@ -147,6 +147,9 @@ type PageProps = {
 	};
 	errors?: Record<string, string>;
 	roomBlockedDates: Record<string, Array<{ from: string; to: string; booking_id: number }>>;
+	filters: {
+		searchName?: string;
+	};
 };
 
 interface BookingFormDialogProps {
@@ -178,6 +181,77 @@ interface BookingFormDialogProps {
 	setCheckOutTime: (value: string) => void;
 }
 
+const FindClientsDialog = ({
+	open,
+	onOpenChange,
+	onSelect,
+}: {
+	open: boolean;
+	onOpenChange: (open: boolean) => void;
+	onSelect: (client: Client) => void;
+}) => {
+	const { clients, filters } = usePage<PageProps>().props;
+
+	const [searchName, setSearchName] = useState(filters.searchName || '');
+
+	useEffect(() => {
+		const delay = setTimeout(() => {
+			router.get(
+				'/bookings',
+				{ searchName },
+				{
+					preserveState: true,
+					replace: true,
+				},
+			);
+		}, 300);
+
+		return () => clearTimeout(delay);
+	}, [searchName]);
+
+	return (
+		<Dialog
+			open={open}
+			onOpenChange={(isOpen) => {
+				if (!isOpen) setSearchName('');
+				onOpenChange(isOpen);
+			}}
+		>
+			<DialogContent>
+				<DialogHeader className='flex flex-row items-center gap-4'>
+					<DialogTitle>Find Client</DialogTitle>
+					<Input
+						placeholder='Search client...'
+						value={searchName}
+						onChange={(e) => setSearchName(e.target.value)}
+						className='w-50'
+					/>
+				</DialogHeader>
+
+				<ScrollArea className='h-90'>
+					{clients.map((client: any) => (
+						<Button
+							key={client.id}
+							variant='outline'
+							className='mb-2 w-full justify-between'
+							onClick={() => {
+								onSelect(client);
+								onOpenChange(false);
+								setSearchName('');
+							}}
+						>
+							<span>
+								{client.first_name} {client.last_name}
+							</span>
+							<span className='text-primary-foreground'>{client.email}</span>
+						</Button>
+					))}
+				</ScrollArea>
+			</DialogContent>
+		</Dialog>
+	);
+};
+
 export default function BookingFormDialog({
 	data,
 	setData,
@@ -206,49 +280,6 @@ export default function BookingFormDialog({
 	checkOutTime,
 	setCheckOutTime,
 }: BookingFormDialogProps) {
-	const FindClientsDialog = ({
-		open,
-		onOpenChange,
-		onSelect,
-	}: {
-		open: boolean;
-		onOpenChange: (open: boolean) => void;
-		onSelect: (client: Client) => void;
-	}) => {
-		const { clients } = usePage<PageProps>().props;
-
-		const sortedClients = [...clients].sort((a, b) => a.first_name.localeCompare(b.first_name));
-
-		return (
-			<Dialog open={open} onOpenChange={onOpenChange}>
-				<DialogContent>
-					<DialogHeader>
-						<DialogTitle>Find Client</DialogTitle>
-					</DialogHeader>
-
-					<ScrollArea className='h-90'>
-						{sortedClients.map((client: any) => (
-							<Button
-								key={client.id}
-								variant='outline'
-								className='mb-2 w-full justify-between'
-								onClick={() => {
-									onSelect(client);
-									onOpenChange(false);
-								}}
-							>
-								<span>
-									{client.first_name} {client.last_name}
-								</span>
-								<span className='text-primary-foreground'>{client.email}</span>
-							</Button>
-						))}
-					</ScrollArea>
-				</DialogContent>
-			</Dialog>
-		);
-	};
-
 	const [isFindClientsDialogOpen, setIsFindClientsDialogOpen] = useState(false);
 
 	const formatDate = (dateString: string) => {
@@ -387,8 +418,10 @@ export default function BookingFormDialog({
 				from.setHours(0, 0, 0, 0);
 				to.setHours(0, 0, 0, 0);
 				const isBlocked = ranges.some(({ from: f, to: t }) => {
-					const fd = new Date(f); fd.setHours(0, 0, 0, 0);
-					const td = new Date(t); td.setHours(0, 0, 0, 0);
+					const fd = new Date(f);
+					fd.setHours(0, 0, 0, 0);
+					const td = new Date(t);
+					td.setHours(0, 0, 0, 0);
 					return from <= td && to >= fd;
 				});
 				if (isBlocked) blocked.add(room.id.toString());
@@ -403,7 +436,7 @@ export default function BookingFormDialog({
 		const isUnavailable = blockedRoomIds.has(room.id.toString());
 		return {
 			value: room.id.toString(),
-			label: `${room.room_number} - ${room.room_type} (₱${room.price})${isUnavailable ? " [Unavailable]": ''}`,
+			label: `${room.room_number} - ${room.room_type} (₱${room.price})${isUnavailable ? ' [Unavailable]' : ''}`,
 			disabled: isUnavailable,
 		};
 	});
