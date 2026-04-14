@@ -59,41 +59,6 @@ class AccommodationController extends Controller
                 $room->status = 'Available';
             }
         }
-        // $roomsTransformed = $rooms->map(function ($room) use ($start, $end) {
-
-        //     $booking = Booking::where('room_id', $room->id)
-        //         ->whereDate('check_in', '<=', $end)
-        //         ->whereDate('check_out', '>', $start)
-        //         // ->whereNotIn('status', ['cancelled', 'checked_out', 'no_show'])
-        //         ->orderByDesc('created_at')
-        //         ->first();
-
-        //     if ($room->status === 'maintenance') {
-        //         $finalStatus = 'Maintenance';
-        //     } elseif ($booking) {
-        //         $bookingStatus = strtolower($booking->status);
-
-        //         if ($bookingStatus === 'checked_in') {
-        //             $finalStatus = 'Occupied';
-        //         } elseif (in_array($bookingStatus, ['reserved', 'pencil'])) {
-        //             $finalStatus = 'Reserved';
-        //         } else {
-        //             $finalStatus = 'Available';
-        //         }
-        //     } else {
-        //         $finalStatus = 'Available';
-        //     }
-
-        //     return [
-        //         'id' => $room->id,
-        //         'roomNumber' => $room->room_number,
-        //         'category' => $room->room_type,
-        //         'capacity' => (int) $room->capacity,
-        //         'beds' => $room->description ?? '',
-        //         'status' => $finalStatus,
-        //         'price' => $room->price,
-        //     ];
-        // });
 
         return Inertia::render('Accommodations/Index', [
             'rooms' => $rooms,
