@@ -120,6 +120,17 @@ class BookingsController extends Controller
 
     public function store(Request $request)
     {
+        if ($request->custom_discount && floatval($request->custom_discount) > 0) {
+            $rate = Rate::create([
+                'name'      => 'Custom Discount',
+                'value'     => $request->custom_discount,
+                'type'      => $request->custom_discount_type ?? 'percentage',
+                'is_active' => true,
+                'is_custom' => true,
+            ]);
+            $request->merge(['rate_id' => $rate->id]);
+        }
+
         $validated = $request->validate([
             'client' => 'required|array',
             'client.first_name' => 'required|string|max:100',
@@ -199,6 +210,17 @@ class BookingsController extends Controller
 
     public function update(Request $request, Booking $booking)
     {
+            if ($request->custom_discount && floatval($request->custom_discount) > 0) {
+            $rate = Rate::create([
+                'name'      => 'Custom Discount',
+                'value'     => $request->custom_discount,
+                'type'      => $request->custom_discount_type ?? 'percentage',
+                'is_active' => true,
+                'is_custom' => true,
+            ]);
+            $request->merge(['rate_id' => $rate->id]);
+        }
+
         $validated = $request->validate([
             'client' => 'required|array',
             'client.first_name' => 'required|string|max:100',

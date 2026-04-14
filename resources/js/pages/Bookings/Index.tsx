@@ -20,7 +20,7 @@ import {
 	Clock,
 	CheckCircle,
 } from 'lucide-react';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Table, TableHead, TableHeader, TableRow, TableBody, TableCell } from '@/components/ui/table';
 import { toast } from 'sonner';
 import BookingFormDialog from '@/components/booking-dialog';
@@ -195,12 +195,18 @@ export default function Index() {
 	const { bookings, stats, filters } = usePage<PageProps>().props;
 
 	const [search, setSearch] = useState(filters.search || '');
+	const isFirstRender = useRef(true);
 
 	useEffect(() => {
+		if (isFirstRender.current) {
+			isFirstRender.current = false;
+			return; // skip on mount
+		}
+
 		const delay = setTimeout(() => {
 			router.get(
 				'/bookings',
-				{ search },
+				{ search, status: activeTab !== 'all' ? activeTab : undefined },
 				{
 					preserveState: true,
 					replace: true,
@@ -547,7 +553,15 @@ export default function Index() {
 									size='sm'
 									onClick={() => {
 										const prevLink = bookings.links.find((link) => link.label === '&laquo; Previous');
-										if (prevLink?.url) router.get(prevLink.url);
+										if (prevLink?.url)
+											router.get(
+												prevLink.url,
+												{
+													search,
+													status: activeTab !== 'all' ? activeTab : undefined,
+												},
+												{ preserveState: true },
+											);
 									}}
 									disabled={!bookings.links.find((link) => link.label === '&laquo; Previous')?.url}
 								>
@@ -558,7 +572,15 @@ export default function Index() {
 									size='sm'
 									onClick={() => {
 										const nextLink = bookings.links.find((link) => link.label === 'Next &raquo;');
-										if (nextLink?.url) router.get(nextLink.url);
+										if (nextLink?.url)
+											router.get(
+												nextLink.url,
+												{
+													search,
+													status: activeTab !== 'all' ? activeTab : undefined,
+												},
+												{ preserveState: true },
+											);
 									}}
 									disabled={!bookings.links.find((link) => link.label === 'Next &raquo;')?.url}
 								>

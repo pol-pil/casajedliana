@@ -88,6 +88,7 @@ type Rate = {
 	name: string;
 	value: number;
 	type: 'exact' | 'percentage';
+	is_custom: boolean;
 };
 
 type Payment = {
@@ -281,6 +282,8 @@ export default function BookingFormDialog({
 	setCheckOutTime,
 }: BookingFormDialogProps) {
 	const [isFindClientsDialogOpen, setIsFindClientsDialogOpen] = useState(false);
+	const [customDiscount, setCustomDiscount] = useState('');
+	const [customDiscountType, setCustomDiscountType] = useState<'percentage' | 'exact'>('percentage');
 
 	const formatDate = (dateString: string) => {
 		return new Date(dateString).toLocaleDateString('en-US', {
@@ -368,21 +371,33 @@ export default function BookingFormDialog({
 			}
 
 			const room = rooms.find((r) => r.id.toString() === selectedRoomId);
-			const rate = rates.find((r) => r.id.toString() === selectedRateId);
 
 			let roomAmount = 0;
 
-			if (room && duration > 0) {
-				roomAmount = room.price * duration;
-
-				if (rate) {
-					if (rate.type === 'percentage') {
-						roomAmount = roomAmount * (1 - rate.value / 100);
-					} else {
-						roomAmount = Math.max(0, roomAmount - rate.value);
-					}
+			const rate = selectedRateId !== 'custom' 
+			? rates.find((r) => r.id.toString() === selectedRateId) 
+			: null;
+		
+		if (room && duration > 0) {
+			roomAmount = room.price * duration;
+		
+			if (selectedRateId === 'custom' && customDiscount && parseFloat(customDiscount) > 0) {
+				// Custom discount calculation
+				if (customDiscountType === 'percentage') {
+					roomAmount = roomAmount * (1 - parseFloat(customDiscount) / 100);
+				} else {
+					roomAmount = Math.max(0, roomAmount - parseFloat(customDiscount));
+				}
+			} else if (rate) {
+				// Preset rate calculation
+				if (rate.type === 'percentage') {
+					roomAmount = roomAmount * (1 - rate.value / 100);
+				} else {
+					roomAmount = Math.max(0, roomAmount - rate.value);
 				}
 			}
+		}
+
 			setData('check_in', checkInDate.toISOString());
 			setData('check_out', checkOutDate.toISOString());
 
@@ -396,7 +411,7 @@ export default function BookingFormDialog({
 				setData('room_id', '');
 			}
 		}
-	}, [dateRange, checkInTime, checkOutTime, selectedRoomId, selectedRateId, rooms, rates, setData]);
+	}, [dateRange, checkInTime, checkOutTime, selectedRoomId, selectedRateId, customDiscount, customDiscountType, rooms, rates, setData]);
 
 	const getBlockedRoomIds = (): Set<string> => {
 		// In edit mode, never disable any rooms in the select
@@ -451,10 +466,15 @@ export default function BookingFormDialog({
 		label: type.name,
 	}));
 
-	const rateOptions = rates.map((rate) => ({
-		value: rate.id.toString(),
-		label: `${rate.name} (${rate.type === 'percentage' ? `${rate.value}% off` : `₱${rate.value} off`})`,
-	}));
+	const rateOptions = [
+		...rates
+			.filter((rate) => isEditMode || !rate.is_custom) // hide custom rates in new booking
+			.map((rate) => ({
+				value: rate.id.toString(),
+				label: `${rate.name} (${rate.type === 'percentage' ? `${rate.value}% off` : `₱${rate.value} off`})`,
+			})),
+		...(!isEditMode ? [{ value: 'custom', label: 'Custom Discount' }] : []),
+	];
 
 	const paymentMethodOptions = ['Cash', 'GCash', 'Credit Card', 'Bank Transfer'].map((method) => ({
 		value: method,
@@ -469,6 +489,8 @@ export default function BookingFormDialog({
 		setSelectedRateId('');
 		setGuestCount('1');
 		setSelectedBookingType('');
+		setCustomDiscount('');
+		setCustomDiscountType('percentage');
 	};
 
 	return (
@@ -593,18 +615,54 @@ export default function BookingFormDialog({
 									<div>
 										<h3 className='mb-2 text-lg font-semibold'>Payment Information</h3>
 										<FieldGroup className='-space-y-2'>
-											<SelectComponent
-												id='rate_id'
-												label='Discount'
-												placeholder='Select discount'
-												value={selectedRateId}
-												onChange={(value) => {
-													setSelectedRateId(value);
-													setData('rate_id', value);
-												}}
-												options={rateOptions}
-												error={errors.rate_id}
-											/>
+											<FieldGroup className='flex flex-row gap-2'>
+												<SelectComponent
+													id='rate_id'
+													label='Discount'
+													placeholder='Select discount'
+													value={selectedRateId}
+													onChange={(value) => {
+														setSelectedRateId(value);
+														if (value !== 'custom') {
+															setData('rate_id', value);
+															setCustomDiscount(''); // clear custom when preset selected
+														} else {
+															setData('rate_id', ''); // clear rate_id, will be set by backend
+														}
+													}}
+													options={rateOptions}
+													error={errors.rate_id}
+												/>
+
+												{selectedRateId === 'custom' && (
+													<FieldGroup className='flex flex-row gap-2'>
+														{/* <SelectComponent
+															id='custom_discount_type'
+															label='Type'
+															placeholder='Type'
+															value={customDiscountType}
+															onChange={(value) => setCustomDiscountType(value as 'percentage' | 'exact')}
+															options={[
+																{ value: 'percentage', label: 'Percentage %' },
+																{ value: 'exact', label: 'Exact ₱' },
+															]}
+														/> */}
+														<InputComponent
+															label={customDiscountType === 'percentage' ? 'Discount (%)' : 'Discount (₱)'}
+															id='custom_discount'
+															type='number'
+															placeholder='0'
+															value={customDiscount}
+															onChange={(e) => {
+																setCustomDiscount(e.target.value);
+																setData('custom_discount', e.target.value);
+																setData('custom_discount_type', customDiscountType);
+															}}
+														/>
+													</FieldGroup>
+												)}
+											</FieldGroup>
+
 											{!isEditMode && (
 												<FieldGroup className='grid grid-cols-2 gap-4'>
 													<Field>
