@@ -12,6 +12,8 @@ use App\Models\Room;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Inertia\Inertia;
+use App\Models\ActivityLog;
+use Illuminate\Support\Facades\Auth;
 
 class BookingsController extends Controller
 {
@@ -86,10 +88,10 @@ class BookingsController extends Controller
         $charges = Charge::where('is_active', true)->get();
         $clients = Client::when($searchName, function ($query, $searchName) {
             $query->where('first_name', 'like', "%{$searchName}%")
-                  ->orWhere('last_name', 'like', "%{$searchName}%");
+                ->orWhere('last_name', 'like', "%{$searchName}%");
         })
-        ->orderBy('first_name')
-        ->get();
+            ->orderBy('first_name')
+            ->get();
         $payments = Payment::all();
         $bookingTypes = BookingType::where('is_active', true)->get();
 
@@ -165,6 +167,16 @@ class BookingsController extends Controller
 
         $this->syncRoomStatus($booking);
 
+        ActivityLog::create([
+            'user_id' => Auth::id(),
+            'staff_name' => Auth::user()->name,
+            'action' => 'CREATE_BOOKING',
+            'guest_name' => $client->first_name . ' ' . $client->last_name,
+            'room_number' => $booking->room->room_number,
+            'status' => $booking->status, // pencil or confirmed
+            'created_at' => now(),
+        ]);
+
         if (! empty($validated['downpayment'])) {
             $booking->payments()->create([
                 'amount' => $validated['downpayment'],
@@ -181,7 +193,7 @@ class BookingsController extends Controller
 
                 $this->syncRoomStatus($booking);
             }
-            
+
             if ($totalPaid >= $booking->total_amount) {
                 $booking->payment_status = 'paid';
             } elseif ($totalPaid > 0) {
@@ -190,7 +202,7 @@ class BookingsController extends Controller
                 $booking->payment_status = 'unpaid';
             }
 
-        $booking->save();
+            $booking->save();
         }
 
         return redirect()->route('bookings.index')
@@ -251,10 +263,20 @@ class BookingsController extends Controller
         } elseif ($totalPaid > 0) {
             $booking->payment_status = 'partial';
         } else {
-            $booking->payment_status = 'unpaid'; 
+            $booking->payment_status = 'unpaid';
         }
 
         $booking->save();
+
+        ActivityLog::create([
+            'user_id' => Auth::id(),
+            'staff_name' => Auth::user()->name,
+            'action' => 'UPDATE_BOOKING',
+            'guest_name' => $booking->client->first_name . ' ' . $booking->client->last_name,
+            'room_number' => $booking->room->room_number,
+            'status' => $booking->status,
+            'created_at' => now(),
+        ]);
 
         $this->syncRoomStatus($booking);
 
@@ -271,7 +293,37 @@ class BookingsController extends Controller
         $booking->status = $request->status;
         $booking->save();
 
+        $actionMap = [
+            'checked_in' => 'CHECK_IN',
+            'checked_out' => 'CHECK_OUT',
+            'cancelled' => 'CANCEL_BOOKING',
+            'no_show' => 'CANCEL_BOOKING',
+            'confirmed' => 'CREATE_BOOKING',
+            'pencil' => 'CREATE_BOOKING',
+            'reserved' => 'CREATE_BOOKING',
+        ];
+
+        ActivityLog::create([
+            'user_id' => Auth::id(),
+            'staff_name' => Auth::user()->name,
+            'action' => $actionMap[$request->status] ?? 'CREATE_BOOKING',
+            'guest_name' => $booking->client->first_name . ' ' . $booking->client->last_name,
+            'room_number' => $booking->room->room_number,
+            'status' => $request->status,
+            'created_at' => now(),
+        ]);
+
         $this->syncRoomStatus($booking);
+
+        ActivityLog::create([
+            'user_id' => Auth::id(),
+            'staff_name' => Auth::user()->name,
+            'action' => strtoupper($request->status), // dynamic
+            'guest_name' => $booking->client->first_name . ' ' . $booking->client->last_name,
+            'room_number' => $booking->room->room_number,
+            'status' => $request->status,
+            'created_at' => now(),
+        ]);
 
         $booking->update([
             'status' => $request->status,

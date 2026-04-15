@@ -1,10 +1,10 @@
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
-import { Head, usePage } from '@inertiajs/react';
+import { Head, usePage, router } from '@inertiajs/react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { LogIn, LogOut, CalendarPlus, Ban, Users, Home } from 'lucide-react';
@@ -20,22 +20,12 @@ interface Log {
 	id: number;
 	staffId: string;
 	user: string;
+	role: string;
 	action: LogType;
 	guest: string;
 	room: string;
 	date: string;
 }
-
-// ✅ MOCK LOGS (UNCHANGED FOR NOW)
-const mockLogs: Log[] = Array.from({ length: 35 }).map((_, i) => ({
-	id: i + 1,
-	staffId: `FD-${100 + (i % 5)}`,
-	user: `Frontdesk ${String.fromCharCode(65 + (i % 3))}`,
-	action: ['CHECK_IN', 'CHECK_OUT', 'CREATE_BOOKING', 'CANCEL_BOOKING'][i % 4] as LogType,
-	guest: `Guest ${i + 1}`,
-	room: `${100 + (i % 10)}`,
-	date: `Apr 10, ${8 + (i % 10)}:${(i % 60).toString().padStart(2, '0')} AM`,
-}));
 
 const actionColor = (action: LogType) => {
 	switch (action) {
@@ -77,15 +67,23 @@ const actionIcon = (action: LogType) => {
 };
 
 export default function Index() {
-	// ✅ INERTIA DATA (NEW)
-	const { users = [] } = usePage().props as {
+	const { users = [], logs = [] } = usePage().props as {
 		users?: {
 			id: number;
 			name: string;
 			email: string;
 			role: string;
 		}[];
+		logs?: Log[];
 	};
+
+	useEffect(() => {
+		const interval = setInterval(() => {
+			router.reload({ only: ['logs'] });
+		}, 5000); // every 5 seconds
+
+		return () => clearInterval(interval);
+	}, []);
 
 	const [search, setSearch] = useState('');
 	const [filter, setFilter] = useState<LogType | 'ALL'>('ALL');
@@ -94,7 +92,7 @@ export default function Index() {
 	const perPage = 10;
 
 	const filteredLogs = useMemo(() => {
-		return mockLogs.filter((log) => {
+		return logs.filter((log) => {
 			const keyword = search.toLowerCase();
 
 			const matchSearch =
@@ -257,7 +255,8 @@ export default function Index() {
 								<TableHeader>
 									<TableRow>
 										<TableHead>ID</TableHead>
-										<TableHead>Staff</TableHead>
+										<TableHead>Name</TableHead>
+										<TableHead>Role</TableHead>
 										<TableHead>Action</TableHead>
 										<TableHead>Guest</TableHead>
 										<TableHead>Room</TableHead>
@@ -271,6 +270,9 @@ export default function Index() {
 											<TableRow key={log.id}>
 												<TableCell>{log.staffId}</TableCell>
 												<TableCell>{log.user}</TableCell>
+												<TableCell>
+													<Badge className='capitalize'>{log.role}</Badge>
+												</TableCell>
 												<TableCell>
 													<Badge className={`flex items-center gap-1 ${actionColor(log.action)}`}>
 														{actionIcon(log.action)}
