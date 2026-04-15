@@ -51,10 +51,12 @@ interface Booking {
 	payment_status?: string;
 }
 
+// Map booking status → FullCalendar event color
 const statusColor: Record<string, string> = {
-	pencil: '#F97316',
-	confirmed: '#8B5CF6',
-	checked_in: '#C1DBFF',
+	pencil: '#F97316', // orange
+	confirmed: '#8B5CF6', // purple
+	reserved: '#8B5CF6', // purple
+	checked_in: '#16A34A', // green
 };
 
 const statusBadge: Record<RoomStatus, string> = {
@@ -114,6 +116,7 @@ export default function Dashboard() {
 				id: String(room.id),
 				title: room.room_number ?? 'Room',
 				roomType: room.room_type ?? '',
+				roomStatus: room.status ?? 'Available',
 			}));
 	}, [rooms, roomScope]);
 
@@ -129,7 +132,6 @@ export default function Dashboard() {
 			extendedProps: {
 				status: b.status,
 				payment_status: b.payment_status,
-				check_in: b.check_in,
 				total_amount: b.total_amount,
 			},
 		}));
@@ -186,101 +188,24 @@ export default function Dashboard() {
 	const initialDate = range?.from ?? new Date();
 
 	const roomsForDate = (rooms ?? [])
-		.filter((room) =>
-			roomScope === 'hotel'
-				? !(room.room_type ?? '').toLowerCase().includes('event')
-				: (room.room_type ?? '').toLowerCase().includes('event'),
-		)
-		.map((room) => ({
-			id: room.id,
-			label: room.room_number ?? 'Room',
-			subLabel: room.room_type ?? '',
-			status: (room.status ?? 'Available') as RoomStatus,
-		}))
-		.filter((room) => (activeFilter === 'All' ? true : room.status === activeFilter));
+	.filter((room) =>
+		roomScope === 'hotel'
+			? !(room.room_type ?? '').toLowerCase().includes('event')
+			: (room.room_type ?? '').toLowerCase().includes('event'),
+	)
+	.map((room) => ({
+		id: room.id,
+		label: room.room_number ?? 'Room',
+		subLabel: room.room_type ?? '',
+		status: (room.status ?? 'Available') as RoomStatus,
+	}))
+	.filter((room) => (activeFilter === 'All' ? true : room.status === activeFilter));
 
 	return (
 		<AppLayout breadcrumbs={breadcrumbs} showDatePicker>
 			<Head title='Dashboard' />
 
-			{/* ── FullCalendar ── */}
-			<Card className='m-6'>
-				<CardContent className='px-4'>
-					<FullCalendar
-						ref={calendarRef}
-						plugins={[resourceTimelinePlugin, dayGridPlugin, interactionPlugin]}
-						initialView='resourceTimelineWeek'
-						initialDate={initialDate}
-						headerToolbar={{
-							right: 'today prev,next',
-							center: 'title',
-							left: 'resourceTimelineDay,resourceTimelineWeek,dayGridMonth',
-						}}
-						buttonText={{
-							today: 'Today',
-							day: 'Day',
-							week: 'Week',
-							month: 'Month',
-						}}
-						views={{
-							resourceTimelineDay: {
-								slotDuration: '01:00:00',
-								slotMinWidth: 10,
-								slotLabelFormat: { hour: 'numeric', hour12: true },
-							},
-							resourceTimelineWeek: {
-								slotDuration: '24:00:00',
-								slotMinWidth: 50,
-								slotLabelFormat: { weekday: 'long', day: 'numeric' },
-							},
-						}}
-						// Filter resources by activeFilter (timeline views only)
-						resources={calendarResources}
-						resourceLabelContent={({ resource }) => (
-							<div className='flex flex-col'>
-								<span className='text-sm leading-tight font-medium'>{resource.title}</span>
-								<span className='text-xs text-muted-foreground'>{resource.extendedProps.roomType}</span>
-							</div>
-						)}
-						events={calendarEvents}
-						eventContent={({ event }: EventContentArg) => {
-							const ps = event.extendedProps.payment_status as string;
-							
-							const ciRaw = event.extendedProps.check_in as string;
-							const ci = new Date(ciRaw).toLocaleTimeString([], {
-								hour: '2-digit',
-								minute: '2-digit',
-							});
-
-							const payColor =
-								ps === 'paid'
-									? 'bg-green-200 text-green-800'
-									: ps === 'partial'
-										? 'bg-yellow-200 text-yellow-800'
-										: 'bg-red-200 text-red-800';
-							return (
-								<div className='flex items-center gap-2 truncate px-1 py-0.5'>
-									<span className='text-xs text-blue-700'>{ci}</span>
-									{ps && (
-										<span className={`shrink-0 rounded px-1 py-0.5 text-[9px] font-semibold capitalize ${payColor}`}>{ps}</span>
-									)}
-									<span className='truncate text-xs font-medium'>{event.title}</span>
-								</div>
-							);
-						}}
-						eventClick={handleEventClick}
-						// Performance optimizations
-						lazyFetching={true}
-						eventMaxStack={20}
-						dayMaxEvents={20}
-						height='auto'
-						resourceAreaWidth='8%'
-						resourceAreaHeaderContent='Room'
-						nowIndicator={true}
-					/>
-				</CardContent>
-			</Card>
-			<div className='mt-6 grid grid-cols-1 gap-6 px-6 pb-10 lg:grid-cols-4'>
+			<div className='mt-10 grid grid-cols-1 gap-6 px-6 pb-10 lg:grid-cols-4'>
 				<div className='space-y-6 lg:col-span-3'>
 					{/* ── Summary cards ── */}
 					<div>
@@ -326,6 +251,117 @@ export default function Dashboard() {
 							))}
 						</TabsList>
 					</Tabs>
+
+					{/* ── FullCalendar ── */}
+					<Card>
+						<CardContent className='p-4'>
+							<FullCalendar
+								ref={calendarRef}
+								plugins={[resourceTimelinePlugin, dayGridPlugin, interactionPlugin]}
+								initialView='resourceTimelineWeek'
+								initialDate={initialDate}
+								headerToolbar={{
+									left: 'prev,next today',
+									center: 'title',
+									right: 'resourceTimelineDay,resourceTimelineWeek,dayGridMonth',
+								}}
+								buttonText={{
+									today: 'Today',
+									day: 'Day',
+									week: 'Week',
+									month: 'Month',
+								}}
+								views={{
+									resourceTimelineDay: {
+										slotDuration: '01:00:00',
+										slotMinWidth: 60,
+										slotLabelFormat: { hour: 'numeric', hour12: true },
+									},
+									resourceTimelineWeek: {
+										slotDuration: '24:00:00',
+										slotMinWidth: 50,
+										slotLabelFormat: { weekday: 'short', day: 'numeric' },
+									},
+									dayGridMonth: {
+										// month view has no resources — shows all bookings across all rooms
+										eventContent: ({ event }: EventContentArg) => {
+											const ps = event.extendedProps.payment_status as string;
+											const payColor =
+												ps === 'paid'
+													? 'bg-green-200 text-green-800'
+													: ps === 'partial'
+														? 'bg-yellow-200 text-yellow-800'
+														: 'bg-red-200 text-red-800';
+											return (
+												<div
+													className='flex w-full items-center gap-1 truncate rounded px-1 py-0.5'
+													style={{ backgroundColor: event.backgroundColor }}
+												>
+													<span className='truncate text-[11px] leading-tight font-medium text-white'>
+														{event.extendedProps.room_number ? `${event.extendedProps.room_number} · ` : ''}
+														{event.title}
+													</span>
+													{ps && (
+														<span className={`shrink-0 rounded px-1 text-[9px] font-semibold ${payColor}`}>
+															{ps}
+														</span>
+													)}
+												</div>
+											);
+										},
+									},
+								}}
+								// Filter resources by activeFilter (timeline views only)
+								resources={
+									activeFilter === 'All'
+										? calendarResources
+										: calendarResources.filter((r) => r.roomStatus === activeFilter)
+								}
+								resourceLabelContent={({ resource }) => (
+									<div className='flex flex-col gap-0.5 py-1'>
+										<span className='text-sm leading-tight font-medium'>{resource.title}</span>
+										<span className='text-xs text-muted-foreground'>{resource.extendedProps.roomType}</span>
+										<span
+											className={`inline-block w-fit rounded px-1.5 py-0.5 text-[10px] font-medium ${
+												statusBadge[resource.extendedProps.roomStatus as RoomStatus] ?? ''
+											}`}
+										>
+											{resource.extendedProps.roomStatus}
+										</span>
+									</div>
+								)}
+								events={calendarEvents}
+								eventContent={({ event }: EventContentArg) => {
+									const ps = event.extendedProps.payment_status as string;
+									const payColor =
+										ps === 'paid'
+											? 'bg-green-200 text-green-800'
+											: ps === 'partial'
+												? 'bg-yellow-200 text-yellow-800'
+												: 'bg-red-200 text-red-800';
+									return (
+										<div className='flex items-center gap-1.5 truncate px-1 py-0.5'>
+											<span className='truncate text-xs font-medium text-white'>{event.title}</span>
+											{ps && (
+												<span className={`shrink-0 rounded px-1 py-0.5 text-[9px] font-semibold ${payColor}`}>
+													{ps}
+												</span>
+											)}
+										</div>
+									);
+								}}
+								eventClick={handleEventClick}
+								// Performance optimizations
+								lazyFetching={true}
+								eventMaxStack={3}
+								dayMaxEvents={3}
+								height='auto'
+								resourceAreaWidth='18%'
+								resourceAreaHeaderContent='Room'
+								nowIndicator={true}
+							/>
+						</CardContent>
+					</Card>
 
 					{/* ROOM GRID */}
 					<div className='grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4'>
