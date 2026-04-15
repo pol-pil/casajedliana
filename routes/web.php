@@ -8,7 +8,8 @@ use App\Http\Controllers\PaymentsController;
 use App\Http\Controllers\RatesController;
 use App\Http\Controllers\HistoryController;
 use App\Http\Controllers\ChartController;
-
+use App\Http\Controllers\Admin\OverviewController;
+use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Middleware\FrontdeskMiddleware;
 use App\Http\Middleware\AdminMiddleware;
 
@@ -77,8 +78,26 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     Route::middleware(AdminMiddleware::class)->group(function () {
-        Route::get('/admin', fn() => Inertia::render('AdminPage/Index'))->name('admin.index');
-        Route::get('/admin/users', fn() => Inertia::render('AdminPage/User'));
+        Route::get('/admin', [OverviewController::class, 'index'])
+    ->name('admin.index');
+        
+
+        // users management
+        Route::get('/admin/users', [AdminUserController::class, 'index'])
+            ->name('admin.users.index');
+        Route::post('/admin/users', [AdminUserController::class, 'store'])
+            ->name('admin.users.store');
+        Route::patch('/admin/users/{user}/password', [AdminUserController::class, 'resetPassword'])
+            ->name('admin.users.resetPassword');
+        Route::patch('/admin/users/{user}', [AdminUserController::class, 'update'])
+            ->name('admin.users.update');
+        Route::patch('/admin/users/{user}/status', [AdminUserController::class, 'updateStatus'])
+            ->name('admin.users.updateStatus');
+        Route::delete('/admin/users/{user}', [AdminUserController::class, 'destroy'])
+            ->name('admin.users.destroy');
+
+
+
         Route::get('/admin/hotel-info', fn() => Inertia::render('AdminPage/HotelInfo'));
     });
 });

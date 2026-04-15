@@ -1,6 +1,6 @@
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
-import { Head } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
@@ -26,7 +26,7 @@ interface Log {
 	date: string;
 }
 
-// MOCK DATA
+// ✅ MOCK LOGS (UNCHANGED FOR NOW)
 const mockLogs: Log[] = Array.from({ length: 35 }).map((_, i) => ({
 	id: i + 1,
 	staffId: `FD-${100 + (i % 5)}`,
@@ -77,6 +77,16 @@ const actionIcon = (action: LogType) => {
 };
 
 export default function Index() {
+	// ✅ INERTIA DATA (NEW)
+	const { users = [] } = usePage().props as {
+		users?: {
+			id: number;
+			name: string;
+			email: string;
+			role: string;
+		}[];
+	};
+
 	const [search, setSearch] = useState('');
 	const [filter, setFilter] = useState<LogType | 'ALL'>('ALL');
 	const [page, setPage] = useState(1);
@@ -122,8 +132,8 @@ export default function Index() {
 					<Card>
 						<CardContent className='flex items-center justify-between p-5'>
 							<div className='text-center'>
-								<h2 className='text-3xl font-bold'>3</h2>
-								<p className='text-sm text-muted-foreground'>Total Users</p>
+								<h2 className='text-3xl font-bold'>{users.length}</h2>
+								<p className='text-sm text-muted-foreground'>Active Users</p>
 							</div>
 							<div className='flex h-20 w-20 items-center justify-center rounded-full bg-blue-100'>
 								<Users className='h-10 w-10 text-blue-600' />
@@ -158,40 +168,43 @@ export default function Index() {
 										<TableHead>ID</TableHead>
 										<TableHead>Username</TableHead>
 										<TableHead>Email</TableHead>
-										<TableHead>Status</TableHead>
+										<TableHead>Role</TableHead>
 									</TableRow>
 								</TableHeader>
 
 								<TableBody>
-									{[
-										{ id: '#01', name: 'Admin', email: 'Admin@gmail' },
-										{ id: '#02', name: 'Front Desk Officer', email: 'Frontdeskoffice@gmail' },
-										{ id: '#03', name: 'Hotel Manager', email: 'Hotelmanager@gmail.com' },
-									].map((user, i) => (
-										<TableRow key={i}>
-											<TableCell>{user.id}</TableCell>
-											<TableCell>{user.name}</TableCell>
-											<TableCell>{user.email}</TableCell>
-											<TableCell>
-												<span className='rounded-full bg-green-100 px-2 py-1 text-xs text-green-700'>Active</span>
+									{users.length > 0 ? (
+										users.map((user) => (
+											<TableRow key={user.id}>
+												<TableCell>#{user.id}</TableCell>
+												<TableCell>{user.name}</TableCell>
+												<TableCell>{user.email}</TableCell>
+												<TableCell>
+													<Badge className='capitalize'>{user.role}</Badge>
+												</TableCell>
+											</TableRow>
+										))
+									) : (
+										<TableRow>
+											<TableCell colSpan={4} className='py-6 text-center text-muted-foreground'>
+												No active users found
 											</TableCell>
 										</TableRow>
-									))}
+									)}
 								</TableBody>
 							</Table>
 						</div>
 					</CardContent>
 				</Card>
 
-				{/*LOGS */}
 				<Card>
 					<CardContent className='p-0'>
 						<div className='border-b px-4 py-3'>
 							<div className='flex flex-col gap-3 md:flex-row md:items-center md:justify-between'>
-								{/* LEFT: TITLE */}
+								{/* TITLE */}
 								<h2 className='font-semibold whitespace-nowrap'>Frontdesk Activity Logs</h2>
 
-								{/* RIGHT: SEARCH + TABS INLINE */}
+								{/* SEARCH + TABS */}
 								<div className='flex w-full flex-col gap-2 md:w-auto md:flex-row md:items-center md:gap-3'>
 									{/* SEARCH */}
 									<Input
@@ -204,7 +217,7 @@ export default function Index() {
 										className='w-full md:w-60'
 									/>
 
-									{/* TABS INLINE */}
+									{/* TABS */}
 									<div className='flex items-center overflow-x-auto rounded-xl border bg-muted p-1'>
 										{[
 											{ type: 'ALL', label: 'All', icon: null },
@@ -214,7 +227,7 @@ export default function Index() {
 											{ type: 'CANCEL_BOOKING', label: 'Cancelled', icon: Ban },
 										].map(({ type, label, icon: Icon }) => {
 											const isActive = filter === type;
- 
+
 											return (
 												<button
 													key={type}
@@ -253,21 +266,29 @@ export default function Index() {
 								</TableHeader>
 
 								<TableBody>
-									{paginatedLogs.map((log) => (
-										<TableRow key={log.id}>
-											<TableCell>{log.staffId}</TableCell>
-											<TableCell>{log.user}</TableCell>
-											<TableCell>
-												<Badge className={`flex items-center gap-1 ${actionColor(log.action)}`}>
-													{actionIcon(log.action)}
-													{actionLabel(log.action)}
-												</Badge>
+									{paginatedLogs.length > 0 ? (
+										paginatedLogs.map((log) => (
+											<TableRow key={log.id}>
+												<TableCell>{log.staffId}</TableCell>
+												<TableCell>{log.user}</TableCell>
+												<TableCell>
+													<Badge className={`flex items-center gap-1 ${actionColor(log.action)}`}>
+														{actionIcon(log.action)}
+														{actionLabel(log.action)}
+													</Badge>
+												</TableCell>
+												<TableCell>{log.guest}</TableCell>
+												<TableCell>{log.room}</TableCell>
+												<TableCell>{log.date}</TableCell>
+											</TableRow>
+										))
+									) : (
+										<TableRow>
+											<TableCell colSpan={6} className='py-6 text-center text-muted-foreground'>
+												No activity found
 											</TableCell>
-											<TableCell>{log.guest}</TableCell>
-											<TableCell>{log.room}</TableCell>
-											<TableCell>{log.date}</TableCell>
 										</TableRow>
-									))}
+									)}
 								</TableBody>
 							</Table>
 						</div>
