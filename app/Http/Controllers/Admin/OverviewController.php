@@ -31,7 +31,9 @@ class OverviewController extends Controller
                     'action' => $log->action,
                     'guest' => $log->guest_name,
                     'room' => $log->room_number,
-                    'date' => Carbon::parse($log->created_at)->format('M d, h:i A'),
+                    'date' => Carbon::parse($log->created_at)
+                        ->timezone('Asia/Manila')
+                        ->format('M d, h:i A'),
                 ];
             });
 

@@ -315,20 +315,6 @@ class BookingsController extends Controller
 
         $this->syncRoomStatus($booking);
 
-        ActivityLog::create([
-            'user_id' => Auth::id(),
-            'staff_name' => Auth::user()->name,
-            'action' => strtoupper($request->status), // dynamic
-            'guest_name' => $booking->client->first_name . ' ' . $booking->client->last_name,
-            'room_number' => $booking->room->room_number,
-            'status' => $request->status,
-            'created_at' => now(),
-        ]);
-
-        $booking->update([
-            'status' => $request->status,
-        ]);
-
         return back()->with('success', 'Booking status updated.');
     }
 
