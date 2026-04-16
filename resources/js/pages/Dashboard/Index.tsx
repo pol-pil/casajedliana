@@ -1,16 +1,8 @@
-// resources/js/pages/Dashboard.tsx
-import { useMemo, useState, useRef } from 'react';
+import { useMemo, useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
-import { Head, usePage, router } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import { format } from 'date-fns';
-
-// FullCalendar
-import FullCalendar from '@fullcalendar/react';
-import resourceTimelinePlugin from '@fullcalendar/resource-timeline';
-import dayGridPlugin from '@fullcalendar/daygrid';
-import interactionPlugin from '@fullcalendar/interaction';
-import type { EventClickArg, EventContentArg } from '@fullcalendar/core';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -50,12 +42,6 @@ interface Booking {
 	room?: Room;
 	payment_status?: string;
 }
-
-const statusColor: Record<string, string> = {
-	pencil: '#F97316',
-	confirmed: '#8B5CF6',
-	checked_in: '#C1DBFF',
-};
 
 const statusBadge: Record<RoomStatus, string> = {
 	Available: 'bg-green-100 text-green-700',
@@ -100,47 +86,7 @@ export default function Dashboard() {
 	const [activeFilter, setActiveFilter] = useState<RoomFilter>('All');
 	const [search, setSearch] = useState('');
 	const { range } = useDateRange();
-	const calendarRef = useRef<FullCalendar>(null);
 
-	// ─── FullCalendar: resources (rooms) ────────────────────────────────────
-	const calendarResources = useMemo(() => {
-		return rooms
-			.filter((room) =>
-				roomScope === 'hotel'
-					? !(room.room_type ?? '').toLowerCase().includes('event')
-					: (room.room_type ?? '').toLowerCase().includes('event'),
-			)
-			.map((room) => ({
-				id: String(room.id),
-				title: room.room_number ?? 'Room',
-				roomType: room.room_type ?? '',
-			}));
-	}, [rooms, roomScope]);
-
-	// ─── FullCalendar: events (bookings) ────────────────────────────────────
-	const calendarEvents = useMemo(() => {
-		return bookings.map((b) => ({
-			id: String(b.id),
-			resourceId: String(b.room_id),
-			title: b.client ? `${b.client.first_name} ${b.client.last_name}` : `Booking #${b.id}`,
-			start: b.check_in,
-			end: b.check_out,
-			color: statusColor[b.status?.toLowerCase()] ?? '#8B5CF6',
-			extendedProps: {
-				status: b.status,
-				payment_status: b.payment_status,
-				check_in: b.check_in,
-				total_amount: b.total_amount,
-			},
-		}));
-	}, [bookings]);
-
-	// ─── Handlers ────────────────────────────────────────────────────────────
-	const handleEventClick = ({ event }: EventClickArg) => {
-		router.visit(`/bookings/${event.id}`);
-	};
-
-	// ─── Summary counts ──────────────────────────────────────────────────────
 	const bookingOverlapsRange = (b: Booking) => {
 		if (!range?.from || !range?.to) return false;
 		return new Date(b.check_in) <= range.to && new Date(b.check_out) > range.from && b.status.toLowerCase() !== 'cancelled';
@@ -160,7 +106,6 @@ export default function Dashboard() {
 		{ label: 'Available', value: availableCount, icon: Check },
 	];
 
-	// ─── Arrivals table ───────────────────────────────────────────────────────
 	const mapBookingStatus = (status?: string) => {
 		const s = (status ?? '').toLowerCase();
 		if (s.includes('pencil')) return 'Pencil';
@@ -181,10 +126,6 @@ export default function Dashboard() {
 		[combinedArrivals, search],
 	);
 
-	// ─── Navigate calendar when global date range changes ────────────────────
-	// Sync the calendar's visible range to your existing date range context
-	const initialDate = range?.from ?? new Date();
-
 	const roomsForDate = (rooms ?? [])
 		.filter((room) =>
 			roomScope === 'hotel'
@@ -203,83 +144,6 @@ export default function Dashboard() {
 		<AppLayout breadcrumbs={breadcrumbs} showDatePicker>
 			<Head title='Dashboard' />
 
-			{/* ── FullCalendar ── */}
-			<Card className='m-6'>
-				<CardContent className='px-4'>
-					<FullCalendar
-						ref={calendarRef}
-						plugins={[resourceTimelinePlugin, dayGridPlugin, interactionPlugin]}
-						initialView='resourceTimelineWeek'
-						initialDate={initialDate}
-						headerToolbar={{
-							right: 'today prev,next',
-							center: 'title',
-							left: 'resourceTimelineDay,resourceTimelineWeek,dayGridMonth',
-						}}
-						buttonText={{
-							today: 'Today',
-							day: 'Day',
-							week: 'Week',
-							month: 'Month',
-						}}
-						views={{
-							resourceTimelineDay: {
-								slotDuration: '01:00:00',
-								slotMinWidth: 10,
-								slotLabelFormat: { hour: 'numeric', hour12: true },
-							},
-							resourceTimelineWeek: {
-								slotDuration: '24:00:00',
-								slotMinWidth: 50,
-								slotLabelFormat: { weekday: 'long', day: 'numeric' },
-							},
-						}}
-						// Filter resources by activeFilter (timeline views only)
-						resources={calendarResources}
-						resourceLabelContent={({ resource }) => (
-							<div className='flex flex-col'>
-								<span className='text-sm leading-tight font-medium'>{resource.title}</span>
-								<span className='text-xs text-muted-foreground'>{resource.extendedProps.roomType}</span>
-							</div>
-						)}
-						events={calendarEvents}
-						eventContent={({ event }: EventContentArg) => {
-							const ps = event.extendedProps.payment_status as string;
-							
-							const ciRaw = event.extendedProps.check_in as string;
-							const ci = new Date(ciRaw).toLocaleTimeString([], {
-								hour: '2-digit',
-								minute: '2-digit',
-							});
-
-							const payColor =
-								ps === 'paid'
-									? 'bg-green-200 text-green-800'
-									: ps === 'partial'
-										? 'bg-yellow-200 text-yellow-800'
-										: 'bg-red-200 text-red-800';
-							return (
-								<div className='flex items-center gap-2 truncate px-1 py-0.5'>
-									<span className='text-xs text-blue-700'>{ci}</span>
-									{ps && (
-										<span className={`shrink-0 rounded px-1 py-0.5 text-[9px] font-semibold capitalize ${payColor}`}>{ps}</span>
-									)}
-									<span className='truncate text-xs font-medium'>{event.title}</span>
-								</div>
-							);
-						}}
-						eventClick={handleEventClick}
-						// Performance optimizations
-						lazyFetching={true}
-						eventMaxStack={20}
-						dayMaxEvents={20}
-						height='auto'
-						resourceAreaWidth='8%'
-						resourceAreaHeaderContent='Room'
-						nowIndicator={true}
-					/>
-				</CardContent>
-			</Card>
 			<div className='mt-6 grid grid-cols-1 gap-6 px-6 pb-10 lg:grid-cols-4'>
 				<div className='space-y-6 lg:col-span-3'>
 					{/* ── Summary cards ── */}

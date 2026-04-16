@@ -202,6 +202,7 @@ const FindClientsDialog = ({
 				{ searchName },
 				{
 					preserveState: true,
+					preserveScroll: true,
 					replace: true,
 				},
 			);
@@ -218,7 +219,7 @@ const FindClientsDialog = ({
 				onOpenChange(isOpen);
 			}}
 		>
-			<DialogContent>
+			<DialogContent onCloseAutoFocus={(event) => event.preventDefault()}>
 				<DialogHeader className='flex flex-row items-center gap-4'>
 					<DialogTitle>Find Client</DialogTitle>
 					<Input
@@ -315,37 +316,32 @@ export default function BookingFormDialog({
 		remarks: '',
 	};
 
-	// Use the PageProps type
 	const { rooms, rates, bookingTypes, roomBlockedDates } = usePage<PageProps>().props;
 
 	const disabledDates = (date: Date): boolean => {
 		const today = new Date();
 		today.setHours(0, 0, 0, 0);
-
-		// Disable past dates
+		
 		if (date < today) return true;
-
-		// If no room selected, only block past dates
+	
 		if (!selectedRoomId) return false;
-
-		// Check if room itself is under maintenance/reserved status
+	
 		const room = rooms.find((r) => r.id.toString() === selectedRoomId);
 		if (room && ['maintenance', 'reserved'].includes(room.status)) return true;
-
-		// Check blocked date ranges for selected room
+	
 		const blocked = roomBlockedDates[selectedRoomId] ?? [];
 		return blocked.some(({ from, to, booking_id }) => {
-			// In edit mode, skip the current booking's own blocked range
+			// allow sariling booking kapag edit
 			if (isEditMode && selectedBooking && booking_id === selectedBooking.id) return false;
-
+	
 			const fromDate = new Date(from);
 			const toDate = new Date(to);
 			fromDate.setHours(0, 0, 0, 0);
 			toDate.setHours(0, 0, 0, 0);
+	
 			return date >= fromDate && date <= toDate;
 		});
 	};
-
 	useEffect(() => {
 		if (dateRange.from && dateRange.to) {
 			const fromDate = new Date(dateRange.from);
@@ -374,29 +370,27 @@ export default function BookingFormDialog({
 
 			let roomAmount = 0;
 
-			const rate = selectedRateId !== 'custom' 
-			? rates.find((r) => r.id.toString() === selectedRateId) 
-			: null;
-		
-		if (room && duration > 0) {
-			roomAmount = room.price * duration;
-		
-			if (selectedRateId === 'custom' && customDiscount && parseFloat(customDiscount) > 0) {
-				// Custom discount calculation
-				if (customDiscountType === 'percentage') {
-					roomAmount = roomAmount * (1 - parseFloat(customDiscount) / 100);
-				} else {
-					roomAmount = Math.max(0, roomAmount - parseFloat(customDiscount));
-				}
-			} else if (rate) {
-				// Preset rate calculation
-				if (rate.type === 'percentage') {
-					roomAmount = roomAmount * (1 - rate.value / 100);
-				} else {
-					roomAmount = Math.max(0, roomAmount - rate.value);
+			const rate = selectedRateId !== 'custom' ? rates.find((r) => r.id.toString() === selectedRateId) : null;
+
+			if (room && duration > 0) {
+				roomAmount = room.price * duration;
+
+				if (selectedRateId === 'custom' && customDiscount && parseFloat(customDiscount) > 0) {
+					// Custom discount calculation
+					if (customDiscountType === 'percentage') {
+						roomAmount = roomAmount * (1 - parseFloat(customDiscount) / 100);
+					} else {
+						roomAmount = Math.max(0, roomAmount - parseFloat(customDiscount));
+					}
+				} else if (rate) {
+					// Preset rate calculation
+					if (rate.type === 'percentage') {
+						roomAmount = roomAmount * (1 - rate.value / 100);
+					} else {
+						roomAmount = Math.max(0, roomAmount - rate.value);
+					}
 				}
 			}
-		}
 
 			setData('check_in', checkInDate.toISOString());
 			setData('check_out', checkOutDate.toISOString());
@@ -432,11 +426,18 @@ export default function BookingFormDialog({
 				const to = new Date(dateRange.to);
 				from.setHours(0, 0, 0, 0);
 				to.setHours(0, 0, 0, 0);
-				const isBlocked = ranges.some(({ from: f, to: t }) => {
+				const isBlocked = ranges.some(({ from: f, to: t, booking_id }) => {
+					// Skip current booking in edit mode
+					if (isEditMode && selectedBooking && booking_id === selectedBooking.id) {
+						return false;
+					}
+				
 					const fd = new Date(f);
 					fd.setHours(0, 0, 0, 0);
+				
 					const td = new Date(t);
 					td.setHours(0, 0, 0, 0);
+				
 					return from <= td && to >= fd;
 				});
 				if (isBlocked) blocked.add(room.id.toString());
@@ -507,7 +508,10 @@ export default function BookingFormDialog({
 		>
 			<DialogTrigger asChild>{children}</DialogTrigger>
 
-			<DialogContent className='max-h-[90vh] min-w-[90vw] overflow-y-auto lg:min-w-5xl'>
+			<DialogContent
+				className='max-h-[90vh] min-w-[90vw] overflow-y-auto lg:min-w-5xl'
+				onCloseAutoFocus={(event) => event.preventDefault()}
+			>
 				<form onSubmit={handleSubmit}>
 					<FieldGroup>
 						<FieldSet>

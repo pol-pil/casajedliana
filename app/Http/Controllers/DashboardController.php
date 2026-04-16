@@ -62,30 +62,22 @@ class DashboardController extends Controller
             }
         }
 
-        $bookings = Booking::with(['client', 'room', 'payments'])
+        $bookings = Booking::with(['client', 'room', 'payments', 'bookingCharges'])
             ->whereDate('check_in', '<=', $end)
             ->whereDate('check_out', '>', $start)
             ->whereNotIn('status', ['cancelled', 'checked_out', 'no_show'])
             ->get();
 
-        $checkIns = Booking::with(['client', 'room', 'payments'])
+        $checkIns = Booking::with(['client', 'room', 'payments', 'bookingCharges'])
             ->whereBetween('check_in', [$start, $end])
             ->get();
 
-        $checkOuts = Booking::with(['client', 'room', 'payments'])
+        $checkOuts = Booking::with(['client', 'room', 'payments', 'bookingCharges'])
             ->whereBetween('check_out', [$start, $end])
             ->get();
 
         $computePaymentStatus = function ($booking) {
-            $totalPaid = $booking->payments->sum('amount');
-
-            if ($totalPaid <= 0) {
-                $booking->payment_status = 'unpaid';
-            } elseif ($totalPaid < $booking->total_amount) {
-                $booking->payment_status = 'partial';
-            } else {
-                $booking->payment_status = 'paid';
-            }
+            $booking->refreshPaymentStatus();
 
             return $booking;
         };

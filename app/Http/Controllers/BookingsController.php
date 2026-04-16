@@ -69,6 +69,23 @@ class BookingsController extends Controller
             ->paginate(10)
             ->withQueryString();
 
+        $calendarBookings = Booking::with([
+            'client',
+            'room',
+            'payments',
+            'bookingType',
+            'bookingCharges.charge',
+            'rate',
+        ])
+            ->whereNotIn('status', ['cancelled', 'checked_out', 'no_show'])
+            ->orderBy('room')
+            ->get()
+            ->map(function (Booking $booking) {
+                $booking->refreshPaymentStatus();
+
+                return $booking;
+            });
+
         $stats = [
             'totalBookings'      => $allActiveBookings->count(),
             'activeGuests'       => $allActiveBookings->where('status', 'checked_in')->count(),
@@ -104,6 +121,7 @@ class BookingsController extends Controller
 
         return Inertia::render('Bookings/Index', [
             'bookings' => $bookings,
+            'calendarBookings' => $calendarBookings,
             'stats' => $stats,
             'rooms' => $rooms,
             'rates' => $rates,
@@ -193,13 +211,7 @@ class BookingsController extends Controller
                 $this->syncRoomStatus($booking);
             }
             
-            if ($totalPaid >= $booking->total_amount) {
-                $booking->payment_status = 'paid';
-            } elseif ($totalPaid > 0) {
-                $booking->payment_status = 'partial';
-            } else {
-                $booking->payment_status = 'unpaid';
-            }
+            $booking->refreshPaymentStatus();
 
         $booking->save();
         }
@@ -262,19 +274,15 @@ class BookingsController extends Controller
         $totalPaid = $booking->payments()->sum('amount');
         $requiredDownpayment = $booking->total_amount * 0.50;
 
-        if ($totalPaid >= $requiredDownpayment) {
-            $booking->status = 'confirmed';
-        } else {
-            $booking->status = 'pencil';
+        if (in_array($booking->status, ['pencil', 'confirmed'])) {
+            if ($totalPaid >= $requiredDownpayment) {
+                $booking->status = 'confirmed';
+            } else {
+                $booking->status = 'pencil';
+            }
         }
 
-        if ($totalPaid >= $booking->total_amount) {
-            $booking->payment_status = 'paid';
-        } elseif ($totalPaid > 0) {
-            $booking->payment_status = 'partial';
-        } else {
-            $booking->payment_status = 'unpaid'; 
-        }
+        $booking->refreshPaymentStatus();
 
         $booking->save();
 

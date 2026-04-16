@@ -15,21 +15,30 @@ import {
 	Plus,
 	AlertCircle,
 	EyeOff,
-	AppWindowIcon,
-	CodeIcon,
-	Clock,
-	CheckCircle,
 } from 'lucide-react';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Table, TableHead, TableHeader, TableRow, TableBody, TableCell } from '@/components/ui/table';
 import { toast } from 'sonner';
 import BookingFormDialog from '@/components/booking-dialog';
 import BookingInfoDialog from '@/components/booking-info-dialog';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import FullCalendar from '@fullcalendar/react';
+import resourceTimelinePlugin from '@fullcalendar/resource-timeline';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import interactionPlugin from '@fullcalendar/interaction';
+import type { EventClickArg, EventContentArg } from '@fullcalendar/core';
+import {
+	getCalendarCheckInClassName,
+	getCalendarEventTheme,
+	getCalendarPaymentBadgeClassName,
+	getCalendarRoomBadgeClassName,
+	getCalendarWrapperClassName,
+} from './fullcalendar-theme';
 
 type Booking = {
 	id: number;
+	room_id: number;
 	created_at: string;
 	client: {
 		id: number;
@@ -58,6 +67,7 @@ type Booking = {
 	check_in: string;
 	check_out: string;
 	status: string;
+	payment_status?: string;
 	total_amount: number;
 	remarks: string;
 	balance: number;
@@ -81,6 +91,15 @@ type Booking = {
 	}>;
 };
 
+type Room = {
+	id: number;
+	room_number?: string;
+	room_type?: string;
+	status?: string;
+};
+
+type RoomScope = 'hotel' | 'event';
+
 type PageProps = {
 	bookings: {
 		data: Booking[];
@@ -88,6 +107,8 @@ type PageProps = {
 		current_page: number;
 		last_page: number;
 	};
+	calendarBookings: Booking[];
+	rooms: Room[];
 	stats: {
 		totalBookings: number;
 		activeGuests: number;
@@ -166,6 +187,8 @@ export default function Index() {
 	const [isEditMode, setIsEditMode] = useState(false);
 	const [editingBookingId, setEditingBookingId] = useState<number | null>(null);
 	const [activeTab, setActiveTab] = useState<'all' | 'pencil' | 'confirmed' | 'checked_in'>('all');
+	const [roomScope, setRoomScope] = useState<RoomScope>('hotel');
+	const calendarRef = useRef<FullCalendar>(null);
 
 	const emptyForm = {
 		client: {
@@ -192,7 +215,7 @@ export default function Index() {
 	const { data, setData, post, put, processing, errors, clearErrors, reset } = useForm(emptyForm);
 
 	// Use the PageProps type
-	const { bookings, stats, filters } = usePage<PageProps>().props;
+	const { bookings, calendarBookings, rooms, stats, filters } = usePage<PageProps>().props;
 
 	const [search, setSearch] = useState(filters.search || '');
 	const isFirstRender = useRef(true);
@@ -209,6 +232,7 @@ export default function Index() {
 				{ search, status: activeTab !== 'all' ? activeTab : undefined },
 				{
 					preserveState: true,
+					preserveScroll: true,
 					replace: true,
 				},
 			);
@@ -249,6 +273,7 @@ export default function Index() {
 		if (isEditMode && editingBookingId) {
 			put(`/bookings/${editingBookingId}`, {
 				...data,
+				preserveScroll: true,
 				onSuccess: () => {
 					toast.success('Booking updated successfully!');
 					resetForm();
@@ -257,6 +282,7 @@ export default function Index() {
 			});
 		} else {
 			post('/bookings', {
+				preserveScroll: true,
 				onSuccess: () => {
 					toast.success('Booking created successfully!');
 					resetForm();
@@ -282,6 +308,12 @@ export default function Index() {
 		});
 	};
 
+	const formatTimeInput = (dateString: string) => {
+		const date = new Date(dateString);
+
+		return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+	};
+
 	const StatusBadge = ({ status }: { status: keyof typeof statusConfig }) => {
 		const config = statusConfig[status] ?? {
 			label: status,
@@ -302,10 +334,11 @@ export default function Index() {
 
 	useEffect(() => {
 		if (selectedBooking) {
-			const fresh = bookings.data.find((b) => b.id === selectedBooking.id);
+			const fresh =
+				bookings.data.find((b) => b.id === selectedBooking.id) ?? calendarBookings.find((b) => b.id === selectedBooking.id);
 			if (fresh) setSelectedBooking(fresh);
 		}
-	}, [bookings]);
+	}, [bookings, calendarBookings]);
 
 	const tabs = [
 		{ value: 'all', label: 'All' },
@@ -316,10 +349,136 @@ export default function Index() {
 
 	const filteredBookings = activeTab === 'all' ? bookings.data : bookings.data.filter((b) => b.status === activeTab);
 
+	const calendarResources = useMemo(() => {
+		return rooms
+			.filter((room) =>
+				roomScope === 'hotel'
+					? !(room.room_type ?? '').toLowerCase().includes('event')
+					: (room.room_type ?? '').toLowerCase().includes('event'),
+			)
+			.map((room) => ({
+				id: String(room.id),
+				title: room.room_number ?? 'Room',
+				roomType: room.room_type ?? '',
+			}));
+	}, [rooms, roomScope]);
+
+	const calendarEvents = useMemo(() => {
+		return calendarBookings.map((booking) => {
+			const theme = getCalendarEventTheme(booking.status);
+
+			return {
+				id: String(booking.id),
+				resourceId: String(booking.room_id ?? booking.room.id),
+				title: booking.client ? `${booking.client.first_name} ${booking.client.last_name}` : `Booking #${booking.id}`,
+				start: booking.check_in,
+				end: booking.check_out,
+				backgroundColor: theme.color,
+				borderColor: theme.color,
+				classNames: [theme.className],
+				extendedProps: {
+					status: booking.status,
+					payment_status: booking.payment_status,
+					check_in: booking.check_in,
+					total_amount: booking.total_amount,
+					room: booking.room.room_number,
+					room_type: booking.room.room_type,
+				},
+			};
+		});
+	}, [calendarBookings]);
+
+	const handleCalendarEventClick = ({ event }: EventClickArg) => {
+		const booking = calendarBookings.find((calendarBooking) => calendarBooking.id === Number(event.id));
+
+		if (booking) {
+			setSelectedBooking(booking);
+			setIsBookingInfoDialogOpen(true);
+		}
+	};
+
 	return (
 		<AppLayout breadcrumbs={breadcrumbs}>
-			<div className='space-y-4 p-6'>
+			<div className='space-y-8 p-6'>
 				<Head title='Bookings' />
+				<div className={getCalendarWrapperClassName()}>
+					<FullCalendar
+						ref={calendarRef}
+						plugins={[resourceTimelinePlugin, dayGridPlugin, interactionPlugin]}
+						initialView='resourceTimelineWeek'
+						resourceOrder=''
+						headerToolbar={{
+							right: 'today prev,next',
+							center: 'title',
+							left: 'resourceTimelineDay,resourceTimelineWeek,dayGridMonth',
+						}}
+						buttonText={{
+							today: 'Today',
+							day: 'Day',
+							week: 'Week',
+							month: 'Month',
+						}}
+						views={{
+							resourceTimelineDay: {
+								slotDuration: '01:00:00',
+								slotMinWidth: 10,
+								slotLabelFormat: { hour: 'numeric', hour12: true },
+							},
+							resourceTimelineWeek: {
+								slotDuration: '24:00:00',
+								slotMinWidth: 50,
+								slotLabelFormat: { weekday: 'long', day: 'numeric' },
+							},
+						}}
+						resources={calendarResources}
+						resourceLabelContent={({ resource }) => (
+							<div className='flex min-w-0 flex-col gap-0.5'>
+								<span className='text-sm leading-tight font-medium'>{resource.title}</span>
+								<span className='text-xs text-muted-foreground'>{resource.extendedProps.roomType}</span>
+							</div>
+						)}
+						events={calendarEvents}
+						eventContent={({ event }: EventContentArg) => {
+							const paymentStatus = event.extendedProps.payment_status as string;
+							const checkIn = new Date(event.extendedProps.check_in as string).toLocaleTimeString([], {
+								hour: '2-digit',
+								minute: '2-digit',
+							});
+							const room = event.extendedProps.room as string;
+
+							const paymentClassName = getCalendarPaymentBadgeClassName(paymentStatus);
+							const checkInClassName = getCalendarCheckInClassName(event.extendedProps.status as string);
+							const roomClassName = getCalendarRoomBadgeClassName(event.extendedProps.room_type as string);
+
+							return (
+								<div className={`flex min-w-0 items-center gap-2 rounded-md px-1.5 py-1 ${checkInClassName}`}>
+									<span className='shrink-0 text-[10px] font-semibold tracking-wide uppercase'>{checkIn}</span>
+									{paymentStatus && (
+										<span
+											className={`shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-semibold capitalize ${paymentClassName}`}
+										>
+											{paymentStatus}
+										</span>
+									)}
+									<span className='truncate text-xs font-medium'>{event.title}</span>
+									<span
+										className={`shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-semibold capitalize ${roomClassName}`}
+									>
+										{room}
+									</span>
+								</div>
+							);
+						}}
+						eventClick={handleCalendarEventClick}
+						lazyFetching={true}
+						eventMaxStack={20}
+						dayMaxEvents={20}
+						height='auto'
+						resourceAreaWidth='8%'
+						resourceAreaHeaderContent='Room'
+						nowIndicator={true}
+					/>
+				</div>
 
 				{/* Stats overview */}
 				<div className='flex-row gap-4 lg:flex'>
@@ -376,7 +535,7 @@ export default function Index() {
 					value={activeTab}
 					onValueChange={(value) => {
 						setActiveTab(value as any);
-						router.get('/bookings', { status: value }, { preserveState: true });
+						router.get('/bookings', { status: value }, { preserveState: true, preserveScroll: true });
 					}}
 				>
 					<TabsList>
@@ -560,7 +719,7 @@ export default function Index() {
 													search,
 													status: activeTab !== 'all' ? activeTab : undefined,
 												},
-												{ preserveState: true },
+												{ preserveState: true, preserveScroll: true },
 											);
 									}}
 									disabled={!bookings.links.find((link) => link.label === '&laquo; Previous')?.url}
@@ -579,7 +738,7 @@ export default function Index() {
 													search,
 													status: activeTab !== 'all' ? activeTab : undefined,
 												},
-												{ preserveState: true },
+												{ preserveState: true, preserveScroll: true },
 											);
 									}}
 									disabled={!bookings.links.find((link) => link.label === 'Next &raquo;')?.url}
@@ -607,6 +766,8 @@ export default function Index() {
 					setSelectedRateId(booking.rate?.id?.toString() || '');
 					setSelectedBookingType(booking.booking_type?.id?.toString() || '');
 					setGuestCount(booking.guest_count.toString());
+					setCheckInTime(formatTimeInput(booking.check_in));
+					setCheckOutTime(formatTimeInput(booking.check_out));
 					setDateRange({
 						from: new Date(booking.check_in),
 						to: new Date(booking.check_out),
