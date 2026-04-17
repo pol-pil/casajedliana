@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Booking;
 use App\Models\BookingCharge;
 use Illuminate\Http\Request;
 
@@ -28,6 +29,10 @@ class BookingChargesController extends Controller
         } else {
             BookingCharge::create($validated);
         }
+
+        $booking = Booking::with(['payments', 'bookingCharges'])->find($validated['booking_id']);
+        $booking->refreshPaymentStatus();
+        $booking->save();
 
         return redirect()->route('bookings.index')
             ->with('success', 'Booking charge saved successfully.');

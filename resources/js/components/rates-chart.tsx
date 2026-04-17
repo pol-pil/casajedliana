@@ -106,7 +106,7 @@ export function RatesChart({ rates, totalBookings = 0 }: RatesChartProps) {
     return (
       <Card className="flex flex-col">
         <CardHeader>
-          <CardTitle>Rates Distribution</CardTitle>
+          <CardTitle>Discount Distribution</CardTitle>
           <CardDescription>No booking data available yet</CardDescription>
         </CardHeader>
         <CardContent className="flex items-center justify-center h-[300px]">
@@ -121,9 +121,9 @@ export function RatesChart({ rates, totalBookings = 0 }: RatesChartProps) {
       <ChartStyle id={id} config={chartConfig} />
       <CardHeader className="flex-row items-start space-y-0 pb-0">
         <div className="grid gap-1">
-          <CardTitle>Rates Distribution</CardTitle>
+          <CardTitle>Discount Distribution</CardTitle>
           <CardDescription>
-            Bookings by rate type
+            Bookings by discount type
           </CardDescription>
         </div>
         <Select value={activeRate} onValueChange={setActiveRate}>

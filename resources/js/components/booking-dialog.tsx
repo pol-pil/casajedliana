@@ -88,6 +88,7 @@ type Rate = {
 	name: string;
 	value: number;
 	type: 'exact' | 'percentage';
+	is_custom: boolean;
 };
 
 type Payment = {
@@ -201,6 +202,7 @@ const FindClientsDialog = ({
 				{ searchName },
 				{
 					preserveState: true,
+					preserveScroll: true,
 					replace: true,
 				},
 			);
@@ -217,7 +219,7 @@ const FindClientsDialog = ({
 				onOpenChange(isOpen);
 			}}
 		>
-			<DialogContent>
+			<DialogContent onCloseAutoFocus={(event) => event.preventDefault()}>
 				<DialogHeader className='flex flex-row items-center gap-4'>
 					<DialogTitle>Find Client</DialogTitle>
 					<Input
@@ -281,6 +283,8 @@ export default function BookingFormDialog({
 	setCheckOutTime,
 }: BookingFormDialogProps) {
 	const [isFindClientsDialogOpen, setIsFindClientsDialogOpen] = useState(false);
+	const [customDiscount, setCustomDiscount] = useState('');
+	const [customDiscountType, setCustomDiscountType] = useState<'percentage' | 'exact'>('percentage');
 
 	const formatDate = (dateString: string) => {
 		return new Date(dateString).toLocaleDateString('en-US', {
@@ -312,37 +316,32 @@ export default function BookingFormDialog({
 		remarks: '',
 	};
 
-	// Use the PageProps type
 	const { rooms, rates, bookingTypes, roomBlockedDates } = usePage<PageProps>().props;
 
 	const disabledDates = (date: Date): boolean => {
 		const today = new Date();
 		today.setHours(0, 0, 0, 0);
-
-		// Disable past dates
+		
 		if (date < today) return true;
-
-		// If no room selected, only block past dates
+	
 		if (!selectedRoomId) return false;
-
-		// Check if room itself is under maintenance/reserved status
+	
 		const room = rooms.find((r) => r.id.toString() === selectedRoomId);
 		if (room && ['maintenance', 'reserved'].includes(room.status)) return true;
-
-		// Check blocked date ranges for selected room
+	
 		const blocked = roomBlockedDates[selectedRoomId] ?? [];
 		return blocked.some(({ from, to, booking_id }) => {
-			// In edit mode, skip the current booking's own blocked range
+			// allow sariling booking kapag edit
 			if (isEditMode && selectedBooking && booking_id === selectedBooking.id) return false;
-
+	
 			const fromDate = new Date(from);
 			const toDate = new Date(to);
 			fromDate.setHours(0, 0, 0, 0);
 			toDate.setHours(0, 0, 0, 0);
+	
 			return date >= fromDate && date <= toDate;
 		});
 	};
-
 	useEffect(() => {
 		if (dateRange.from && dateRange.to) {
 			const fromDate = new Date(dateRange.from);
@@ -368,14 +367,23 @@ export default function BookingFormDialog({
 			}
 
 			const room = rooms.find((r) => r.id.toString() === selectedRoomId);
-			const rate = rates.find((r) => r.id.toString() === selectedRateId);
 
 			let roomAmount = 0;
+
+			const rate = selectedRateId !== 'custom' ? rates.find((r) => r.id.toString() === selectedRateId) : null;
 
 			if (room && duration > 0) {
 				roomAmount = room.price * duration;
 
-				if (rate) {
+				if (selectedRateId === 'custom' && customDiscount && parseFloat(customDiscount) > 0) {
+					// Custom discount calculation
+					if (customDiscountType === 'percentage') {
+						roomAmount = roomAmount * (1 - parseFloat(customDiscount) / 100);
+					} else {
+						roomAmount = Math.max(0, roomAmount - parseFloat(customDiscount));
+					}
+				} else if (rate) {
+					// Preset rate calculation
 					if (rate.type === 'percentage') {
 						roomAmount = roomAmount * (1 - rate.value / 100);
 					} else {
@@ -383,6 +391,7 @@ export default function BookingFormDialog({
 					}
 				}
 			}
+
 			setData('check_in', checkInDate.toISOString());
 			setData('check_out', checkOutDate.toISOString());
 
@@ -396,7 +405,7 @@ export default function BookingFormDialog({
 				setData('room_id', '');
 			}
 		}
-	}, [dateRange, checkInTime, checkOutTime, selectedRoomId, selectedRateId, rooms, rates, setData]);
+	}, [dateRange, checkInTime, checkOutTime, selectedRoomId, selectedRateId, customDiscount, customDiscountType, rooms, rates, setData]);
 
 	const getBlockedRoomIds = (): Set<string> => {
 		// In edit mode, never disable any rooms in the select
@@ -417,11 +426,18 @@ export default function BookingFormDialog({
 				const to = new Date(dateRange.to);
 				from.setHours(0, 0, 0, 0);
 				to.setHours(0, 0, 0, 0);
-				const isBlocked = ranges.some(({ from: f, to: t }) => {
+				const isBlocked = ranges.some(({ from: f, to: t, booking_id }) => {
+					// Skip current booking in edit mode
+					if (isEditMode && selectedBooking && booking_id === selectedBooking.id) {
+						return false;
+					}
+				
 					const fd = new Date(f);
 					fd.setHours(0, 0, 0, 0);
+				
 					const td = new Date(t);
 					td.setHours(0, 0, 0, 0);
+				
 					return from <= td && to >= fd;
 				});
 				if (isBlocked) blocked.add(room.id.toString());
@@ -451,10 +467,15 @@ export default function BookingFormDialog({
 		label: type.name,
 	}));
 
-	const rateOptions = rates.map((rate) => ({
-		value: rate.id.toString(),
-		label: `${rate.name} (${rate.type === 'percentage' ? `${rate.value}% off` : `₱${rate.value} off`})`,
-	}));
+	const rateOptions = [
+		...rates
+			.filter((rate) => isEditMode || !rate.is_custom) // hide custom rates in new booking
+			.map((rate) => ({
+				value: rate.id.toString(),
+				label: `${rate.name} (${rate.type === 'percentage' ? `${rate.value}% off` : `₱${rate.value} off`})`,
+			})),
+		...(!isEditMode ? [{ value: 'custom', label: 'Custom Discount' }] : []),
+	];
 
 	const paymentMethodOptions = ['Cash', 'GCash', 'Credit Card', 'Bank Transfer'].map((method) => ({
 		value: method,
@@ -469,6 +490,8 @@ export default function BookingFormDialog({
 		setSelectedRateId('');
 		setGuestCount('1');
 		setSelectedBookingType('');
+		setCustomDiscount('');
+		setCustomDiscountType('percentage');
 	};
 
 	return (
@@ -485,7 +508,10 @@ export default function BookingFormDialog({
 		>
 			<DialogTrigger asChild>{children}</DialogTrigger>
 
-			<DialogContent className='max-h-[90vh] min-w-[90vw] overflow-y-auto lg:min-w-5xl'>
+			<DialogContent
+				className='max-h-[90vh] min-w-[90vw] overflow-y-auto lg:min-w-5xl'
+				onCloseAutoFocus={(event) => event.preventDefault()}
+			>
 				<form onSubmit={handleSubmit}>
 					<FieldGroup>
 						<FieldSet>
@@ -593,18 +619,54 @@ export default function BookingFormDialog({
 									<div>
 										<h3 className='mb-2 text-lg font-semibold'>Payment Information</h3>
 										<FieldGroup className='-space-y-2'>
-											<SelectComponent
-												id='rate_id'
-												label='Discount'
-												placeholder='Select discount'
-												value={selectedRateId}
-												onChange={(value) => {
-													setSelectedRateId(value);
-													setData('rate_id', value);
-												}}
-												options={rateOptions}
-												error={errors.rate_id}
-											/>
+											<FieldGroup className='flex flex-row gap-2'>
+												<SelectComponent
+													id='rate_id'
+													label='Discount'
+													placeholder='Select discount'
+													value={selectedRateId}
+													onChange={(value) => {
+														setSelectedRateId(value);
+														if (value !== 'custom') {
+															setData('rate_id', value);
+															setCustomDiscount(''); // clear custom when preset selected
+														} else {
+															setData('rate_id', ''); // clear rate_id, will be set by backend
+														}
+													}}
+													options={rateOptions}
+													error={errors.rate_id}
+												/>
+
+												{selectedRateId === 'custom' && (
+													<FieldGroup className='flex flex-row gap-2'>
+														{/* <SelectComponent
+															id='custom_discount_type'
+															label='Type'
+															placeholder='Type'
+															value={customDiscountType}
+															onChange={(value) => setCustomDiscountType(value as 'percentage' | 'exact')}
+															options={[
+																{ value: 'percentage', label: 'Percentage %' },
+																{ value: 'exact', label: 'Exact ₱' },
+															]}
+														/> */}
+														<InputComponent
+															label={customDiscountType === 'percentage' ? 'Discount (%)' : 'Discount (₱)'}
+															id='custom_discount'
+															type='number'
+															placeholder='0'
+															value={customDiscount}
+															onChange={(e) => {
+																setCustomDiscount(e.target.value);
+																setData('custom_discount', e.target.value);
+																setData('custom_discount_type', customDiscountType);
+															}}
+														/>
+													</FieldGroup>
+												)}
+											</FieldGroup>
+
 											{!isEditMode && (
 												<FieldGroup className='grid grid-cols-2 gap-4'>
 													<Field>

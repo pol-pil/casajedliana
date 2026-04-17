@@ -14,6 +14,7 @@ return new class extends Migration
             $table->decimal('value', 10, 2);
             $table->string('type');
             $table->boolean('is_active')->default(true);
+            $table->boolean('is_custom')->default(false);
             $table->timestamps();
 
             $table->index('is_active');

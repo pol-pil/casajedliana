@@ -1,0 +1,8 @@
+initializig dompdf
+php artisan vendor:publish --provider="Barryvdh\DomPDF\ServiceProvider"
+
+running update booking command
+php artisan bookings:update-statuses
+
+running automatic update booking command
+php artisan schedule:work

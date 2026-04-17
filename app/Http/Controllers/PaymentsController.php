@@ -17,28 +17,20 @@ class PaymentsController extends Controller
             'payment_type' => 'required|string|max:100',
         ]);
 
-        $payment = Payment::create($validated);
+        Payment::create($validated);
 
-        $booking = Booking::with('payments')->find($validated['booking_id']);
+        $booking = Booking::with(['payments', 'bookingCharges'])->find($validated['booking_id']);
 
         $totalPaid = $booking->payments->sum('amount');
-
         $requiredDownpayment = $booking->total_amount * 0.50;
 
-        if ($totalPaid > 1) {
-            $booking->payment_status = 'partial';
-            $booking->save();
-        }
-
-        if ($totalPaid >= $booking->total_amount) {
-            $booking->payment_status = 'paid';
-            $booking->save();
-        }
+        $booking->refreshPaymentStatus();
 
         if ($totalPaid >= $requiredDownpayment) {
             $booking->status = 'confirmed';
-            $booking->save();
         }
+
+        $booking->save();
 
         return redirect()->route('bookings.index')
             ->with('success', 'Payment added successfully.');

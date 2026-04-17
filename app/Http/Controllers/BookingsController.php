@@ -71,6 +71,23 @@ class BookingsController extends Controller
             ->paginate(10)
             ->withQueryString();
 
+        $calendarBookings = Booking::with([
+            'client',
+            'room',
+            'payments',
+            'bookingType',
+            'bookingCharges.charge',
+            'rate',
+        ])
+            ->whereNotIn('status', ['cancelled', 'checked_out', 'no_show'])
+            ->orderBy('room')
+            ->get()
+            ->map(function (Booking $booking) {
+                $booking->refreshPaymentStatus();
+
+                return $booking;
+            });
+
         $stats = [
             'totalBookings'      => $allActiveBookings->count(),
             'activeGuests'       => $allActiveBookings->where('status', 'checked_in')->count(),
@@ -106,6 +123,7 @@ class BookingsController extends Controller
 
         return Inertia::render('Bookings/Index', [
             'bookings' => $bookings,
+            'calendarBookings' => $calendarBookings,
             'stats' => $stats,
             'rooms' => $rooms,
             'rates' => $rates,
@@ -122,6 +140,17 @@ class BookingsController extends Controller
 
     public function store(Request $request)
     {
+        if ($request->custom_discount && floatval($request->custom_discount) > 0) {
+            $rate = Rate::create([
+                'name'      => 'Custom Discount',
+                'value'     => $request->custom_discount,
+                'type'      => $request->custom_discount_type ?? 'percentage',
+                'is_active' => true,
+                'is_custom' => true,
+            ]);
+            $request->merge(['rate_id' => $rate->id]);
+        }
+
         $validated = $request->validate([
             'client' => 'required|array',
             'client.first_name' => 'required|string|max:100',
@@ -201,6 +230,8 @@ class BookingsController extends Controller
             } else {
                 $booking->payment_status = 'unpaid';
             }
+            
+            $booking->refreshPaymentStatus();
 
             $booking->save();
         }
@@ -211,6 +242,17 @@ class BookingsController extends Controller
 
     public function update(Request $request, Booking $booking)
     {
+            if ($request->custom_discount && floatval($request->custom_discount) > 0) {
+            $rate = Rate::create([
+                'name'      => 'Custom Discount',
+                'value'     => $request->custom_discount,
+                'type'      => $request->custom_discount_type ?? 'percentage',
+                'is_active' => true,
+                'is_custom' => true,
+            ]);
+            $request->merge(['rate_id' => $rate->id]);
+        }
+
         $validated = $request->validate([
             'client' => 'required|array',
             'client.first_name' => 'required|string|max:100',
@@ -252,22 +294,22 @@ class BookingsController extends Controller
         $totalPaid = $booking->payments()->sum('amount');
         $requiredDownpayment = $booking->total_amount * 0.50;
 
-        if ($totalPaid >= $requiredDownpayment) {
-            $booking->status = 'confirmed';
-        } else {
-            $booking->status = 'pencil';
+        if (in_array($booking->status, ['pencil', 'confirmed'])) {
+            if ($totalPaid >= $requiredDownpayment) {
+                $booking->status = 'confirmed';
+            } else {
+                $booking->status = 'pencil';
+            }
         }
 
         if ($totalPaid >= $booking->total_amount) {
             $booking->payment_status = 'paid';
-        } elseif ($totalPaid > 0) {
             $booking->payment_status = 'partial';
         } else {
             $booking->payment_status = 'unpaid';
         }
-
+        $booking->refreshPaymentStatus();
         $booking->save();
-
         ActivityLog::create([
             'user_id' => Auth::id(),
             'staff_name' => Auth::user()->name,

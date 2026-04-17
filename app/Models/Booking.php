@@ -112,9 +112,30 @@ class Booking extends Model
         return $this->payments->sum('amount');
     }
 
+    public function getTotalWithChargesAttribute(): float
+    {
+        return (float) ($this->total_amount + $this->charges_total);
+    }
+
+    public function refreshPaymentStatus(): void
+    {
+        $this->loadMissing(['payments', 'bookingCharges']);
+
+        $totalPaid = (float) $this->payments->sum('amount');
+        $totalWithCharges = (float) ($this->total_amount + $this->bookingCharges->sum('total'));
+
+        if ($totalPaid <= 0) {
+            $this->payment_status = 'unpaid';
+        } elseif ($totalPaid >= $totalWithCharges) {
+            $this->payment_status = 'paid';
+        } else {
+            $this->payment_status = 'partial';
+        }
+    }
+
     public function getAmountAttribute()
     {
-        return $this->total_amount + $this->charges_total;
+        return $this->total_with_charges;
     }
 
     public function getBalanceAttribute()
