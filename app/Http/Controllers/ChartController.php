@@ -10,103 +10,156 @@ class ChartController extends Controller
 {
     public function index()
     {
-        // ✅ VALID BOOKINGS ONLY (adjust if needed)
-        $validStatuses = ['checked_in', 'checked_out'];
+        /*
+        |--------------------------------------------------------------------------
+        | ✅ VALID STATUSES (BASED ON YOUR SYSTEM)
+        |--------------------------------------------------------------------------
+        */
+        $validStatuses = ['confirmed', 'checked_in', 'checked_out'];
 
         /*
         |--------------------------------------------------------------------------
-        | 📊 MONTHLY REVENUE
+        | 📊 FETCH BOOKINGS (WITH CHARGES + TYPE)
         |--------------------------------------------------------------------------
         */
-        $monthly = Booking::select(
-            DB::raw("MONTH(check_in) as month"),
-            DB::raw('SUM(total_price) as revenue')
-        )
-            ->whereYear('check_in', now()->year)
+        $bookings = Booking::with(['bookingCharges', 'bookingType'])
             ->whereIn('status', $validStatuses)
-            ->groupBy('month')
-            ->orderBy('month')
-            ->get()
-            ->map(fn($item) => [
-                'label' => date('M', mktime(0, 0, 0, (int) $item->month, 1)),
-                'revenue' => (float) $item->revenue,
-            ]);
+            ->get();
+
+        /*
+        |--------------------------------------------------------------------------
+        | 📊 MONTHLY REVENUE (REAL: base + charges)
+        |--------------------------------------------------------------------------
+        */
+        $monthly = $bookings
+            ->groupBy(fn($b) => $b->check_in->format('m'))
+            ->map(function ($group, $month) {
+
+                $revenue = $group->sum(fn($b) =>
+                    $b->total_amount + $b->bookingCharges->sum('total')
+                );
+
+                return [
+                    'label' => date('M', mktime(0, 0, 0, (int) $month, 1)),
+                    'revenue' => (float) $revenue,
+                ];
+            })
+            ->sortBy(fn($item) => date('m', strtotime($item['label'])))
+            ->values();
 
         /*
         |--------------------------------------------------------------------------
         | 📊 YEARLY REVENUE
         |--------------------------------------------------------------------------
         */
-        $yearly = Booking::select(
-            DB::raw("YEAR(check_in) as year"),
-            DB::raw('SUM(total_price) as revenue')
-        )
-            ->whereIn('status', $validStatuses)
-            ->groupBy('year')
-            ->orderBy('year')
-            ->get()
-            ->map(fn($item) => [
-                'label' => $item->year,
-                'revenue' => (float) $item->revenue,
-            ]);
+        $yearly = $bookings
+            ->groupBy(fn($b) => $b->check_in->format('Y'))
+            ->map(function ($group, $year) {
+
+                $revenue = $group->sum(fn($b) =>
+                    $b->total_amount + $b->bookingCharges->sum('total')
+                );
+
+                return [
+                    'label' => $year,
+                    'revenue' => (float) $revenue,
+                ];
+            })
+            ->sortBy('label')
+            ->values();
 
         /*
         |--------------------------------------------------------------------------
-        | 💰 CORE KPIs
+        | 💰 TOTAL REVENUE (REAL)
         |--------------------------------------------------------------------------
         */
-        $totalRevenue = Booking::whereIn('status', $validStatuses)
-            ->sum('total_price');
+        $totalRevenue = $bookings->sum(fn($b) =>
+            $b->total_amount + $b->bookingCharges->sum('total')
+        );
 
+        /*
+        |--------------------------------------------------------------------------
+        | 💳 PAYMENTS
+        |--------------------------------------------------------------------------
+        */
         $totalPayments = DB::table('payments')->sum('amount');
+
+        $cashPayments = DB::table('payments')
+            ->where('payment_method', 'cash')
+            ->sum('amount');
 
         $balance = $totalRevenue - $totalPayments;
 
         /*
         |--------------------------------------------------------------------------
-        | 🛏️ ROOM & STAY METRICS
+        | 🛏️ ROOM METRICS
         |--------------------------------------------------------------------------
         */
-
-        $totalRooms = DB::table('rooms')->count();
+        $totalRooms = DB::table('rooms')
+            ->where('is_active', true)
+            ->count();
 
         // Total room nights sold
-        $roomNights = Booking::whereIn('status', $validStatuses)
-            ->select(DB::raw('SUM(DATEDIFF(check_out, check_in)) as nights'))
-            ->value('nights') ?? 0;
+        $roomNights = $bookings->sum(fn($b) =>
+            $b->check_in->diffInDays($b->check_out)
+        );
 
-        // Total days (for current year)
+        // Days elapsed this year
         $days = now()->dayOfYear;
 
+        // Total possible room nights
         $availableRoomNights = $totalRooms * $days;
 
         /*
         |--------------------------------------------------------------------------
-        | 📈 METRICS
+        | 📈 KPI CALCULATIONS
         |--------------------------------------------------------------------------
         */
 
-        // ADR = Revenue / Room Nights
-        $adr = $roomNights > 0 ? $totalRevenue / $roomNights : 0;
+        // ADR = Revenue / Sold Room Nights
+        $adr = $roomNights > 0
+            ? $totalRevenue / $roomNights
+            : 0;
 
         // Occupancy = Sold Nights / Available Nights
         $occupancy = $availableRoomNights > 0
             ? ($roomNights / $availableRoomNights) * 100
             : 0;
 
-        // RevPAR = Revenue / Available Rooms
+        // RevPAR = Revenue / Available Room Nights
         $revpar = $availableRoomNights > 0
             ? $totalRevenue / $availableRoomNights
             : 0;
 
+        /*
+        |--------------------------------------------------------------------------
+        | 📊 CLIENT DISTRIBUTION (REAL DATA)
+        |--------------------------------------------------------------------------
+        */
+        $clientDistribution = $bookings
+            ->groupBy(fn($b) => $b->bookingType->name ?? 'Unknown')
+            ->map(function ($group, $type) {
+                return [
+                    'name' => $type,
+                    'value' => $group->count(),
+                ];
+            })
+            ->values();
+
+        /*
+        |--------------------------------------------------------------------------
+        | 🚀 RETURN TO FRONTEND
+        |--------------------------------------------------------------------------
+        */
         return Inertia::render('reports/charts', [
             'monthlyData' => $monthly,
             'yearlyData' => $yearly,
+            'clientDistribution' => $clientDistribution,
             'kpis' => [
                 'revenue' => round($totalRevenue, 2),
                 'payments' => round($totalPayments, 2),
                 'balance' => round($balance, 2),
-                'cash' => round($totalPayments, 2), // refine later by payment method
+                'cash' => round($cashPayments, 2),
                 'adr' => round($adr, 2),
                 'revpar' => round($revpar, 2),
                 'occupancy' => round($occupancy, 2),

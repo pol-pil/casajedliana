@@ -1,308 +1,240 @@
-import { Head, usePage } from '@inertiajs/react'
-import AppLayout from '@/layouts/app-layout'
-import { useState } from 'react'
+import { Head, usePage } from '@inertiajs/react';
+import AppLayout from '@/layouts/app-layout';
+import { useState } from 'react';
 
-import {
-    Card,
-    CardContent,
-    CardHeader,
-    CardTitle,
-} from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-import {
-    Tabs,
-    TabsList,
-    TabsTrigger,
-} from '@/components/ui/tabs'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-import {
-    LineChart,
-    Line,
-    XAxis,
-    YAxis,
-    Tooltip,
-    ResponsiveContainer,
-    CartesianGrid,
-    BarChart,
-    Bar,
-    Cell,
-} from 'recharts'
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, BarChart, Bar, Cell } from 'recharts';
 
-import {
-    Wallet,
-    CreditCard,
-    AlertCircle,
-    Banknote,
-} from 'lucide-react'
+import { Wallet, CreditCard, AlertCircle, Banknote, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 
 type ChartData = {
-    label: string
-    revenue: number
-}
+	label: string;
+	revenue: number;
+};
+
+type Distribution = {
+	name: string;
+	value: number;
+};
 
 type PageProps = {
-    monthlyData: ChartData[]
-    yearlyData: ChartData[]
-    kpis: {
-        revenue: number
-        payments: number
-        balance: number
-        cash: number
-        adr: number
-        revpar: number
-        occupancy: number
-    }
-}
+	monthlyData: ChartData[];
+	yearlyData: ChartData[];
+	clientDistribution: Distribution[]; // ✅ NEW
+	kpis: {
+		revenue: number;
+		payments: number;
+		balance: number;
+		cash: number;
+		adr: number;
+		revpar: number;
+		occupancy: number;
+	};
+};
 
 export default function Charts() {
-    const { monthlyData, yearlyData, kpis } = usePage<PageProps>().props
+	const { monthlyData, yearlyData, kpis, clientDistribution } = usePage<PageProps>().props;
 
-    const [view, setView] = useState<'monthly' | 'yearly'>('monthly')
+	const [view, setView] = useState<'monthly' | 'yearly'>('monthly');
 
-    const chartData = view === 'monthly' ? monthlyData : yearlyData
+	const chartData = view === 'monthly' ? monthlyData : yearlyData;
 
-    const distribution = [
-        { name: 'Regular', value: 45, color: '#3b82f6' },
-        { name: 'Corporate', value: 20, color: '#8b5cf6' },
-        { name: 'Supplier Discount', value: 15, color: '#06b6d4' },
-        { name: 'Government', value: 12, color: '#10b981' },
-        { name: 'Employee', value: 8, color: '#f59e0b' },
-    ]
+	/*
+    |--------------------------------------------------------------------------
+    | 🎨 Dynamic Colors (auto assign)
+    |--------------------------------------------------------------------------
+    */
+	const colors = ['#3b82f6', '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444'];
 
-    return (
-        <AppLayout>
-            <Head title="Charts & Analytics" />
+	const distribution = clientDistribution.map((item, index) => ({
+		...item,
+		color: colors[index % colors.length],
+	}));
 
-            <div className="p-6 space-y-8">
+	/*
+    |--------------------------------------------------------------------------
+    | 📊 Convert to % (for chart display)
+    |--------------------------------------------------------------------------
+    */
+	const total = distribution.reduce((sum, item) => sum + item.value, 0);
 
-                {/* HEADER */}
-                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                    <div>
-                        <h1 className="text-3xl font-semibold">Reports & Analytics</h1>
-                        <p className="text-muted-foreground text-sm">
-                            Financial overview and performance metrics
-                        </p>
-                    </div>
+	const distributionPercent = distribution
+		.map((item) => ({
+			...item,
+			value: total > 0 ? Math.round((item.value / total) * 100) : 0,
+		}))
+		.sort((a, b) => b.value - a.value);
 
-                    <Tabs value={view} onValueChange={(v) => setView(v as any)}>
-                        <TabsList>
-                            <TabsTrigger value="monthly">Monthly</TabsTrigger>
-                            <TabsTrigger value="yearly">Yearly</TabsTrigger>
-                        </TabsList>
-                    </Tabs>
-                </div>
+	const getTrend = (value: number) => {
+		if (value > 0) return 'up';
+		if (value < 0) return 'down';
+		return 'neutral';
+	};
 
-                {/* KPI CARDS */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+	return (
+		<AppLayout>
+			<Head title='Charts & Analytics' />
 
-                    <Card>
-                        <CardHeader className="flex items-center gap-2 pb-2">
-                            <Wallet className="text-blue-500 h-4 w-4" />
-                            <CardTitle className="text-xs uppercase text-muted-foreground">
-                                Revenue
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <p className="text-xl sm:text-2xl font-bold">
-                                ₱ {kpis.revenue.toLocaleString()}
-                            </p>
-                        </CardContent>
-                    </Card>
+			<div className='space-y-8 p-6'>
+				{/* HEADER */}
+				<div className='flex flex-col gap-4 md:flex-row md:items-center md:justify-between'>
+					<div>
+						<h1 className='text-3xl font-semibold'>Reports & Analytics</h1>
+						<p className='text-sm text-muted-foreground'>Financial overview and performance metrics</p>
+					</div>
 
-                    <Card>
-                        <CardHeader className="flex items-center gap-2 pb-2">
-                            <CreditCard className="text-green-500 h-4 w-4" />
-                            <CardTitle className="text-xs uppercase text-muted-foreground">
-                                Payments
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <p className="text-xl sm:text-2xl font-bold">
-                                ₱ {kpis.payments.toLocaleString()}
-                            </p>
-                        </CardContent>
-                    </Card>
+					<Tabs value={view} onValueChange={(v) => setView(v as any)}>
+						<TabsList>
+							<TabsTrigger value='monthly'>Monthly</TabsTrigger>
+							<TabsTrigger value='yearly'>Yearly</TabsTrigger>
+						</TabsList>
+					</Tabs>
+				</div>
 
-                    <Card>
-                        <CardHeader className="flex items-center gap-2 pb-2">
-                            <AlertCircle className="text-red-500 h-4 w-4" />
-                            <CardTitle className="text-xs uppercase text-muted-foreground">
-                                Balance
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <p className="text-xl sm:text-2xl font-bold">
-                                ₱ {kpis.balance.toLocaleString()}
-                            </p>
-                        </CardContent>
-                    </Card>
+				{/* KPI CARDS */}
+				<div className='grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4'>
+					<Card>
+						<CardHeader className='flex items-center gap-2 pb-2'>
+							<Wallet className='h-4 w-4 text-blue-500' />
+							<CardTitle className='text-xs text-muted-foreground uppercase'>Revenue</CardTitle>
+						</CardHeader>
+						<CardContent>
+							<p className='text-xl font-bold sm:text-2xl'>₱ {kpis.revenue.toLocaleString()}</p>
+						</CardContent>
+					</Card>
 
-                    <Card>
-                        <CardHeader className="flex items-center gap-2 pb-2">
-                            <Banknote className="text-yellow-500 h-4 w-4" />
-                            <CardTitle className="text-xs uppercase text-muted-foreground">
-                                Cash
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <p className="text-xl sm:text-2xl font-bold">
-                                ₱ {kpis.cash.toLocaleString()}
-                            </p>
-                        </CardContent>
-                    </Card>
+					<Card>
+						<CardHeader className='flex items-center gap-2 pb-2'>
+							<CreditCard className='h-4 w-4 text-green-500' />
+							<CardTitle className='text-xs text-muted-foreground uppercase'>Payments</CardTitle>
+						</CardHeader>
+						<CardContent>
+							<p className='text-xl font-bold sm:text-2xl'>₱ {kpis.payments.toLocaleString()}</p>
+						</CardContent>
+					</Card>
 
-                </div>
+					<Card>
+						<CardHeader className='flex items-center gap-2 pb-2'>
+							<AlertCircle className='h-4 w-4 text-red-500' />
+							<CardTitle className='text-xs text-muted-foreground uppercase'>Balance</CardTitle>
+						</CardHeader>
+						<CardContent>
+							<p className='text-xl font-bold sm:text-2xl'>₱ {kpis.balance.toLocaleString()}</p>
+						</CardContent>
+					</Card>
 
-                {/* MAIN CHART + SIDE KPIs */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+					<Card>
+						<CardHeader className='flex items-center gap-2 pb-2'>
+							<Banknote className='h-4 w-4 text-yellow-500' />
+							<CardTitle className='text-xs text-muted-foreground uppercase'>Cash</CardTitle>
+						</CardHeader>
+						<CardContent>
+							<p className='text-xl font-bold sm:text-2xl'>₱ {kpis.cash.toLocaleString()}</p>
+						</CardContent>
+					</Card>
+				</div>
 
-                    {/* LINE CHART */}
-                    <Card className="lg:col-span-2">
-                        <CardHeader>
-                            <CardTitle>
-                                {view === 'monthly'
-                                    ? 'Monthly Revenue Overview'
-                                    : 'Yearly Revenue Overview'}
-                            </CardTitle>
-                        </CardHeader>
+				{/* MAIN CHART */}
+				<div className='grid grid-cols-1 gap-6 lg:grid-cols-3'>
+					<Card className='lg:col-span-2'>
+						<CardHeader>
+							<CardTitle>{view === 'monthly' ? 'Monthly Revenue Overview' : 'Yearly Revenue Overview'}</CardTitle>
+						</CardHeader>
 
-                        <CardContent>
-                            <div className="h-[400px] w-full min-w-0">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <LineChart data={chartData}>
-                                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+						<CardContent>
+							<div className='h-[400px] w-full'>
+								<ResponsiveContainer>
+									<LineChart data={chartData}>
+										<CartesianGrid strokeDasharray='3 3' vertical={false} />
+										<XAxis dataKey='label' />
+										<YAxis />
+										<Tooltip />
+										<Line type='monotone' dataKey='revenue' stroke='#3b82f6' strokeWidth={3} dot={false} />
+									</LineChart>
+								</ResponsiveContainer>
+							</div>
+						</CardContent>
+					</Card>
 
-                                        <XAxis dataKey="label" axisLine={false} tickLine={false} />
-                                        <YAxis axisLine={false} tickLine={false} />
+					{/* SIDE KPIs */}
+					<div className='space-y-4'>
+						<Card>
+							<CardHeader>
+								<CardTitle className='text-xs text-muted-foreground'>ADR</CardTitle>
+							</CardHeader>
+							<CardContent className='flex items-center justify-between'>
+								<span>₱ {kpis.adr.toLocaleString()}</span>
 
-                                        <Tooltip />
+								{getTrend(kpis.adr) === 'up' && <ArrowUpRight className='h-4 w-4 text-green-500' />}
+								{getTrend(kpis.adr) === 'down' && <ArrowDownRight className='h-4 w-4 text-red-500' />}
+							</CardContent>
+						</Card>
 
-                                        <Line
-                                            type="monotone"
-                                            dataKey="revenue"
-                                            stroke="#3b82f6"
-                                            strokeWidth={3}
-                                            dot={false}
-                                        />
-                                    </LineChart>
-                                </ResponsiveContainer>
-                            </div>
-                        </CardContent>
-                    </Card>
+						<Card>
+							<CardHeader>
+								<CardTitle className='text-xs text-muted-foreground'>RevPAR</CardTitle>
+							</CardHeader>
+							<CardContent className='flex items-center justify-between'>
+								<span>₱ {kpis.revpar.toLocaleString()}</span>
 
-                    {/* SIDE KPIs */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4">
+								{getTrend(kpis.revpar) === 'up' && <ArrowUpRight className='h-4 w-4 text-green-500' />}
+								{getTrend(kpis.revpar) === 'down' && <ArrowDownRight className='h-4 w-4 text-red-500' />}
+							</CardContent>
+						</Card>
 
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-xs text-muted-foreground">
-                                    Average Daily Rate
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <p className="text-lg font-bold">
-                                    ₱ {kpis.adr.toLocaleString()}
-                                </p>
-                            </CardContent>
-                        </Card>
+						<Card>
+							<CardHeader>
+								<CardTitle className='text-xs text-muted-foreground'>Occupancy</CardTitle>
+							</CardHeader>
+							<CardContent className='flex items-center justify-between'>
+								<span>{kpis.occupancy}%</span>
 
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-xs text-muted-foreground">
-                                    RevPAR
-                                </CardTitle>                
-                            </CardHeader>
-                            <CardContent>
-                                <p className="text-lg font-bold">
-                                    ₱ {kpis.revpar.toLocaleString()}
-                                </p>
-                            </CardContent>
-                        </Card>
+								{getTrend(kpis.occupancy) === 'up' && <ArrowUpRight className='h-4 w-4 text-green-500' />}
+								{getTrend(kpis.occupancy) === 'down' && <ArrowDownRight className='h-4 w-4 text-red-500' />}
+							</CardContent>
+						</Card>
+					</div>
+				</div>
 
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-xs text-muted-foreground">
-                                    Occupancy Rate
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <p className="text-lg font-bold">
-                                    {kpis.occupancy}%
-                                </p>
-                            </CardContent>
-                        </Card>
+				{/* CLIENT DISTRIBUTION */}
+				<Card>
+					<CardHeader>
+						<CardTitle>Client Booking Distribution</CardTitle>
+					</CardHeader>
 
-                    </div>
+					<CardContent className='grid grid-cols-1 items-center gap-6 border-t px-4 py-4 lg:grid-cols-[1.5fr_1fr]'>
+						<div className='mx-auto h-[200px] w-full max-w-[500px]'>
+							<ResponsiveContainer>
+								<BarChart layout='vertical' data={distributionPercent} margin={{ left: 20, right: 10 }}>
+									<CartesianGrid strokeDasharray='3 3' />
+									<XAxis type='number' tickFormatter={(v) => `${v}%`} />
+									<YAxis type='category' dataKey='name' width={200} tick={{ fontSize: 12 }} />
+									<Tooltip formatter={(v) => `${v}%`} />
+									<Bar dataKey='value' radius={[6, 6, 6, 6]}>
+										{distributionPercent.map((item, i) => (
+											<Cell key={i} fill={item.color} />
+										))}
+									</Bar>
+								</BarChart>
+							</ResponsiveContainer>
+						</div>
 
-                </div>
-
-                {/* CLIENT DISTRIBUTION */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Client Booking Distribution</CardTitle>
-                    </CardHeader>
-
-                    <CardContent className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-10 items-center px-6 py-6">
-
-                        {/* CHART */}
-                        <div className="h-[260px] w-full min-w-0 pr-4">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart
-                                    layout="vertical"
-                                    data={distribution}
-                                    margin={{ left: 20 }}
-                                >
-                                    <CartesianGrid strokeDasharray="3 3" />
-
-                                    <XAxis type="number" tickFormatter={(v) => `${v}%`} />
-
-                                    <YAxis
-                                        type="category"
-                                        dataKey="name"
-                                        width={160}
-                                        tick={{ fontSize: 12 }}
-                                    />
-
-                                    <Tooltip formatter={(v) => `${v}%`} />
-
-                                    <Bar dataKey="value" radius={[6, 6, 6, 6]}>
-                                        {distribution.map((item, i) => (
-                                            <Cell key={i} fill={item.color} />
-                                        ))}
-                                    </Bar>
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
-
-                        {/* LEGEND */}
-                        <div className="space-y-5 pt-2">
-                            {distribution.map((item) => (
-                                <div key={item.name} className="flex items-center justify-between py-1">
-
-                                    <div className="flex items-center gap-3">
-                                        <span
-                                            className="w-3.5 h-3.5 rounded"
-                                            style={{ backgroundColor: item.color }}
-                                        />
-                                        <span className="text-sm text-muted-foreground">
-                                            {item.name}
-                                        </span>
-                                    </div>
-
-                                    <span
-                                        className="text-sm font-semibold"
-                                        style={{ color: item.color }}
-                                    >
-                                        {item.value}%
-                                    </span>
-                                </div>
-                            ))}
-                        </div>
-
-                    </CardContent>
-                </Card>
-
-            </div>
-        </AppLayout>
-    )
+						<div className='space-y-2 text-sm'>
+							{distributionPercent.map((item) => (
+								<div key={item.name} className='flex items-center justify-between'>
+									<span className='max-w-[160px] overflow-hidden text-ellipsis whitespace-nowrap' title={item.name}>
+										{item.name}
+									</span>
+									<span style={{ color: item.color }}>{item.value}%</span>
+								</div>
+							))}
+						</div>
+					</CardContent>
+				</Card>
+			</div>
+		</AppLayout>
+	);
 }
