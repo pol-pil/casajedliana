@@ -80,7 +80,6 @@ class BookingsController extends Controller
             'rate',
         ])
             ->whereNotIn('status', ['cancelled', 'checked_out', 'no_show'])
-            ->orderBy('room')
             ->get()
             ->map(function (Booking $booking) {
                 $booking->refreshPaymentStatus();
@@ -304,12 +303,15 @@ class BookingsController extends Controller
 
         if ($totalPaid >= $booking->total_amount) {
             $booking->payment_status = 'paid';
+        } elseif ($totalPaid > 0) {
             $booking->payment_status = 'partial';
         } else {
             $booking->payment_status = 'unpaid';
         }
         $booking->refreshPaymentStatus();
+
         $booking->save();
+
         ActivityLog::create([
             'user_id' => Auth::id(),
             'staff_name' => Auth::user()->name,
