@@ -8,8 +8,6 @@ import { Room } from '@/types/room';
 
 type Status = 'Available' | 'Occupied' | 'Reserved' | 'Maintenance';
 
-
-
 type Props = {
 	room: Room;
 	statusColor: (status: Status) => string;
@@ -19,6 +17,10 @@ type Props = {
 };
 
 export default function RoomCard({ room, statusColor, onEdit, onDelete, refreshRooms }: Props) {
+	const parts = room.beds ? room.beds.split(' • ') : [];
+	const bedOnly = parts[0] || '';
+	const amenitiesOnly = parts.slice(1);
+
 	return (
 		<Dialog>
 			<Card className='relative flex h-48 flex-col justify-between p-6 text-center transition hover:shadow-lg'>
@@ -111,13 +113,13 @@ export default function RoomCard({ room, statusColor, onEdit, onDelete, refreshR
 							<strong>Capacity:</strong> {room.capacity} Pax
 						</p>
 						<p>
-							<strong>Beds:</strong> {room.beds}
+							<strong>Beds:</strong> {bedOnly}
 						</p>
 
 						<div>
 							<h3 className='mb-2 font-medium'>Amenities</h3>
 							<div className='flex flex-wrap gap-2'>
-								{room.amenities.map((a, i) => (
+								{amenitiesOnly.map((a, i) => (
 									<span key={i} className='rounded-full bg-teal-500/10 px-3 py-1 text-xs text-teal-400'>
 										{a}
 									</span>

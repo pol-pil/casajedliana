@@ -66,16 +66,28 @@ const actionIcon = (action: LogType) => {
 	}
 };
 
-export default function Index() {
-	const { users = [], logs = [] } = usePage().props as {
-		users?: {
-			id: number;
+type PageProps = {
+	users?: {
+		id: number;
+		name: string;
+		email: string;
+		role: string;
+	}[];
+	logs?: Log[];
+	auth?: {
+		user?: {
 			name: string;
-			email: string;
 			role: string;
-		}[];
-		logs?: Log[];
+		};
 	};
+};
+
+export default function Index() {
+	const { users = [], logs = [], auth } = usePage<PageProps>().props;
+
+	const adminCount = users.filter((u) => u.role?.toLowerCase() === 'admin').length;
+	const frontdeskCount = users.filter((u) => u.role?.toLowerCase() === 'frontdesk').length;
+	const totalUsers = users.length;
 
 	useEffect(() => {
 		const interval = setInterval(() => {
@@ -121,80 +133,105 @@ export default function Index() {
 			<div className='flex w-full min-w-0 flex-col gap-6 p-6'>
 				{/* HEADER */}
 				<div>
-					<h1 className='text-2xl font-semibold'>Hi, Admin</h1>
-					<p className='text-sm text-muted-foreground'>Welcome back to Casa Jedliana Admin!</p>
+					<h1 className='text-2xl font-semibold'>
+						Welcome {auth?.user?.role ? auth.user.role.charAt(0).toUpperCase() + auth.user.role.slice(1) : 'User'},{' '}
+						{auth?.user?.name ?? ''}
+					</h1>
+					<p className='text-sm text-muted-foreground'>
+						Welcome back to Casa Jedliana{' '}
+						{auth?.user?.role ? auth.user.role.charAt(0).toUpperCase() + auth.user.role.slice(1) : 'User'},{' '}
+						{auth?.user?.name ?? ''}!
+					</p>
 				</div>
 
 				{/* STATS */}
-				<div className='mx-auto grid w-full max-w-3xl gap-4 md:grid-cols-2'>
+				<div className='mx-auto grid w-full max-w-5xl gap-4 md:grid-cols-3'>
+					{/* ADMIN */}
 					<Card>
 						<CardContent className='flex items-center justify-between p-5'>
-							<div className='text-center'>
-								<h2 className='text-3xl font-bold'>{users.length}</h2>
-								<p className='text-sm text-muted-foreground'>Active Users</p>
+							<div className='flex-1 text-center'>
+								<h2 className='text-3xl font-bold'>{adminCount}</h2>
+								<p className='text-sm text-muted-foreground'>Admins</p>
 							</div>
-							<div className='flex h-20 w-20 items-center justify-center rounded-full bg-blue-100'>
-								<Users className='h-10 w-10 text-blue-600' />
+							<div className='flex h-16 w-16 items-center justify-center rounded-full bg-red-100'>
+								<Users className='h-8 w-8 text-red-600' />
 							</div>
 						</CardContent>
 					</Card>
 
+					{/* FRONTDESK */}
 					<Card>
 						<CardContent className='flex items-center justify-between p-5'>
-							<div className='text-center'>
-								<h2 className='text-3xl font-bold'>4</h2>
-								<p className='text-sm text-muted-foreground'>Total Events</p>
+							<div className='flex-1 text-center'>
+								<h2 className='text-3xl font-bold'>{frontdeskCount}</h2>
+								<p className='text-sm text-muted-foreground'>Frontdesk</p>
 							</div>
-							<div className='flex h-20 w-20 items-center justify-center rounded-full bg-orange-100'>
-								<Home className='h-10 w-10 text-orange-600' />
+							<div className='flex h-16 w-16 items-center justify-center rounded-full bg-blue-100'>
+								<Users className='h-8 w-8 text-blue-600' />
+							</div>
+						</CardContent>
+					</Card>
+
+					{/* TOTAL USERS */}
+					<Card>
+						<CardContent className='flex items-center justify-between p-5'>
+							<div className='flex-1 text-center'>
+								<h2 className='text-3xl font-bold'>{totalUsers}</h2>
+								<p className='text-sm text-muted-foreground'>Total Users</p>
+							</div>
+							<div className='flex h-16 w-16 items-center justify-center rounded-full bg-green-100'>
+								<Users className='h-8 w-8 text-green-600' />
 							</div>
 						</CardContent>
 					</Card>
 				</div>
 
 				{/* USER MANAGEMENT */}
-				<Card>
-					<CardContent className='p-0'>
-						<div className='border-b px-4 py-3'>
-							<h2 className='font-semibold'>User Management</h2>
-						</div>
+				<div className='mx-auto w-full max-w-5xl'>
+					<Card>
+						<CardContent className='p-0'>
+							<div className='border-b px-4 py-3'>
+								<h2 className='font-semibold'>User Management</h2>
+							</div>
 
-						<div className='overflow-x-auto'>
-							<Table>
-								<TableHeader>
-									<TableRow>
-										<TableHead>ID</TableHead>
-										<TableHead>Username</TableHead>
-										<TableHead>Email</TableHead>
-										<TableHead>Role</TableHead>
-									</TableRow>
-								</TableHeader>
+							<div className='overflow-x-auto'>
+								<Table>
+									<TableHeader>
+										<TableRow>
+											<TableHead>ID</TableHead>
+											<TableHead>Username</TableHead>
+											<TableHead>Email</TableHead>
+											<TableHead>Role</TableHead>
+										</TableRow>
+									</TableHeader>
 
-								<TableBody>
-									{users.length > 0 ? (
-										users.map((user) => (
-											<TableRow key={user.id}>
-												<TableCell>#{user.id}</TableCell>
-												<TableCell>{user.name}</TableCell>
-												<TableCell>{user.email}</TableCell>
-												<TableCell>
-													<Badge className='capitalize'>{user.role}</Badge>
+									<TableBody>
+										{users.length > 0 ? (
+											users.map((user) => (
+												<TableRow key={user.id}>
+													<TableCell>#{user.id}</TableCell>
+													<TableCell>{user.name}</TableCell>
+													<TableCell>{user.email}</TableCell>
+													<TableCell>
+														<Badge className='capitalize'>{user.role}</Badge>
+													</TableCell>
+												</TableRow>
+											))
+										) : (
+											<TableRow>
+												<TableCell colSpan={4} className='py-6 text-center text-muted-foreground'>
+													No active users found
 												</TableCell>
 											</TableRow>
-										))
-									) : (
-										<TableRow>
-											<TableCell colSpan={4} className='py-6 text-center text-muted-foreground'>
-												No active users found
-											</TableCell>
-										</TableRow>
-									)}
-								</TableBody>
-							</Table>
-						</div>
-					</CardContent>
-				</Card>
+										)}
+									</TableBody>
+								</Table>
+							</div>
+						</CardContent>
+					</Card>
+				</div>
 
+				{/* ACTIVITY LOGS */}
 				<Card>
 					<CardContent className='p-0'>
 						<div className='border-b px-4 py-3'>

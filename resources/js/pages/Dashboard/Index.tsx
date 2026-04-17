@@ -2,22 +2,18 @@
 import { useMemo, useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
-import { Head, usePage, router } from '@inertiajs/react';
+import { Head, usePage} from '@inertiajs/react';
 import { format } from 'date-fns';
 
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Calendar } from '@/components/ui/calendar';
 import { Button } from '@/components/ui/button';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 
-import { DoorOpen, LogOut, Lock, Check, CalendarDays } from 'lucide-react';
-
-import { DateRange } from 'react-day-picker';
+import { DoorOpen, LogOut, Lock, Check} from 'lucide-react';
 import { useDateRange } from '@/contexts/date-range-context';
 
 
@@ -365,8 +361,6 @@ export default function Dashboard() {
 						</CardContent>
 					</Card>
 				</div>
-
-				
 			</div>
 		</AppLayout>
 	);

@@ -13,12 +13,12 @@ class OverviewController extends Controller
 {
     public function index()
     {
-        // ✅ USERS (NO STATUS FILTER FOR NOW — safe)
+       
         $users = User::select('id', 'name', 'email', 'role')
             ->latest()
             ->get();
 
-        // ✅ ACTIVITY LOGS (REAL DATA)
+        
         $logs = ActivityLog::latest()
             ->limit(100)
             ->get()
@@ -37,7 +37,7 @@ class OverviewController extends Controller
                 ];
             });
 
-        // ✅ SEND TO FRONTEND
+      
         return Inertia::render('AdminPage/Index', [
             'users' => $users,
             'logs' => $logs,

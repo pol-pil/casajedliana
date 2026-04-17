@@ -10,12 +10,20 @@ class ChartController extends Controller
 {
     public function index()
     {
+        // ✅ VALID BOOKINGS ONLY (adjust if needed)
+        $validStatuses = ['checked_in', 'checked_out'];
 
+        /*
+        |--------------------------------------------------------------------------
+        | 📊 MONTHLY REVENUE
+        |--------------------------------------------------------------------------
+        */
         $monthly = Booking::select(
             DB::raw("MONTH(check_in) as month"),
-            DB::raw('SUM(total_amount) as revenue')
+            DB::raw('SUM(total_price) as revenue')
         )
             ->whereYear('check_in', now()->year)
+            ->whereIn('status', $validStatuses)
             ->groupBy('month')
             ->orderBy('month')
             ->get()
@@ -24,10 +32,16 @@ class ChartController extends Controller
                 'revenue' => (float) $item->revenue,
             ]);
 
+        /*
+        |--------------------------------------------------------------------------
+        | 📊 YEARLY REVENUE
+        |--------------------------------------------------------------------------
+        */
         $yearly = Booking::select(
             DB::raw("YEAR(check_in) as year"),
-            DB::raw('SUM(total_amount) as revenue')
+            DB::raw('SUM(total_price) as revenue')
         )
+            ->whereIn('status', $validStatuses)
             ->groupBy('year')
             ->orderBy('year')
             ->get()
@@ -36,19 +50,54 @@ class ChartController extends Controller
                 'revenue' => (float) $item->revenue,
             ]);
 
-        // KPIs
-        $totalBookings = Booking::count();
-        $totalRevenue = Booking::sum('total_amount');
+        /*
+        |--------------------------------------------------------------------------
+        | 💰 CORE KPIs
+        |--------------------------------------------------------------------------
+        */
+        $totalRevenue = Booking::whereIn('status', $validStatuses)
+            ->sum('total_price');
+
         $totalPayments = DB::table('payments')->sum('amount');
 
         $balance = $totalRevenue - $totalPayments;
 
-        $totalRooms = DB::table('rooms')->count();
-        $occupied = Booking::where('status', 'checked_in')->count();
+        /*
+        |--------------------------------------------------------------------------
+        | 🛏️ ROOM & STAY METRICS
+        |--------------------------------------------------------------------------
+        */
 
-        $adr = $totalBookings > 0 ? $totalRevenue / $totalBookings : 0;
-        $revpar = $totalRooms > 0 ? $totalRevenue / $totalRooms : 0;
-        $occupancy = $totalRooms > 0 ? ($occupied / $totalRooms) * 100 : 0;
+        $totalRooms = DB::table('rooms')->count();
+
+        // Total room nights sold
+        $roomNights = Booking::whereIn('status', $validStatuses)
+            ->select(DB::raw('SUM(DATEDIFF(check_out, check_in)) as nights'))
+            ->value('nights') ?? 0;
+
+        // Total days (for current year)
+        $days = now()->dayOfYear;
+
+        $availableRoomNights = $totalRooms * $days;
+
+        /*
+        |--------------------------------------------------------------------------
+        | 📈 METRICS
+        |--------------------------------------------------------------------------
+        */
+
+        // ADR = Revenue / Room Nights
+        $adr = $roomNights > 0 ? $totalRevenue / $roomNights : 0;
+
+        // Occupancy = Sold Nights / Available Nights
+        $occupancy = $availableRoomNights > 0
+            ? ($roomNights / $availableRoomNights) * 100
+            : 0;
+
+        // RevPAR = Revenue / Available Rooms
+        $revpar = $availableRoomNights > 0
+            ? $totalRevenue / $availableRoomNights
+            : 0;
 
         return Inertia::render('reports/charts', [
             'monthlyData' => $monthly,
@@ -57,7 +106,7 @@ class ChartController extends Controller
                 'revenue' => round($totalRevenue, 2),
                 'payments' => round($totalPayments, 2),
                 'balance' => round($balance, 2),
-                'cash' => round($totalPayments, 2),
+                'cash' => round($totalPayments, 2), // refine later by payment method
                 'adr' => round($adr, 2),
                 'revpar' => round($revpar, 2),
                 'occupancy' => round($occupancy, 2),
