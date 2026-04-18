@@ -7,19 +7,30 @@ use App\Models\User;
 use App\Models\ActivityLog;
 use Inertia\Inertia;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 
 
 class OverviewController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-       
-        $users = User::select('id', 'name', 'email', 'role')
-            ->latest()
-            ->get();
+        $start = $request->get('start');
+        $end = $request->get('end');
 
-        
-        $logs = ActivityLog::latest()
+        $query = ActivityLog::with('user')->latest();
+
+        if ($start && $end) {
+            $startDate = Carbon::parse($start)->timezone('Asia/Manila')->startOfDay();
+            $endDate = Carbon::parse($end)->timezone('Asia/Manila')->endOfDay();
+
+            if ($startDate->isSameDay($endDate)) {
+                $query->whereDate('created_at', $startDate);
+            } else {
+                $query->whereBetween('created_at', [$startDate, $endDate]);
+            }
+        }
+
+        $logs = $query
             ->limit(100)
             ->get()
             ->map(function ($log) {
@@ -27,7 +38,7 @@ class OverviewController extends Controller
                     'id' => $log->id,
                     'staffId' => $log->user_id,
                     'user' => $log->staff_name,
-                    'role' => User::find($log->user_id)?->role ?? 'N/A',
+                    'role' => $log->user->role ?? 'N/A',
                     'action' => $log->action,
                     'guest' => $log->guest_name,
                     'room' => $log->room_number,
@@ -37,9 +48,8 @@ class OverviewController extends Controller
                 ];
             });
 
-      
         return Inertia::render('AdminPage/Index', [
-            'users' => $users,
+            'users' => User::latest()->get(),
             'logs' => $logs,
         ]);
     }

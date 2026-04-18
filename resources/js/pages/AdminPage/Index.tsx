@@ -9,6 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { LogIn, LogOut, CalendarPlus, Ban, Users, Home } from 'lucide-react';
 
+import { useDateRange } from '@/contexts/date-range-context';
+
 const breadcrumbs: BreadcrumbItem[] = [
 	{ title: 'Dashboard', href: '/dashboard' },
 	{ title: 'Admin', href: '/admin' },
@@ -83,19 +85,35 @@ type PageProps = {
 };
 
 export default function Index() {
+	const { range } = useDateRange();
 	const { users = [], logs = [], auth } = usePage<PageProps>().props;
 
 	const adminCount = users.filter((u) => u.role?.toLowerCase() === 'admin').length;
 	const frontdeskCount = users.filter((u) => u.role?.toLowerCase() === 'frontdesk').length;
 	const totalUsers = users.length;
+	const start = useMemo(() => range?.from?.toLocaleDateString('en-CA'), [range?.from]);
+
+	const end = useMemo(() => range?.to?.toLocaleDateString('en-CA'), [range?.to]);
 
 	useEffect(() => {
-		const interval = setInterval(() => {
-			router.reload({ only: ['logs'] });
-		}, 5000); // every 5 seconds
+		if (!start || !end) return;
 
-		return () => clearInterval(interval);
-	}, []);
+		const params = new URLSearchParams(window.location.search);
+		const currentStart = params.get('start');
+		const currentEnd = params.get('end');
+
+		// 🛑 STOP if already same → prevents loop
+		if (currentStart === start && currentEnd === end) return;
+
+		router.get(
+			'/admin',
+			{ start, end },
+			{
+				preserveScroll: true,
+				replace: true,
+			},
+		);
+	}, [start, end]);
 
 	const [search, setSearch] = useState('');
 	const [filter, setFilter] = useState<LogType | 'ALL'>('ALL');
@@ -127,7 +145,7 @@ export default function Index() {
 	}, [filteredLogs, page]);
 
 	return (
-		<AppLayout breadcrumbs={breadcrumbs}>
+		<AppLayout breadcrumbs={breadcrumbs} showDatePicker>
 			<Head title='Admin Dashboard' />
 
 			<div className='flex w-full min-w-0 flex-col gap-6 p-6'>
