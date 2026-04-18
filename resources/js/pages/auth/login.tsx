@@ -11,6 +11,7 @@ import { store } from '@/routes/login';
 import { request } from '@/routes/password';
 import AuthImageCardLayout from '@/layouts/auth/auth-image-card-layout';
 import AuthCardLayout from '@/layouts/auth/auth-card-layout';
+import AppearanceToggleTab from '@/components/appearance-tabs';
 
 type Props = {
     status?: string;
@@ -24,7 +25,7 @@ export default function Login({
     canRegister,
 }: Props) {
     return (
-        <AuthCardLayout
+        <AuthImageCardLayout
             title="Log in to your account"
             description="Enter your email and password below to log in"
         >
@@ -116,6 +117,6 @@ export default function Login({
                     {status}
                 </div>
             )}
-        </AuthCardLayout>
+        </AuthImageCardLayout>
     );
 }
