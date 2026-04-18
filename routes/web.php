@@ -81,7 +81,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/admin', [OverviewController::class, 'index'])
     ->name('admin.index');
         
-
         // users management
         Route::get('/admin/users', [AdminUserController::class, 'index'])
             ->name('admin.users.index');
@@ -95,8 +94,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('admin.users.updateStatus');
         Route::delete('/admin/users/{user}', [AdminUserController::class, 'destroy'])
             ->name('admin.users.destroy');
-
-
 
         Route::get('/admin/hotel-info', fn() => Inertia::render('AdminPage/HotelInfo'));
     });
