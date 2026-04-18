@@ -20,6 +20,28 @@ class RatesController extends Controller
             'stats' => [
                 'totalBookings' => Booking::count(),
             ],
+            'discounts' => Rate::where('type', 'percentage')
+                ->where('is_custom', false)
+                ->orderBy('value')
+                ->with(['bookings.room'])
+                ->get()
+                ->map(function ($rate) {
+                    $totalDiscount = $rate->bookings->sum(function ($booking) use ($rate) {
+                        $checkIn  = \Carbon\Carbon::parse($booking->check_in);
+                        $checkOut = \Carbon\Carbon::parse($booking->check_out);
+                        $nights   = max(1, round($checkOut->diffInDays($checkIn), 0));
+                        $total    = $booking->room->price * $nights;
+
+                        return $total * ($rate->value / 100);
+                    });
+
+        return [
+            'id'             => $rate->id,
+            'name'           => $rate->name,
+            'value'          => $rate->value,
+            'totalDiscount'  => round($totalDiscount, 2),
+        ];
+    }),
         ]);
     }
 

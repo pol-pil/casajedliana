@@ -225,7 +225,8 @@
 						<td>{{ number_format($nights, 0) }}</td>
 					</tr>
 
-					@php $total = $booking->room->price * round($nights, 0); @endphp @php $discountAmount = $total * ($booking->rate->value
+					@php $total = $booking->room->price * round($nights, 0); @endphp
+					@php $discountAmount = $total * ($booking->rate->value
 					/ 100); @endphp
 
 					<tr>
