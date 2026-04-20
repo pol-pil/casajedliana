@@ -59,7 +59,7 @@ export default function Charts() {
     | 📊 Convert to % (for chart display)
     |--------------------------------------------------------------------------
     */
-   
+
 	const total = distribution.reduce((sum, item) => sum + item.value, 0);
 
 	const distributionPercent = distribution
@@ -69,7 +69,7 @@ export default function Charts() {
 		}))
 		.sort((a, b) => b.value - a.value);
 
-		const topDistribution = distributionPercent.slice(0, 5);
+	const topDistribution = distributionPercent.slice(0, 5);
 
 	const getTrend = (value: number) => {
 		if (value > 0) return 'up';
@@ -209,26 +209,31 @@ export default function Charts() {
 					</CardHeader>
 
 					<CardContent className='grid grid-cols-1 items-center gap-6 border-t px-4 py-4 lg:grid-cols-[1.5fr_1fr]'>
-						<div className='mx-auto h-[200px] w-full max-w-[500px]'>
+						<div className='h-[320px] w-full md:h-[380px]'>
 							<ResponsiveContainer>
-								<BarChart layout='vertical' data={topDistribution} margin={{ left: 10, right: 20 }}>
+								<BarChart
+									layout='vertical'
+									data={topDistribution}
+									margin={{right: 10}}
+									barSize={50}
+									barCategoryGap='10%'
+								>
 									<CartesianGrid strokeDasharray='3 3' horizontal={false} />
 
 									<XAxis type='number' tickFormatter={(v) => `${v}%`} />
 
-									<YAxis type='category' dataKey='name' width={180} tick={{ fontSize: 12 }} />
+									<YAxis type='category' dataKey='name' width={180} tick={{ fontSize: 17 }} />
 
 									<Tooltip formatter={(v: number) => `${v}%`} />
 
 									<Bar dataKey='value' radius={[8, 8, 8, 8]}>
-										{distributionPercent.map((item, i) => (
+										{topDistribution.map((item, i) => (
 											<Cell key={i} fill={item.color} />
 										))}
 									</Bar>
 								</BarChart>
 							</ResponsiveContainer>
 						</div>
-
 						<div className='space-y-2 text-sm'>
 							{distributionPercent.map((item) => (
 								<div key={item.name} className='flex items-center justify-between'>

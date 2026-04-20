@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
-import { Head, usePage} from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import { format } from 'date-fns';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -200,8 +200,53 @@ export default function Dashboard() {
 							</div>
 						))}
 					</div>
+				</div>
 
-					{/* ── Arrivals / Departures table ── */}
+				{/* RIGHT SIDE - QUICK ACTION */}
+					<div className='flex flex-col'>
+						<div className='mt-auto lg:mt-60'>
+							<Card>
+								<CardHeader>
+									<CardTitle>Quick Action</CardTitle>
+								</CardHeader>
+
+								<CardContent className='grid grid-cols-2 gap-3'>
+									<Button variant='outline' className='flex h-24 flex-col gap-2'>
+										<span>＋</span>
+										<span className='text-xs'>New Reservation</span>
+									</Button>
+
+									<Button variant='secondary' className='flex h-24 flex-col gap-2'>
+										<span>🔍</span>
+										<span className='text-xs'>Search</span>
+									</Button>
+
+									<Button variant='secondary' className='flex h-24 flex-col gap-2'>
+										<span>📖</span>
+										<span className='text-xs'>Check-In</span>
+									</Button>
+
+									<Button variant='secondary' className='flex h-24 flex-col gap-2'>
+										<span>🚪</span>
+										<span className='text-xs'>Check-Out</span>
+									</Button>
+
+									<Button variant='secondary' className='flex h-24 flex-col gap-2'>
+										<span>📦</span>
+										<span className='text-xs'>Create Package</span>
+									</Button>
+
+									<Button variant='secondary' className='flex h-24 flex-col gap-2'>
+										<span>🛏️</span>
+										<span className='text-xs'>Manage Rooms</span>
+									</Button>
+								</CardContent>
+							</Card>
+						</div>
+					</div>
+
+				{/* ── Arrivals / Departures table ── */}
+				<div className='lg:col-span-4'>
 					<Card>
 						<CardHeader className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
 							<CardTitle>Arrival / Departure</CardTitle>
@@ -214,7 +259,7 @@ export default function Dashboard() {
 						</CardHeader>
 						<CardContent>
 							<div className='w-full overflow-x-auto'>
-								<table className='w-full min-w-[900px] border-separate border-spacing-y-1 text-sm'>
+								<table className='w-full min-w-[1000px] border-separate border-spacing-y-1 text-sm'>
 									<thead>
 										<tr className='border-b text-left'>
 											<th className='py-2 whitespace-nowrap'>Check-in Date</th>
