@@ -10,6 +10,8 @@ import { useState, useEffect } from 'react';
 import { router, usePage } from '@inertiajs/react';
 import { format, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
 import { DateRange } from 'react-day-picker';
+import AppearanceToggleTab from './appearance-tabs';
+import AppearanceToggleButton from './appearance-button';
 
 const presets = [
 	{ label: 'Today', range: { from: new Date(), to: new Date() } },
@@ -136,6 +138,7 @@ export function AppSidebarHeader({
 				<div className='flex flex-row items-center gap-2'>
 					<SidebarTrigger className='-ml-1' />
 					<Breadcrumbs breadcrumbs={breadcrumbs} />
+					<AppearanceToggleButton/>
 				</div>
 				<div className='absolute left-1/2 -translate-x-1/2 items-center justify-center text-center text-sm'>
 					<p>{greeting}!</p>
