@@ -11,7 +11,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 
-const breadcrumbs: BreadcrumbItem[] = [{ title: 'Hotel Info', href: '/admin/hotel-info' }];
+const breadcrumbs: BreadcrumbItem[] = [
+	{ title: 'Admin', href: '/admin' },
+	{ title: 'Hotel Info', href: '/admin/hotel-info' },
+];
 
 export default function HotelInfo() {
 	const { hotel } = usePage().props as any;

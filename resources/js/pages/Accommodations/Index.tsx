@@ -14,7 +14,10 @@ import RoomDialogs from '@/components/rooms/RoomDialogs';
 
 import { Room } from '@/types/room';
 
-const breadcrumbs: BreadcrumbItem[] = [{ title: 'Rooms', href: '/rooms' }];
+const breadcrumbs: BreadcrumbItem[] = [
+	{ title: 'Admin', href: '/admin' },
+	{ title: 'Rooms', href: '/rooms' },
+];
 
 type Status = 'Available' | 'Occupied' | 'Reserved' | 'Maintenance';
 

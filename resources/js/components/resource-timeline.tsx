@@ -219,7 +219,7 @@ export default function ResourceTimeline({
                 d.setHours(i);
                 return d;
             });
-            const min = 64;
+            const min = 40;
             return {
                 days: hrs,
                 slotWidth: containerWidth > 0 ? Math.max(min, containerWidth / hrs.length) : min,
@@ -317,14 +317,14 @@ export default function ResourceTimeline({
 
             {/* Toolbar */}
             <div className="flex items-center justify-between px-4 py-2.5 border-b gap-2 flex-wrap bg-card">
-                <div className="flex items-center gap-1.5">
-                    <Button variant="outline" size="sm" onClick={() => navigate(-1)} className="h-7 w-7 p-0">
+                <div className="flex items-center gap-1">
+                    <Button variant="outline" size="sm" onClick={() => navigate(-1)} className="size-8 p-0">
                         <ChevronLeft className="h-3.5 w-3.5" />
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => navigate(1)} className="h-7 w-7 p-0">
+                    <Button variant="outline" size="sm" onClick={() => navigate(1)} className="size-8 p-0">
                         <ChevronRight className="h-3.5 w-3.5" />
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => setAnchor(new Date())} className="h-7 px-2.5 text-xs">
+                    <Button variant="outline" size="sm" onClick={() => setAnchor(new Date())} className="h-8 px-3.5 text-xs">
                         Today
                     </Button>
                     <span className="text-sm font-semibold ml-2 text-foreground">{title}</span>
@@ -336,7 +336,7 @@ export default function ResourceTimeline({
                             variant={view === v ? 'default' : 'ghost'}
                             size="sm"
                             onClick={() => setView(v)}
-                            className="h-7 px-2.5 text-xs capitalize"
+                            className="h-8 px-3.5 text-xs capitalize"
                         >
                             {v}
                         </Button>
@@ -397,9 +397,9 @@ export default function ResourceTimeline({
                                         key={i}
                                         ref={todaySlot ? todayColRef : undefined}
                                         className={cn(
-                                            'flex-shrink-0 flex items-center justify-center border-r text-[11px] font-medium',
+                                            'flex-shrink-0 flex items-center justify-center border-r text-[12px] font-medium',
                                             todaySlot
-                                                ? 'bg-primary/10 text-primary font-semibold'
+                                                ? 'bg-primary/10 text-primary-foreground dark:text-primary font-semibold'
                                                 : 'text-muted-foreground',
                                         )}
                                         style={{ width: slotWidth, height: HEADER_HEIGHT }}
@@ -443,7 +443,7 @@ export default function ResourceTimeline({
                                     {/* Now indicator line */}
                                     {nowLeft !== null && (
                                         <div
-                                            className="absolute top-0 bottom-0 z-20 pointer-events-none bg-red-500 opacity-60"
+                                            className="absolute top-0 bottom-0 z-20 pointer-events-none bg-amber-500 opacity-60"
                                             style={{ left: nowLeft, width: 1 }}
                                         />
                                     )}
@@ -459,7 +459,7 @@ export default function ResourceTimeline({
                                         return (
                                             <div
                                                 key={ev.id}
-                                                className="absolute rounded cursor-pointer z-10 overflow-hidden transition-opacity hover:opacity-90 active:scale-[0.99]"
+                                                className="absolute rounded-sm cursor-pointer z-10 overflow-hidden transition-opacity hover:opacity-90 active:scale-[0.99]"
                                                 style={{ left, width, top, height: LANE_HEIGHT, backgroundColor: bgColor }}
                                                 onClick={() => onEventClick?.(ev)}
                                                 title={ev.title}

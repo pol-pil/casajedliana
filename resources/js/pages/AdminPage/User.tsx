@@ -12,6 +12,12 @@ import CreateUserDialog from '@/components/users/CreateUserDialog';
 import EditUserDialog from '@/components/users/EditUserDialog';
 import ResetPasswordDialog from '@/components/users/ResetPasswordDialog';
 import DeleteUserDialog from '@/components/users/DeleteUserDialog';
+import { BreadcrumbItem } from '@/types';
+
+const breadcrumbs: BreadcrumbItem[] = [
+	{ title: 'Admin', href: '/admin' },
+	{ title: 'Users', href: 'admin/users' },
+];
 
 type User = {
 	id: number;
@@ -106,7 +112,7 @@ export default function Index() {
 	const getRoleVariant = (role: string) => (role === 'admin' ? 'default' : 'secondary');
 
 	return (
-		<AppLayout breadcrumbs={[]}>
+		<AppLayout breadcrumbs={breadcrumbs}>
 			<Head title='User Management' />
 
 			<div className='space-y-4 p-6'>

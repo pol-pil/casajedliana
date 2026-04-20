@@ -12,8 +12,8 @@ import { LogIn, LogOut, CalendarPlus, Ban, Users, Home, Pencil } from 'lucide-re
 import { useDateRange } from '@/contexts/date-range-context';
 
 const breadcrumbs: BreadcrumbItem[] = [
-	{ title: 'Dashboard', href: '/dashboard' },
 	{ title: 'Admin', href: '/admin' },
+	{ title: 'Dashboard', href: '/dashboard' },
 ];
 
 type LogType = 'CHECK_IN' | 'CHECK_OUT' | 'CREATE_BOOKING' | 'UPDATE_BOOKING' | 'CANCEL_BOOKING';
