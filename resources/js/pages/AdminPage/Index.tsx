@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { useMemo, useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { LogIn, LogOut, CalendarPlus, Ban, Users, Home } from 'lucide-react';
+import { LogIn, LogOut, CalendarPlus, Ban, Users, Home, Pencil } from 'lucide-react';
 
 import { useDateRange } from '@/contexts/date-range-context';
 
@@ -16,7 +16,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 	{ title: 'Admin', href: '/admin' },
 ];
 
-type LogType = 'CHECK_IN' | 'CHECK_OUT' | 'CREATE_BOOKING' | 'CANCEL_BOOKING';
+type LogType = 'CHECK_IN' | 'CHECK_OUT' | 'CREATE_BOOKING' | 'UPDATE_BOOKING' | 'CANCEL_BOOKING';
 
 interface Log {
 	id: number;
@@ -37,6 +37,8 @@ const actionColor = (action: LogType) => {
 			return 'bg-blue-500/20 text-blue-400';
 		case 'CREATE_BOOKING':
 			return 'bg-yellow-500/20 text-yellow-400';
+		case 'UPDATE_BOOKING':
+			return 'bg-purple-500/20 text-purple-400';
 		case 'CANCEL_BOOKING':
 			return 'bg-red-500/20 text-red-400';
 	}
@@ -50,6 +52,8 @@ const actionLabel = (action: LogType) => {
 			return 'Check-out';
 		case 'CREATE_BOOKING':
 			return 'Booking Created';
+		case 'UPDATE_BOOKING':
+			return 'Booking Updated';
 		case 'CANCEL_BOOKING':
 			return 'Cancelled';
 	}
@@ -63,6 +67,8 @@ const actionIcon = (action: LogType) => {
 			return <LogOut className='h-3.5 w-3.5' />;
 		case 'CREATE_BOOKING':
 			return <CalendarPlus className='h-3.5 w-3.5' />;
+		case 'UPDATE_BOOKING':
+			return <Pencil className='h-3.5 w-3.5' />;
 		case 'CANCEL_BOOKING':
 			return <Ban className='h-3.5 w-3.5' />;
 	}
@@ -277,6 +283,7 @@ export default function Index() {
 											{ type: 'CHECK_IN', label: 'Check-in', icon: LogIn },
 											{ type: 'CHECK_OUT', label: 'Check-out', icon: LogOut },
 											{ type: 'CREATE_BOOKING', label: 'Booking', icon: CalendarPlus },
+											{ type: 'UPDATE_BOOKING', label: 'Updated', icon: Pencil },
 											{ type: 'CANCEL_BOOKING', label: 'Cancelled', icon: Ban },
 										].map(({ type, label, icon: Icon }) => {
 											const isActive = filter === type;
