@@ -3,6 +3,21 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
+function useDarkMode(): boolean {
+    const [dark, setDark] = useState(() =>
+        typeof window !== 'undefined' && document.documentElement.classList.contains('dark')
+    );
+    useEffect(() => {
+        const observer = new MutationObserver(() => {
+            setDark(document.documentElement.classList.contains('dark'));
+        });
+        observer.observe(document.documentElement, { attributeFilter: ['class'] });
+        return () => observer.disconnect();
+    }, []);
+    return dark;
+}
+
+
 type Resource = {
     id: string;
     title: string;
@@ -32,9 +47,22 @@ type ResourceTimelineProps = {
     initialView?: 'day' | 'week' | 'month';
 };
 
-const RESOURCE_COL_WIDTH = 120;
-const ROW_HEIGHT = 48;
-const HEADER_HEIGHT = 56;
+type LanedEvent = {
+    event: CalendarEvent;
+    lane: number;
+    totalLanes: number;
+    left: number;
+    width: number;
+};
+
+const RESOURCE_COL_WIDTH = 130;
+const LANE_HEIGHT = 36;
+const LANE_GAP = 4;
+const ROW_PADDING = 6;
+const MIN_ROW_HEIGHT = LANE_HEIGHT + ROW_PADDING * 2;
+const HEADER_HEIGHT = 52;
+
+// ── Date helpers ──────────────────────────────────────────────────────────────
 
 function startOfDay(date: Date) {
     const d = new Date(date);
@@ -50,8 +78,7 @@ function addDays(date: Date, n: number) {
 
 function startOfWeek(date: Date) {
     const d = new Date(date);
-    const day = d.getDay();
-    d.setDate(d.getDate() - day);
+    d.setDate(d.getDate() - d.getDay());
     d.setHours(0, 0, 0, 0);
     return d;
 }
@@ -75,17 +102,6 @@ function daysInRange(start: Date, end: Date) {
     return days;
 }
 
-function formatDayLabel(date: Date, view: 'day' | 'week' | 'month') {
-    if (view === 'month') {
-        return date.toLocaleDateString('en-US', { day: 'numeric' });
-    }
-    return date.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' });
-}
-
-function formatMonthLabel(date: Date) {
-    return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-}
-
 function isToday(date: Date) {
     const t = new Date();
     return (
@@ -94,6 +110,79 @@ function isToday(date: Date) {
         date.getFullYear() === t.getFullYear()
     );
 }
+
+function formatRangeTitle(view: 'day' | 'week' | 'month', anchor: Date, days: Date[]) {
+    if (view === 'day') {
+        return anchor.toLocaleDateString('en-US', {
+            weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
+        });
+    }
+    if (view === 'week') {
+        return `${days[0].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${days[6].toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+    }
+    return anchor.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+}
+
+function formatSlotLabel(date: Date, view: 'day' | 'week' | 'month') {
+    if (view === 'day') return date.toLocaleTimeString('en-US', { hour: 'numeric', hour12: true });
+    if (view === 'month') return date.toLocaleDateString('en-US', { day: 'numeric' });
+    return date.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' });
+}
+
+// ── Lane assignment ───────────────────────────────────────────────────────────
+//
+// Sort events by start time, then greedily assign each to the lowest lane
+// whose last event has already ended.  This guarantees no two events in the
+// same lane overlap, and minimises the total number of lanes used.
+
+function assignLanes(
+    events: CalendarEvent[],
+    rangeStart: Date,
+    rangeEnd: Date,
+    unitMs: number,
+    slotWidth: number,
+): LanedEvent[] {
+    const sorted = [...events].sort(
+        (a, b) => new Date(a.start).getTime() - new Date(b.start).getTime(),
+    );
+
+    // laneEndMs[i] = timestamp at which lane i becomes free
+    const laneEndMs: number[] = [];
+    const laned: (LanedEvent & { _endMs: number })[] = [];
+
+    for (const ev of sorted) {
+        const evStart = new Date(ev.start);
+        const evEnd = new Date(ev.end);
+
+        // Skip events entirely outside the visible range
+        if (evEnd <= rangeStart || evStart >= rangeEnd) continue;
+
+        const clampedStart = evStart < rangeStart ? rangeStart : evStart;
+        const clampedEnd = evEnd > rangeEnd ? rangeEnd : evEnd;
+
+        const left = ((clampedStart.getTime() - rangeStart.getTime()) / unitMs) * slotWidth;
+        const width = Math.max(
+            ((clampedEnd.getTime() - clampedStart.getTime()) / unitMs) * slotWidth - 2,
+            28,
+        );
+
+        // Find the first free lane (free = laneEndMs[lane] <= evStart)
+        const startMs = evStart.getTime();
+        let lane = laneEndMs.findIndex((endMs) => endMs <= startMs);
+        if (lane === -1) {
+            lane = laneEndMs.length;
+            laneEndMs.push(0);
+        }
+        laneEndMs[lane] = evEnd.getTime();
+
+        laned.push({ event: ev, lane, totalLanes: 0, left, width, _endMs: evEnd.getTime() });
+    }
+
+    const totalLanes = Math.max(laneEndMs.length, 1);
+    return laned.map(({ _endMs, ...rest }) => ({ ...rest, totalLanes }));
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
 
 export default function ResourceTimeline({
     resources,
@@ -105,44 +194,104 @@ export default function ResourceTimeline({
     const [view, setView] = useState<'day' | 'week' | 'month'>(initialView);
     const [anchor, setAnchor] = useState<Date>(() => new Date());
     const scrollRef = useRef<HTMLDivElement>(null);
-    const todayRef = useRef<HTMLDivElement>(null);
+    const todayColRef = useRef<HTMLDivElement>(null);
+    const [containerWidth, setContainerWidth] = useState(0);
+    const isDark = useDarkMode();
 
-    const { days, title, slotWidth } = useMemo(() => {
+    // Measure the scrollable pane width so slots can stretch to fill it
+    useEffect(() => {
+        const el = scrollRef.current;
+        if (!el) return;
+        setContainerWidth(el.clientWidth);
+        const ro = new ResizeObserver(([entry]) => {
+            setContainerWidth(entry.contentRect.width);
+        });
+        ro.observe(el);
+        return () => ro.disconnect();
+    }, []);
+
+    // ── Derive slot days/hours ────────────────────────────────────────────────
+    const { days, slotWidth } = useMemo(() => {
         if (view === 'day') {
             const day = startOfDay(anchor);
-            const hours = Array.from({ length: 24 }, (_, i) => {
+            const hrs = Array.from({ length: 24 }, (_, i) => {
                 const d = new Date(day);
                 d.setHours(i);
                 return d;
             });
+            const min = 64;
             return {
-                days: hours,
-                title: day.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }),
-                slotWidth: 60,
+                days: hrs,
+                slotWidth: containerWidth > 0 ? Math.max(min, containerWidth / hrs.length) : min,
             };
         }
         if (view === 'week') {
             const start = startOfWeek(anchor);
             const ds = Array.from({ length: 7 }, (_, i) => addDays(start, i));
+            const min = 80;
             return {
                 days: ds,
-                title: `${ds[0].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${ds[6].toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`,
-                slotWidth: 100,
+                slotWidth: containerWidth > 0 ? Math.max(min, containerWidth / ds.length) : min,
             };
         }
-        // month
         const start = startOfMonth(anchor);
-        const end = endOfMonth(anchor);
-        const ds = daysInRange(start, end);
+        const ds = daysInRange(start, endOfMonth(anchor));
+        const min = 34;
         return {
             days: ds,
-            title: formatMonthLabel(anchor),
-            slotWidth: 36,
+            slotWidth: containerWidth > 0 ? Math.max(min, containerWidth / ds.length) : min,
         };
-    }, [view, anchor]);
+    }, [view, anchor, containerWidth]);
 
+    const title = useMemo(() => formatRangeTitle(view, anchor, days), [view, anchor, days]);
     const totalWidth = days.length * slotWidth;
 
+    const rangeStart = days[0];
+    const rangeEnd = useMemo(
+        () =>
+            view === 'day'
+                ? new Date(days[days.length - 1].getTime() + 3_600_000)
+                : new Date(days[days.length - 1].getTime() + 86_400_000),
+        [days, view],
+    );
+    const unitMs = view === 'day' ? 3_600_000 : 86_400_000;
+
+    // ── Live now-indicator ────────────────────────────────────────────────────
+    const [nowMs, setNowMs] = useState(Date.now);
+    useEffect(() => {
+        const id = setInterval(() => setNowMs(Date.now()), 60_000);
+        return () => clearInterval(id);
+    }, []);
+    const nowLeft =
+        nowMs >= rangeStart.getTime() && nowMs <= rangeEnd.getTime()
+            ? ((nowMs - rangeStart.getTime()) / unitMs) * slotWidth
+            : null;
+
+    // ── Lane-assigned events per resource ─────────────────────────────────────
+    const lanedByResource = useMemo(() => {
+        const map: Record<string, LanedEvent[]> = {};
+        for (const resource of resources) {
+            const evs = events.filter((ev) => ev.resourceId === resource.id);
+            map[resource.id] = assignLanes(evs, rangeStart, rangeEnd, unitMs, slotWidth);
+        }
+        return map;
+    }, [events, resources, rangeStart, rangeEnd, unitMs, slotWidth]);
+
+    // ── Dynamic row heights (grow with lane count) ────────────────────────────
+    const rowHeights = useMemo(() => {
+        const map: Record<string, number> = {};
+        for (const resource of resources) {
+            const laned = lanedByResource[resource.id] ?? [];
+            const maxLanes = laned.length > 0 ? Math.max(...laned.map((l) => l.totalLanes)) : 1;
+            map[resource.id] = Math.max(
+                MIN_ROW_HEIGHT,
+                maxLanes * LANE_HEIGHT + (maxLanes - 1) * LANE_GAP + ROW_PADDING * 2,
+            );
+        }
+        return map;
+    }, [lanedByResource, resources]);
+
+    // ── Navigation ───────────────────────────────────────────────────────────
     function navigate(dir: -1 | 1) {
         setAnchor((prev) => {
             const d = new Date(prev);
@@ -153,201 +302,182 @@ export default function ResourceTimeline({
         });
     }
 
-    function goToday() {
-        setAnchor(new Date());
-    }
-
+    // ── Scroll today into view on mount / view change ─────────────────────────
     useEffect(() => {
-        if (todayRef.current && scrollRef.current) {
-            const el = todayRef.current;
+        if (todayColRef.current && scrollRef.current) {
+            const el = todayColRef.current;
             const container = scrollRef.current;
-            const offset = el.offsetLeft - container.offsetWidth / 2 + slotWidth / 2;
-            container.scrollLeft = Math.max(0, offset);
+            container.scrollLeft = Math.max(0, el.offsetLeft - container.offsetWidth / 2 + slotWidth / 2);
         }
-    }, [view, anchor, slotWidth]);
+    }, [view, anchor, slotWidth, containerWidth]);
 
-    function getEventPosition(event: CalendarEvent): { left: number; width: number } | null {
-        const rangeStart = days[0];
-        const rangeEnd = view === 'day'
-            ? new Date(days[days.length - 1].getTime() + 3600 * 1000)
-            : new Date(days[days.length - 1].getTime() + 86400 * 1000);
-
-        const evStart = new Date(event.start);
-        const evEnd = new Date(event.end);
-
-        if (evEnd <= rangeStart || evStart >= rangeEnd) return null;
-
-        const clampedStart = evStart < rangeStart ? rangeStart : evStart;
-        const clampedEnd = evEnd > rangeEnd ? rangeEnd : evEnd;
-
-        const unitMs = view === 'day' ? 3600 * 1000 : 86400 * 1000;
-        const left = ((clampedStart.getTime() - rangeStart.getTime()) / unitMs) * slotWidth;
-        const width = Math.max(((clampedEnd.getTime() - clampedStart.getTime()) / unitMs) * slotWidth - 2, 20);
-
-        return { left, width };
-    }
-
-    const eventsByResource = useMemo(() => {
-        const map: Record<string, CalendarEvent[]> = {};
-        for (const ev of events) {
-            if (!map[ev.resourceId]) map[ev.resourceId] = [];
-            map[ev.resourceId].push(ev);
-        }
-        return map;
-    }, [events]);
-
-    const nowMs = Date.now();
-    const rangeStart = days[0];
-    const rangeEnd = view === 'day'
-        ? new Date(days[days.length - 1].getTime() + 3600 * 1000)
-        : new Date(days[days.length - 1].getTime() + 86400 * 1000);
-    const unitMs = view === 'day' ? 3600 * 1000 : 86400 * 1000;
-    const nowLeft = nowMs >= rangeStart.getTime() && nowMs <= rangeEnd.getTime()
-        ? ((nowMs - rangeStart.getTime()) / unitMs) * slotWidth
-        : null;
-
+    // ── Render ───────────────────────────────────────────────────────────────
     return (
-        <div className="rounded-lg border bg-card overflow-hidden flex flex-col" style={{ fontFamily: 'inherit' }}>
+        <div className="rounded-lg border bg-card overflow-hidden flex flex-col select-none">
+
             {/* Toolbar */}
-            <div className="flex items-center justify-between px-4 py-3 border-b gap-2 flex-wrap">
-                <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={() => navigate(-1)}>
-                        <ChevronLeft className="h-4 w-4" />
+            <div className="flex items-center justify-between px-4 py-2.5 border-b gap-2 flex-wrap bg-card">
+                <div className="flex items-center gap-1.5">
+                    <Button variant="outline" size="sm" onClick={() => navigate(-1)} className="h-7 w-7 p-0">
+                        <ChevronLeft className="h-3.5 w-3.5" />
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => navigate(1)}>
-                        <ChevronRight className="h-4 w-4" />
+                    <Button variant="outline" size="sm" onClick={() => navigate(1)} className="h-7 w-7 p-0">
+                        <ChevronRight className="h-3.5 w-3.5" />
                     </Button>
-                    <Button variant="outline" size="sm" onClick={goToday}>
+                    <Button variant="outline" size="sm" onClick={() => setAnchor(new Date())} className="h-7 px-2.5 text-xs">
                         Today
                     </Button>
-                    <span className="text-sm font-medium ml-2">{title}</span>
+                    <span className="text-sm font-semibold ml-2 text-foreground">{title}</span>
                 </div>
                 <div className="flex items-center gap-1">
                     {(['day', 'week', 'month'] as const).map((v) => (
                         <Button
                             key={v}
-                            variant={view === v ? 'default' : 'outline'}
+                            variant={view === v ? 'default' : 'ghost'}
                             size="sm"
                             onClick={() => setView(v)}
+                            className="h-7 px-2.5 text-xs capitalize"
                         >
-                            {v.charAt(0).toUpperCase() + v.slice(1)}
+                            {v}
                         </Button>
                     ))}
                 </div>
             </div>
 
-            {/* Grid */}
+            {/* Grid wrapper */}
             <div className="flex overflow-hidden">
-                {/* Resource column (fixed) */}
-                <div className="flex-shrink-0 border-r" style={{ width: RESOURCE_COL_WIDTH }}>
-                    {/* Header cell */}
+
+                {/* Fixed resource label column */}
+                <div
+                    className="flex-shrink-0 border-r bg-muted/20 z-10"
+                    style={{ width: RESOURCE_COL_WIDTH }}
+                >
+                    {/* Corner header */}
                     <div
-                        className="flex items-center px-3 border-b bg-muted/40 text-xs font-semibold text-muted-foreground"
+                        className="flex items-center px-3 border-b bg-muted/40"
                         style={{ height: HEADER_HEIGHT }}
                     >
-                        Room
+                        <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                            Room
+                        </span>
                     </div>
+
+                    {/* Resource rows (heights must match timeline side) */}
                     {resources.map((resource) => (
                         <div
                             key={resource.id}
                             className="flex flex-col justify-center px-3 border-b"
-                            style={{ height: ROW_HEIGHT }}
+                            style={{ height: rowHeights[resource.id] ?? MIN_ROW_HEIGHT }}
                         >
-                            <span className="text-sm font-medium leading-tight truncate">{resource.title}</span>
+                            <span className="text-sm font-medium leading-tight truncate">
+                                {resource.title}
+                            </span>
                             {resource.roomType && (
-                                <span className="text-xs text-muted-foreground truncate">{resource.roomType}</span>
+                                <span className="text-[11px] text-muted-foreground truncate mt-0.5">
+                                    {resource.roomType}
+                                </span>
                             )}
                         </div>
                     ))}
                 </div>
 
-                {/* Scrollable timeline area */}
-                <div ref={scrollRef} className="overflow-x-auto flex-1" style={{ position: 'relative' }}>
-                    <div style={{ width: totalWidth, minWidth: '100%' }}>
-                        {/* Day/hour header row */}
+                {/* Timeline pane — scrolls only when slots hit their minimum width */}
+                <div ref={scrollRef} className="overflow-x-auto flex-1 overflow-y-hidden">
+                    <div style={{ width: totalWidth }}>
+
+                        {/* Slot header */}
                         <div
-                            className="flex border-b bg-muted/40 relative"
+                            className="flex border-b bg-muted/40"
                             style={{ height: HEADER_HEIGHT }}
                         >
                             {days.map((day, i) => {
-                                const today = view !== 'day' && isToday(day);
+                                const todaySlot = view !== 'day' && isToday(day);
                                 return (
                                     <div
                                         key={i}
-                                        ref={today ? todayRef : undefined}
+                                        ref={todaySlot ? todayColRef : undefined}
                                         className={cn(
-                                            'flex-shrink-0 flex items-center justify-center border-r text-xs font-medium',
-                                            today
-                                                ? 'bg-primary/10 text-primary'
-                                                : 'text-muted-foreground'
+                                            'flex-shrink-0 flex items-center justify-center border-r text-[11px] font-medium',
+                                            todaySlot
+                                                ? 'bg-primary/10 text-primary font-semibold'
+                                                : 'text-muted-foreground',
                                         )}
                                         style={{ width: slotWidth, height: HEADER_HEIGHT }}
                                     >
-                                        {view === 'day'
-                                            ? day.toLocaleTimeString('en-US', { hour: 'numeric', hour12: true })
-                                            : formatDayLabel(day, view)}
+                                        {formatSlotLabel(day, view)}
                                     </div>
                                 );
                             })}
                         </div>
 
-                        {/* Resource rows */}
+                        {/* One row per resource */}
                         {resources.map((resource) => {
-                            const rowEvents = eventsByResource[resource.id] ?? [];
+                            const rowHeight = rowHeights[resource.id] ?? MIN_ROW_HEIGHT;
+                            const laned = lanedByResource[resource.id] ?? [];
+
                             return (
                                 <div
                                     key={resource.id}
                                     className="border-b relative"
-                                    style={{ height: ROW_HEIGHT }}
+                                    style={{ height: rowHeight }}
                                 >
-                                    {/* Slot grid lines */}
+                                    {/* Slot background columns */}
                                     <div className="absolute inset-0 flex pointer-events-none">
-                                        {days.map((_, i) => (
-                                            <div
-                                                key={i}
-                                                className="flex-shrink-0 border-r border-border/40"
-                                                style={{ width: slotWidth }}
-                                            />
-                                        ))}
+                                        {days.map((day, i) => {
+                                            const todaySlot = view !== 'day' && isToday(day);
+                                            return (
+                                                <div
+                                                    key={i}
+                                                    className={cn(
+                                                        'flex-shrink-0 h-full border-r',
+                                                        todaySlot
+                                                            ? 'bg-primary/[0.04] border-primary/20'
+                                                            : 'border-border/30',
+                                                    )}
+                                                    style={{ width: slotWidth }}
+                                                />
+                                            );
+                                        })}
                                     </div>
 
-                                    {/* Now indicator */}
+                                    {/* Now indicator line */}
                                     {nowLeft !== null && (
                                         <div
-                                            className="absolute top-0 bottom-0 w-px bg-red-500 z-20 pointer-events-none"
-                                            style={{ left: nowLeft }}
+                                            className="absolute top-0 bottom-0 z-20 pointer-events-none bg-red-500 opacity-60"
+                                            style={{ left: nowLeft, width: 1 }}
                                         />
                                     )}
 
-                                    {/* Events */}
-                                    {rowEvents.map((ev) => {
-                                        const pos = getEventPosition(ev);
-                                        if (!pos) return null;
+                                    {/* Events — each placed in its own lane, no overlap */}
+                                    {laned.map(({ event: ev, lane, left, width }) => {
+                                        const top = ROW_PADDING + lane * (LANE_HEIGHT + LANE_GAP);
+                                        const colorLight = ev.extendedProps?.colorLight as string | undefined;
+                                        const colorDark = ev.extendedProps?.colorDark as string | undefined;
+                                        const bgColor = isDark
+                                            ? (colorDark ?? ev.backgroundColor ?? '#166534')
+                                            : (colorLight ?? ev.backgroundColor ?? '#C1F3C9');
                                         return (
                                             <div
                                                 key={ev.id}
-                                                className="absolute top-1 bottom-1 rounded cursor-pointer z-10 overflow-hidden"
-                                                style={{
-                                                    left: pos.left,
-                                                    width: pos.width,
-                                                    backgroundColor: ev.backgroundColor ?? '#3b82f6',
-                                                }}
+                                                className="absolute rounded cursor-pointer z-10 overflow-hidden transition-opacity hover:opacity-90 active:scale-[0.99]"
+                                                style={{ left, width, top, height: LANE_HEIGHT, backgroundColor: bgColor }}
                                                 onClick={() => onEventClick?.(ev)}
                                                 title={ev.title}
                                             >
-                                                {eventContent
-                                                    ? eventContent({ event: ev })
-                                                    : (
-                                                        <div className="px-1.5 py-0.5 text-xs font-medium text-white truncate h-full flex items-center">
-                                                            {ev.title}
-                                                        </div>
-                                                    )}
+                                                {eventContent ? (
+                                                    eventContent({ event: ev })
+                                                ) : (
+                                                    <div className="flex items-center h-full px-2 text-xs font-medium truncate">
+                                                        {ev.title}
+                                                    </div>
+                                                )}
                                             </div>
                                         );
                                     })}
                                 </div>
                             );
                         })}
+
                     </div>
                 </div>
             </div>
