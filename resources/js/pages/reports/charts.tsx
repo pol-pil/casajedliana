@@ -59,6 +59,7 @@ export default function Charts() {
     | 📊 Convert to % (for chart display)
     |--------------------------------------------------------------------------
     */
+   
 	const total = distribution.reduce((sum, item) => sum + item.value, 0);
 
 	const distributionPercent = distribution
@@ -67,6 +68,8 @@ export default function Charts() {
 			value: total > 0 ? Math.round((item.value / total) * 100) : 0,
 		}))
 		.sort((a, b) => b.value - a.value);
+
+		const topDistribution = distributionPercent.slice(0, 5);
 
 	const getTrend = (value: number) => {
 		if (value > 0) return 'up';
@@ -199,21 +202,25 @@ export default function Charts() {
 					</div>
 				</div>
 
-				{/* CLIENT DISTRIBUTION */}
+				{/* Discount DISTRIBUTION */}
 				<Card>
 					<CardHeader>
-						<CardTitle>Client Booking Distribution</CardTitle>
+						<CardTitle>Discount Distribution</CardTitle>
 					</CardHeader>
 
 					<CardContent className='grid grid-cols-1 items-center gap-6 border-t px-4 py-4 lg:grid-cols-[1.5fr_1fr]'>
 						<div className='mx-auto h-[200px] w-full max-w-[500px]'>
 							<ResponsiveContainer>
-								<BarChart layout='vertical' data={distributionPercent} margin={{ left: 20, right: 10 }}>
-									<CartesianGrid strokeDasharray='3 3' />
+								<BarChart layout='vertical' data={topDistribution} margin={{ left: 10, right: 20 }}>
+									<CartesianGrid strokeDasharray='3 3' horizontal={false} />
+
 									<XAxis type='number' tickFormatter={(v) => `${v}%`} />
-									<YAxis type='category' dataKey='name' width={200} tick={{ fontSize: 12 }} />
-									<Tooltip formatter={(v) => `${v}%`} />
-									<Bar dataKey='value' radius={[6, 6, 6, 6]}>
+
+									<YAxis type='category' dataKey='name' width={180} tick={{ fontSize: 12 }} />
+
+									<Tooltip formatter={(v: number) => `${v}%`} />
+
+									<Bar dataKey='value' radius={[8, 8, 8, 8]}>
 										{distributionPercent.map((item, i) => (
 											<Cell key={i} fill={item.color} />
 										))}

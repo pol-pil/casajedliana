@@ -1,6 +1,6 @@
 import AppLayout from '@/layouts/app-layout';
-import { useState } from 'react';
-import { router } from '@inertiajs/react';
+import { useState, useEffect } from 'react';
+import { router, usePage } from '@inertiajs/react';
 import { toast } from 'sonner';
 
 import type { BreadcrumbItem } from '@/types';
@@ -10,12 +10,22 @@ import { Download, Upload, Building2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Hotel Info', href: '/admin/hotel-info' }];
 
 export default function HotelInfo() {
-	const [hotelName, setHotelName] = useState('');
+	const { hotel } = usePage().props as any;
+
+	const [hotelName, setHotelName] = useState(hotel?.hotel_name || '');
 	const [logo, setLogo] = useState<File | null>(null);
+	const [preview, setPreview] = useState<string | null>(null);
 	const [restoreFile, setRestoreFile] = useState<File | null>(null);
+
+	useEffect(() => {
+		if (hotel?.hotel_name) {
+			setHotelName(hotel.hotel_name);
+		}
+	}, [hotel]);
 
 	function handleSave() {
 		if (!hotelName) {
@@ -32,8 +42,12 @@ export default function HotelInfo() {
 
 		router.post('/admin/hotel-info', formData, {
 			forceFormData: true,
+			preserveScroll: true,
 			onSuccess: () => {
 				toast.success('Hotel info updated successfully');
+				router.reload({ only: ['hotel'] });
+				setPreview(null);
+				setLogo(null);
 			},
 			onError: () => {
 				toast.error('Failed to update hotel info');
@@ -56,12 +70,8 @@ export default function HotelInfo() {
 
 		router.post('/admin/backup/restore', formData, {
 			forceFormData: true,
-			onSuccess: () => {
-				toast.success('System restored successfully');
-			},
-			onError: () => {
-				toast.error('Restore failed');
-			},
+			onSuccess: () => toast.success('System restored successfully'),
+			onError: () => toast.error('Restore failed'),
 		});
 	}
 
@@ -76,38 +86,41 @@ export default function HotelInfo() {
 							<Building2 className='h-5 w-5' />
 							Hotel Details
 						</CardTitle>
-
-						<p className='text-sm text-muted-foreground'>
-							Update your property information. This will be used across bookings, reports, and system-generated documents.
-						</p>
 					</CardHeader>
 
 					<CardContent className='space-y-6'>
 						<div className='space-y-2'>
 							<Label>Hotel Name</Label>
-							<Input placeholder='Enter hotel name' value={hotelName} onChange={(e) => setHotelName(e.target.value)} />
+							<Input value={hotelName} onChange={(e) => setHotelName(e.target.value)} />
 						</div>
 
-						{/* LOGO UPLOAD */}
+						{/* LOGO */}
 						<div className='space-y-2'>
 							<Label>Hotel Logo</Label>
 
 							<div className='flex items-center gap-4'>
-								{/* PREVIEW PLACEHOLDER */}
-								<div className='flex h-40 w-60 items-center justify-center rounded-md border text-xs text-muted-foreground'>
-									Logo
+								<div className='flex h-40 w-60 items-center justify-center overflow-hidden rounded-md border'>
+									{preview ? (
+										<img src={preview} className='h-full w-full object-contain' />
+									) : hotel?.logo ? (
+										<img src={`/storage/${hotel.logo}`} className='h-full w-full object-contain' />
+									) : (
+										<span className='text-xs text-muted-foreground'>No Logo</span>
+									)}
 								</div>
 
 								<div className='flex w-full flex-col gap-2'>
 									<Input
 										type='file'
+										accept='image/*'
 										onChange={(e) => {
 											if (e.target.files?.[0]) {
-												setLogo(e.target.files[0]);
+												const file = e.target.files[0];
+												setLogo(file);
+												setPreview(URL.createObjectURL(file));
 											}
 										}}
 									/>
-									<p className='text-xs text-muted-foreground'>Upload a logo (PNG, JPG). Recommended size: 512x512px.</p>
 								</div>
 							</div>
 						</div>
@@ -155,9 +168,7 @@ export default function HotelInfo() {
 
 				<div className='flex justify-end gap-2'>
 					<Button variant='outline'>Cancel</Button>
-					<Button className='bg-secondary hover:bg-primary' onClick={handleSave}>
-						Save Changes
-					</Button>
+					<Button onClick={handleSave}>Save Changes</Button>
 				</div>
 			</div>
 		</AppLayout>

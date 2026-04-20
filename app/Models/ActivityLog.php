@@ -6,8 +6,6 @@ use Illuminate\Database\Eloquent\Model;
 
 class ActivityLog extends Model
 {
-    public $timestamps = false;
-
     protected $fillable = [
         'user_id',
         'staff_name',
@@ -17,4 +15,9 @@ class ActivityLog extends Model
         'status',
         'created_at',
     ];
+
+    public function user()
+    {
+        return $this->belongsTo(\App\Models\User::class, 'user_id');
+    }
 }

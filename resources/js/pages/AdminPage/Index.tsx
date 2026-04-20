@@ -7,14 +7,16 @@ import { Input } from '@/components/ui/input';
 import { useMemo, useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { LogIn, LogOut, CalendarPlus, Ban, Users, Home } from 'lucide-react';
+import { LogIn, LogOut, CalendarPlus, Ban, Users, Home, Pencil } from 'lucide-react';
+
+import { useDateRange } from '@/contexts/date-range-context';
 
 const breadcrumbs: BreadcrumbItem[] = [
 	{ title: 'Dashboard', href: '/dashboard' },
 	{ title: 'Admin', href: '/admin' },
 ];
 
-type LogType = 'CHECK_IN' | 'CHECK_OUT' | 'CREATE_BOOKING' | 'CANCEL_BOOKING';
+type LogType = 'CHECK_IN' | 'CHECK_OUT' | 'CREATE_BOOKING' | 'UPDATE_BOOKING' | 'CANCEL_BOOKING';
 
 interface Log {
 	id: number;
@@ -48,6 +50,8 @@ const actionLabel = (action: LogType) => {
 			return 'Check-out';
 		case 'CREATE_BOOKING':
 			return 'Booking Created';
+		case 'UPDATE_BOOKING':
+			return 'Booking Updated';
 		case 'CANCEL_BOOKING':
 			return 'Cancelled';
 	}
@@ -61,6 +65,8 @@ const actionIcon = (action: LogType) => {
 			return <LogOut className='h-3.5 w-3.5' />;
 		case 'CREATE_BOOKING':
 			return <CalendarPlus className='h-3.5 w-3.5' />;
+		case 'UPDATE_BOOKING':
+			return <Pencil className='h-3.5 w-3.5' />;
 		case 'CANCEL_BOOKING':
 			return <Ban className='h-3.5 w-3.5' />;
 	}
@@ -83,19 +89,35 @@ type PageProps = {
 };
 
 export default function Index() {
+	const { range } = useDateRange();
 	const { users = [], logs = [], auth } = usePage<PageProps>().props;
 
 	const adminCount = users.filter((u) => u.role?.toLowerCase() === 'admin').length;
 	const frontdeskCount = users.filter((u) => u.role?.toLowerCase() === 'frontdesk').length;
 	const totalUsers = users.length;
+	const start = useMemo(() => range?.from?.toLocaleDateString('en-CA'), [range?.from]);
+
+	const end = useMemo(() => range?.to?.toLocaleDateString('en-CA'), [range?.to]);
 
 	useEffect(() => {
-		const interval = setInterval(() => {
-			router.reload({ only: ['logs'] });
-		}, 5000); // every 5 seconds
+		if (!start || !end) return;
 
-		return () => clearInterval(interval);
-	}, []);
+		const params = new URLSearchParams(window.location.search);
+		const currentStart = params.get('start');
+		const currentEnd = params.get('end');
+
+		// 🛑 STOP if already same → prevents loop
+		if (currentStart === start && currentEnd === end) return;
+
+		router.get(
+			'/admin',
+			{ start, end },
+			{
+				preserveScroll: true,
+				replace: true,
+			},
+		);
+	}, [start, end]);
 
 	const [search, setSearch] = useState('');
 	const [filter, setFilter] = useState<LogType | 'ALL'>('ALL');
@@ -127,7 +149,7 @@ export default function Index() {
 	}, [filteredLogs, page]);
 
 	return (
-		<AppLayout breadcrumbs={breadcrumbs}>
+		<AppLayout breadcrumbs={breadcrumbs} showDatePicker>
 			<Head title='Admin Dashboard' />
 
 			<div className='flex w-full min-w-0 flex-col gap-6 p-6'>
@@ -259,6 +281,7 @@ export default function Index() {
 											{ type: 'CHECK_IN', label: 'Check-in', icon: LogIn },
 											{ type: 'CHECK_OUT', label: 'Check-out', icon: LogOut },
 											{ type: 'CREATE_BOOKING', label: 'Booking', icon: CalendarPlus },
+											{ type: 'UPDATE_BOOKING', label: 'Updated', icon: Pencil },
 											{ type: 'CANCEL_BOOKING', label: 'Cancelled', icon: Ban },
 										].map(({ type, label, icon: Icon }) => {
 											const isActive = filter === type;

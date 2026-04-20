@@ -192,7 +192,6 @@ class BookingsController extends Controller
             'guest_name' => $client->first_name . ' ' . $client->last_name,
             'room_number' => $booking->room->room_number,
             'status' => $booking->status, // pencil or confirmed
-            'created_at' => now(),
         ]);
 
         if (! empty($validated['downpayment'])) {
@@ -293,7 +292,6 @@ class BookingsController extends Controller
             'guest_name' => $booking->client->first_name . ' ' . $booking->client->last_name,
             'room_number' => $booking->room->room_number,
             'status' => $booking->status,
-            'created_at' => now(),
         ]);
 
         $this->syncRoomStatus($booking);
@@ -328,7 +326,6 @@ class BookingsController extends Controller
             'guest_name' => $booking->client->first_name . ' ' . $booking->client->last_name,
             'room_number' => $booking->room->room_number,
             'status' => $request->status,
-            'created_at' => now(),
         ]);
 
         $this->syncRoomStatus($booking);
