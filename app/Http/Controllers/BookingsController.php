@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreBookingRequest;
+use App\Http\Requests\UpdateBookingRequest;
+use App\Models\ActivityLog;
 use App\Models\Booking;
 use App\Models\BookingType;
 use App\Models\Charge;
@@ -9,14 +12,15 @@ use App\Models\Client;
 use App\Models\Payment;
 use App\Models\Rate;
 use App\Models\Room;
-use Illuminate\Http\Request;
+use App\Support\RoomPricing;
 use Carbon\Carbon;
 use Inertia\Inertia;
-use App\Models\ActivityLog;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class BookingsController extends Controller
 {
+    public function __construct(private RoomPricing $roomPricing) {}
 
     private function syncRoomStatus(Booking $booking)
     {
@@ -137,7 +141,7 @@ class BookingsController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(StoreBookingRequest $request)
     {
         if ($request->custom_discount && floatval($request->custom_discount) > 0) {
             $rate = Rate::create([
@@ -150,27 +154,10 @@ class BookingsController extends Controller
             $request->merge(['rate_id' => $rate->id]);
         }
 
-        $validated = $request->validate([
-            'client' => 'required|array',
-            'client.first_name' => 'required|string|max:100',
-            'client.last_name' => 'required|string|max:100',
-            'client.email' => 'nullable|email|max:60',
-            'client.contact_number' => 'required|string|max:20',
-            'client.address' => 'nullable|string',
-            'client.company' => 'nullable|string',
-
-            'room_id' => 'required|exists:rooms,id',
-            'rate_id' => 'required|exists:rates,id',
-            'check_in' => 'required|date',
-            'check_out' => 'required|date|after:check_in',
-            'guest_count' => 'required|integer|min:1',
-            'purpose' => 'nullable|string',
-            'booking_type_id' => 'required|exists:booking_types,id',
-            'total_amount' => 'required|numeric|min:0',
-            'downpayment' => 'nullable|numeric|min:0',
-            'payment_method' => 'nullable|required_with:downpayment|string',
-            'remarks' => 'nullable|string',
-        ]);
+        $validated = $request->validated();
+        $room = Room::query()->findOrFail($validated['room_id']);
+        $rate = Rate::query()->findOrFail($request->input('rate_id'));
+        $pricing = $this->roomPricing->quote($room, $rate, $validated['check_in'], $validated['check_out']);
 
         $client = Client::firstOrCreate(
             ['contact_number' => $validated['client']['contact_number']],
@@ -181,13 +168,16 @@ class BookingsController extends Controller
             'client_id' => $client->id,
             'room_id' => $validated['room_id'],
             'receptionist_id' => auth()->id(),
-            'rate_id' => $validated['rate_id'],
+            'rate_id' => $request->input('rate_id'),
             'check_in' => $validated['check_in'],
             'check_out' => $validated['check_out'],
             'guest_count' => $validated['guest_count'],
             'purpose' => $validated['purpose'],
             'booking_type_id' => $validated['booking_type_id'],
-            'total_amount' => $validated['total_amount'],
+            'total_amount' => $pricing['total_amount'],
+            'base_amount' => $pricing['base_amount'],
+            'discount_amount' => $pricing['discount_amount'],
+            'pricing_breakdown' => $pricing['pricing_breakdown'],
             'remarks' => $validated['remarks'] ?? '',
             'payment_status' => ! empty($validated['downpayment']) ? 'partial' : 'unpaid',
             'status' => 'pencil',
@@ -239,9 +229,9 @@ class BookingsController extends Controller
             ->with('success', 'Booking created successfully.');
     }
 
-    public function update(Request $request, Booking $booking)
+    public function update(UpdateBookingRequest $request, Booking $booking)
     {
-            if ($request->custom_discount && floatval($request->custom_discount) > 0) {
+        if ($request->custom_discount && floatval($request->custom_discount) > 0) {
             $rate = Rate::create([
                 'name'      => 'Custom Discount',
                 'value'     => $request->custom_discount,
@@ -252,44 +242,28 @@ class BookingsController extends Controller
             $request->merge(['rate_id' => $rate->id]);
         }
 
-        $validated = $request->validate([
-            'client' => 'required|array',
-            'client.first_name' => 'required|string|max:100',
-            'client.last_name' => 'required|string|max:100',
-            'client.email' => 'nullable|email|max:60',
-            'client.contact_number' => 'required|string|max:20',
-            'client.address' => 'nullable|string',
-            'client.company' => 'nullable|string',
+        $validated = $request->validated();
+        $room = Room::query()->findOrFail($validated['room_id']);
+        $rate = Rate::query()->findOrFail($request->input('rate_id'));
+        $pricing = $this->roomPricing->quote($room, $rate, $validated['check_in'], $validated['check_out']);
 
-            'room_id' => 'required|exists:rooms,id',
-            'rate_id' => 'required|exists:rates,id',
-            'check_in' => 'required|date',
-            'check_out' => 'required|date|after:check_in',
-            'guest_count' => 'required|integer|min:1',
-            'purpose' => 'nullable|string',
-            'booking_type_id' => 'required|exists:booking_types,id',
-            'total_amount' => 'required|numeric|min:0',
-            'payment_method' => 'nullable|string',
-            'remarks' => 'nullable|string',
-        ]);
-
-        // Update client
         $booking->client->update($validated['client']);
 
-        // Update booking details
         $booking->update([
             'room_id' => $validated['room_id'],
-            'rate_id' => $validated['rate_id'],
+            'rate_id' => $rate->id,
             'check_in' => $validated['check_in'],
             'check_out' => $validated['check_out'],
             'guest_count' => $validated['guest_count'],
             'purpose' => $validated['purpose'],
             'booking_type_id' => $validated['booking_type_id'],
-            'total_amount' => $validated['total_amount'],
+            'total_amount' => $pricing['total_amount'],
+            'base_amount' => $pricing['base_amount'],
+            'discount_amount' => $pricing['discount_amount'],
+            'pricing_breakdown' => $pricing['pricing_breakdown'],
             'remarks' => $validated['remarks'] ?? '',
         ]);
 
-        // Recompute payment totals
         $totalPaid = $booking->payments()->sum('amount');
         $requiredDownpayment = $booking->total_amount * 0.50;
 

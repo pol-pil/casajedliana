@@ -33,7 +33,10 @@ class BookingFactory extends Factory
                 'Government Event',
             ]),
             'guest_count' => $this->faker->numberBetween(1, 4),
-            'total_amount' => 0, // Will be calculated in seeder
+            'total_amount' => 1000,
+            'base_amount' => 1000,
+            'discount_amount' => 0,
+            'pricing_breakdown' => [],
             'payment_status' => $this->faker->randomElement(['unpaid', 'partial', 'paid']),
             'status' => $this->faker->randomElement([
                 'pencil',

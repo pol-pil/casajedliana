@@ -53,6 +53,8 @@ type Booking = {
 		id: number;
 		room_number: string;
 		room_type: string;
+		weekday_rate?: number;
+		weekend_rate?: number;
 	};
 	rate: {
 		id: number;
@@ -69,6 +71,20 @@ type Booking = {
 	status: string;
 	payment_status?: string;
 	total_amount: number;
+	pricing_details?: {
+		base_amount: number;
+		discount_amount: number;
+		total_amount: number;
+		nights: number;
+		weekday_nights: number;
+		weekend_nights: number;
+		pricing_breakdown: Array<{
+			date: string;
+			day_name: string;
+			day_type: 'weekday' | 'weekend';
+			amount: number;
+		}>;
+	};
 	remarks: string;
 	balance: number;
 	payments: Array<{
@@ -95,6 +111,9 @@ type Room = {
 	id: number;
 	room_number?: string;
 	room_type?: string;
+	weekday_rate?: number;
+	weekend_rate?: number;
+	price?: number;
 	status?: string;
 };
 

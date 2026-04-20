@@ -15,16 +15,25 @@ class Room extends Model
         'capacity',
         'description',
         'price',
+        'weekday_rate',
+        'weekend_rate',
         'status',
         'is_active',
     ];
 
-    public function bookings()
+    protected $casts = [
+        'price' => 'decimal:2',
+        'weekday_rate' => 'decimal:2',
+        'weekend_rate' => 'decimal:2',
+        'is_active' => 'boolean',
+    ];
+
+    public function bookings(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(Booking::class);
     }
 
-    public function isAvailable($checkIn, $checkOut)
+    public function isAvailable($checkIn, $checkOut): bool
     {
         $overlapping = $this->bookings()
             ->where(function ($query) use ($checkIn, $checkOut) {
@@ -39,5 +48,15 @@ class Room extends Model
             ->exists();
 
         return ! $overlapping;
+    }
+
+    public function getWeekdayRateAttribute($value): string
+    {
+        return (string) ($value ?? $this->attributes['price']);
+    }
+
+    public function getWeekendRateAttribute($value): string
+    {
+        return (string) ($value ?? $this->attributes['price']);
     }
 }

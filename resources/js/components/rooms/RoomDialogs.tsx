@@ -20,8 +20,10 @@ export default function RoomDialogs(props: any) {
 		setRoomType,
 		capacity,
 		setCapacity,
-		price,
-		setPrice,
+		weekdayRate,
+		setWeekdayRate,
+		weekendRate,
+		setWeekendRate,
 		description,
 		setDescription,
 		bedType,
@@ -50,7 +52,8 @@ export default function RoomDialogs(props: any) {
 								room_number: roomNumber,
 								room_type: roomType,
 								capacity,
-								price,
+								weekday_rate: weekdayRate,
+								weekend_rate: weekendRate,
 								description,
 							}, {
 								onSuccess: () => {
@@ -84,7 +87,8 @@ export default function RoomDialogs(props: any) {
 								room_number: roomNumber,
 								room_type: roomType,
 								capacity,
-								price,
+								weekday_rate: weekdayRate,
+								weekend_rate: weekendRate,
 								description,
 							}, {
 								onSuccess: () => {

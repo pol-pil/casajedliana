@@ -31,6 +31,8 @@ type Booking = {
         id: number;
         room_number: string;
         room_type: string;
+        weekday_rate?: number;
+        weekend_rate?: number;
     };
     rate: {
         id: number;
@@ -46,6 +48,20 @@ type Booking = {
     check_out: string;
     status: string;
     total_amount: number;
+    pricing_details?: {
+        base_amount: number;
+        discount_amount: number;
+        total_amount: number;
+        nights: number;
+        weekday_nights: number;
+        weekend_nights: number;
+        pricing_breakdown: Array<{
+            date: string;
+            day_name: string;
+            day_type: 'weekday' | 'weekend';
+            amount: number;
+        }>;
+    };
     remarks: string;
     balance: number;
     payments: Array<{
@@ -210,6 +226,8 @@ export default function BookingInfoDialog({ open, onOpenChange, selectedBooking,
                                 <div className='flex justify-between'><span>Room Type</span><span>{selectedBooking?.room.room_type}</span></div>
                                 <div className='flex justify-between'><span>Room Number</span><span>{selectedBooking?.room.room_number}</span></div>
                                 <div className='flex justify-between'><span>Number of Guests</span><span>{selectedBooking?.guest_count}</span></div>
+                                <div className='flex justify-between'><span>Weekday Rate</span><span>₱ {Number(selectedBooking?.room.weekday_rate ?? 0).toFixed(2)}</span></div>
+                                <div className='flex justify-between'><span>Weekend Rate</span><span>₱ {Number(selectedBooking?.room.weekend_rate ?? 0).toFixed(2)}</span></div>
                             </DialogDescription>
                         </div>
                         <div>
@@ -271,8 +289,18 @@ export default function BookingInfoDialog({ open, onOpenChange, selectedBooking,
                             </div>
                             <DialogDescription className='space-y-1 pt-4 pb-2'>
                                 <div className='flex justify-between text-primary-foreground'>
-                                    <span>Room ({selectedBooking?.rate?.name || 'N/A'})</span>
-                                    <span>{selectedBooking?.total_amount}</span>
+                                    <span>Room {selectedBooking?.room?.room_number}</span>
+                                    <span>₱ {Number(selectedBooking?.pricing_details?.base_amount ?? selectedBooking?.total_amount ?? 0).toFixed(2)}</span>
+                                </div>
+                                {(selectedBooking?.pricing_details?.pricing_breakdown ?? []).map((night) => (
+                                    <div key={night.date} className='flex justify-between text-xs'>
+                                        <span>{night.date} {night.day_name} ({night.day_type})</span>
+                                        <span>₱ {Number(night.amount ?? 0).toFixed(2)}</span>
+                                    </div>
+                                ))}
+                                <div className='flex justify-between'>
+                                    <span>Discount ({selectedBooking?.rate?.name || 'N/A'})</span>
+                                    <span>-₱ {Number(selectedBooking?.pricing_details?.discount_amount ?? 0).toFixed(2)}</span>
                                 </div>
                                 {(selectedBooking?.booking_charges ?? []).filter((bc) => bc.charge?.type === 'amenity').map((amenity) => (
                                     <div key={amenity.id} className='flex justify-between'>

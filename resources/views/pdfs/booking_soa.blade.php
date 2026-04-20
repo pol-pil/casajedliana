@@ -23,6 +23,7 @@
 			}
 
 			.details-container {
+				position: relative;
 				padding: 20px 30px;
 				background-image: url("{{ public_path('/soabg.png') }}");
 				background-repeat: no-repeat;
@@ -131,9 +132,9 @@
 			}
 
 			.watermark {
-				position: fixed;
-				top: 45.5%;
-				right: 28px;
+				position: absolute;
+				top: 39.7%;
+				right: 29px;
 				width: 60px;
 			}
 
@@ -208,6 +209,10 @@
 						<th>Value</th>
 					</tr>
 
+					@php
+						$pricing = $booking->pricing_details;
+					@endphp
+
 					<tr>
 						<td>Room No.</td>
 						<td>{{ $booking->room->room_number }}</td>
@@ -224,10 +229,15 @@
 						<td>No. of Nights</td>
 						<td>{{ number_format($nights, 0) }}</td>
 					</tr>
+					<tr>
+						<td>Weekday / Weekend</td>
+						<td><span style="font-family: DejaVu Sans">₱</span> {{ number_format((float) $booking->room->weekday_rate, 2) }} / <span style="font-family: DejaVu Sans">₱</span> {{ number_format((float) $booking->room->weekend_rate, 2) }}</td>
+						<td>Night Split</td>
+						<td>{{ $pricing['weekday_nights'] }} weekday / {{ $pricing['weekend_nights'] }} weekend</td>
+					</tr>
 
-					@php $total = $booking->room->price * round($nights, 0); @endphp
-					@php $discountAmount = $total * ($booking->rate->value
-					/ 100); @endphp
+					@php $total = $pricing['base_amount']; @endphp
+					@php $discountAmount = $pricing['discount_amount']; @endphp
 
 					<tr>
 						<td>Booking Type</td>
@@ -262,6 +272,15 @@
 						<td><span style="font-family: DejaVu Sans">₱</span> {{ number_format($grandTotal, 2) }}</td>
 					</tr>
 
+					<!-- <tr>
+						<td colspan="2">Nightly Breakdown</td>
+						<td colspan="2">
+							@foreach ($pricing['pricing_breakdown'] as $night)
+								<div>{{ $night['date'] }} {{ $night['day_name'] }} ({{ ucfirst($night['day_type']) }}) - <span style="font-family: DejaVu Sans">₱</span> {{ number_format($night['amount'], 2) }}</div>
+							@endforeach
+						</td>
+					</tr> -->
+
 					<tr>
 						<td colspan="2">Amount Paid</td>
 						<td colspan="2"><span style="font-family: DejaVu Sans">₱</span> <span class="negative">-</span>{{ number_format($amountPaid, 2) }}</td>
@@ -291,9 +310,10 @@
 						</td>
 					</tr>
 				</table>
+
+				<img class="watermark" src="{{ public_path('watermark.png') }}" />
 			</div>
 		</div>
 
-		<img class="watermark" src="{{ public_path('watermark.png') }}" />
 	</body>
 </html>

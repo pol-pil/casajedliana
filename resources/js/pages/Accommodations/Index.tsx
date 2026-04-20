@@ -23,19 +23,19 @@ type Category = 'Standard' | 'Suite' | 'Quadro' | 'Family' | 'Penthouse' | 'Rest
 const statusColor = (status: Status) => {
 	switch (status) {
 		case 'Available':
-			return 'bg-green-500/20 text-green-400';
+			return 'bg-green-100 text-green-600 dark:bg-green-950 dark:text-green-400';
 
 		case 'Occupied':
-			return 'bg-red-500/20 text-red-400';
+			return 'bg-red-100 text-red-600 dark:bg-red-950 dark:text-red-400';
 
 		case 'Reserved':
-			return 'bg-yellow-500/20 text-yellow-400';
+			return 'bg-purple-100 text-purple-600 dark:bg-purple-950 dark:text-purple-400';
 
 		case 'Maintenance':
-			return 'bg-gray-500/20 text-gray-400';
+			return 'bg-gray-200 text-gray-600 dark:bg-gray-950 dark:text-gray-400';
 
 		default:
-			return 'bg-gray-100 text-gray-600';
+			return 'bg-gray-200 text-gray-600 dark:bg-gray-950 dark:text-gray-400';
 	}
 };
 
@@ -45,7 +45,8 @@ export default function Index() {
 	const [roomNumber, setRoomNumber] = useState('');
 	const [roomType, setRoomType] = useState('');
 	const [capacity, setCapacity] = useState(1);
-	const [price, setPrice] = useState(0);
+	const [weekdayRate, setWeekdayRate] = useState(0);
+	const [weekendRate, setWeekendRate] = useState(0);
 	const [description, setDescription] = useState('');
 
 	const [bedType, setBedType] = useState('');
@@ -116,6 +117,8 @@ export default function Index() {
 			amenities: [],
 			status,
 			price: r.price ?? undefined,
+			weekdayRate: r.weekday_rate ?? r.price ?? undefined,
+			weekendRate: r.weekend_rate ?? r.price ?? undefined,
 		};
 	});
 
@@ -182,7 +185,8 @@ export default function Index() {
 						setRoomNumber('');
 						setRoomType('');
 						setCapacity(1);
-						setPrice(0);
+						setWeekdayRate(0);
+						setWeekendRate(0);
 						setDescription('');
 						setBedType('');
 						setAmenities([]);
@@ -215,7 +219,8 @@ export default function Index() {
 										setRoomNumber(room.roomNumber);
 										setRoomType(room.category);
 										setCapacity(room.capacity);
-										setPrice(room.price ?? 0);
+										setWeekdayRate(room.weekdayRate ?? room.price ?? 0);
+										setWeekendRate(room.weekendRate ?? room.price ?? 0);
 
 										setDescription(room.beds ?? '');
 										setBedType(parts[0] || '');
@@ -247,8 +252,10 @@ export default function Index() {
 						setRoomType,
 						capacity,
 						setCapacity,
-						price,
-						setPrice,
+						weekdayRate,
+						setWeekdayRate,
+						weekendRate,
+						setWeekendRate,
 						description,
 						setDescription,
 						bedType,

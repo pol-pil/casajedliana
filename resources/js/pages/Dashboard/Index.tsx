@@ -43,25 +43,25 @@ interface Booking {
 }
 
 const statusBadge: Record<RoomStatus, string> = {
-	Available: 'bg-green-100 text-green-700',
-	Reserved: 'bg-purple-100 text-purple-700',
-	Occupied: 'bg-red-100 text-red-700',
-	Maintenance: 'bg-gray-200 text-gray-700',
+	Available: 'bg-green-100 text-green-600 dark:bg-green-950 dark:text-green-400',
+	Reserved: 'bg-purple-100 text-purple-600 dark:bg-purple-950 dark:text-purple-400',
+	Occupied: 'bg-red-100 text-red-600 dark:bg-red-950 dark:text-red-400',
+	Maintenance: 'bg-gray-200 text-gray-600 dark:bg-gray-950 dark:text-gray-400',
 };
 
 const bookingStatusBadge: Record<string, string> = {
-	Reserved: 'bg-purple-100 text-purple-700',
-	Pencil: 'bg-orange-100 text-orange-700',
-	'Checked In': 'bg-green-100 text-green-700',
-	'Checked Out': 'bg-blue-100 text-blue-700',
-	Cancelled: 'bg-gray-200 text-gray-700',
+	Reserved: 'bg-purple-100 text-purple-600 dark:bg-purple-950 dark:text-purple-400',
+	Pencil: 'bg-yellow-100 text-yellow-600 dark:bg-yellow-950 dark:text-yellow-400',
+	'Checked In': 'bg-blue-100 text-blue-600 dark:bg-blue-950 dark:text-blue-400',
+	'Checked Out': 'bg-gray-200 text-gray-600 dark:bg-gray-950 dark:text-gray-400',
+	Cancelled: 'bg-red-100 text-red-600 dark:bg-red-950 dark:text-red-400',
 };
 
 const summaryIconStyle: Record<string, string> = {
-	'Check-ins': 'bg-blue-100 text-blue-600',
-	'Check-outs': 'bg-orange-100 text-orange-600',
-	Unavailable: 'bg-red-100 text-red-600',
-	Available: 'bg-green-100 text-green-600',
+	'Check-ins': 'bg-blue-100 text-blue-600 dark:bg-blue-950 dark:text-blue-400',
+	'Check-outs': 'bg-gray-200 text-gray-600 dark:bg-gray-950 dark:text-gray-400',
+	Unavailable: 'bg-red-100 text-red-600 dark:bg-red-950 dark:text-red-400',
+	Available: 'bg-green-100 text-green-600 dark:bg-green-950 dark:text-green-400',
 };
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Dashboard', href: '/dashboard' }];
@@ -243,10 +243,10 @@ export default function Dashboard() {
 												totalPaid <= 0 ? 'Unpaid' : totalPaid < Number(b.total_amount) ? 'Partial' : 'Paid';
 											const paymentColor =
 												paymentLabel === 'Unpaid'
-													? 'bg-red-100 text-red-700'
+													? 'bg-red-100 text-red-600 dark:bg-red-950 dark:text-red-400'
 													: paymentLabel === 'Partial'
-														? 'bg-yellow-100 text-yellow-700'
-														: 'bg-green-100 text-green-700';
+														? 'bg-yellow-100 text-yellow-600 dark:bg-yellow-950 dark:text-yellow-400'
+														: 'bg-green-100 text-green-600 dark:bg-green-950 dark:text-green-400';
 
 											return (
 												<tr key={`${b.id}-${b.type}`} className='border-b'>

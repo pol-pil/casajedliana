@@ -155,7 +155,7 @@ export default function HotelInfo() {
 
 				<div className='flex justify-end gap-2'>
 					<Button variant='outline'>Cancel</Button>
-					<Button className='bg-green-500 hover:bg-green-600' onClick={handleSave}>
+					<Button className='bg-secondary hover:bg-primary' onClick={handleSave}>
 						Save Changes
 					</Button>
 				</div>

@@ -55,32 +55,32 @@ const statusConfig = {
 	confirmed: {
 		label: 'Confirmed',
 		icon: CheckCircleIcon,
-		color: 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-400',
+		color: 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400',
 	},
 	pencil: {
 		label: 'Pencil',
 		icon: ClockIcon,
-		color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-950 dark:text-yellow-400',
+		color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-400',
 	},
 	checked_in: {
 		label: 'Checked In',
 		icon: CheckCircleIcon,
-		color: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300',
+		color: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400',
 	},
 	checked_out: {
 		label: 'Checked Out',
 		icon: CheckCircleIcon,
-		color: 'bg-gray-100 text-gray-800 dark:bg-gray-950 dark:text-gray-300',
+		color: 'bg-gray-100 text-gray-700 dark:bg-gray-950 dark:text-gray-400',
 	},
 	cancelled: {
 		label: 'Cancelled',
 		icon: XCircleIcon,
-		color: 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300',
+		color: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400',
 	},
 	no_show: {
 		label: 'No Show',
 		icon: EyeOff,
-		color: 'bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-300',
+		color: 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-400',
 	},
 };
 
@@ -88,7 +88,7 @@ const StatusBadge = ({ status }: { status: keyof typeof statusConfig }) => {
 	const config = statusConfig[status] ?? {
 		label: status,
 		icon: AlertCircle,
-		color: 'bg-gray-100 text-gray-800',
+		color: 'bg-gray-100 text-gray-700',
 	};
 
 	const Icon = config.icon;
@@ -137,7 +137,7 @@ export default function History() {
 				},
 				{ preserveState: true, replace: true },
 			);
-		}, 300);
+		}, 400);
 
 		return () => clearTimeout(delay);
 	}, [search, range, activeTab]);
@@ -240,7 +240,7 @@ export default function History() {
 														{booking.client?.first_name ?? '—'} {booking.client?.last_name ?? ''}
 													</div>
 													{booking.client?.email && (
-														<div className='flex gap-1 text-sm text-muted-foreground'>
+														<div className='flex gap-1 text-sm text-muted-foreground items-center'>
 															<MailIcon className='h-3 w-3' />
 															{booking.client.email}
 														</div>

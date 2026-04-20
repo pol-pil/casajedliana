@@ -45,6 +45,7 @@ type Booking = {
 	check_out: string;
 	status: string;
 	total_amount: number;
+	pricing_details?: PricingDetails;
 	remarks: string;
 	balance: number;
 	payments: Array<{
@@ -67,6 +68,21 @@ type Booking = {
 	}>;
 };
 
+type PricingDetails = {
+	base_amount: number;
+	discount_amount: number;
+	total_amount: number;
+	nights: number;
+	weekday_nights: number;
+	weekend_nights: number;
+	pricing_breakdown: Array<{
+		date: string;
+		day_name: string;
+		day_type: 'weekday' | 'weekend';
+		amount: number;
+	}>;
+};
+
 type Charge = {
 	id: number;
 	name: string;
@@ -80,6 +96,8 @@ type Room = {
 	room_type: string;
 	capacity: number;
 	price: number;
+	weekday_rate: number;
+	weekend_rate: number;
 	status: string;
 };
 
@@ -317,6 +335,78 @@ export default function BookingFormDialog({
 	};
 
 	const { rooms, rates, bookingTypes, roomBlockedDates } = usePage<PageProps>().props;
+	const selectedRoom = rooms.find((room) => room.id.toString() === selectedRoomId);
+
+	const buildPricingPreview = (): PricingDetails => {
+		if (!dateRange.from || !dateRange.to || !selectedRoom) {
+			return {
+				base_amount: 0,
+				discount_amount: 0,
+				total_amount: 0,
+				nights: 0,
+				weekday_nights: 0,
+				weekend_nights: 0,
+				pricing_breakdown: [],
+			};
+		}
+
+		const start = new Date(dateRange.from);
+		const end = new Date(dateRange.to);
+		start.setHours(0, 0, 0, 0);
+		end.setHours(0, 0, 0, 0);
+
+		const pricingBreakdown: PricingDetails['pricing_breakdown'] = [];
+		const cursor = new Date(start);
+
+		if (cursor.getTime() === end.getTime()) {
+			const isWeekend = [5, 6].includes(cursor.getDay());
+			pricingBreakdown.push({
+				date: cursor.toISOString().slice(0, 10),
+				day_name: cursor.toLocaleDateString('en-US', { weekday: 'long' }),
+				day_type: isWeekend ? 'weekend' : 'weekday',
+				amount: isWeekend ? Number(selectedRoom.weekend_rate ?? selectedRoom.price) : Number(selectedRoom.weekday_rate ?? selectedRoom.price),
+			});
+		} else {
+			while (cursor < end) {
+				const isWeekend = [5, 6].includes(cursor.getDay());
+				pricingBreakdown.push({
+					date: cursor.toISOString().slice(0, 10),
+					day_name: cursor.toLocaleDateString('en-US', { weekday: 'long' }),
+					day_type: isWeekend ? 'weekend' : 'weekday',
+					amount: isWeekend ? Number(selectedRoom.weekend_rate ?? selectedRoom.price) : Number(selectedRoom.weekday_rate ?? selectedRoom.price),
+				});
+				cursor.setDate(cursor.getDate() + 1);
+			}
+		}
+
+		const baseAmount = pricingBreakdown.reduce((sum, item) => sum + item.amount, 0);
+		let discountAmount = 0;
+		const rate = selectedRateId !== 'custom' ? rates.find((item) => item.id.toString() === selectedRateId) : null;
+
+		if (selectedRateId === 'custom' && customDiscount && parseFloat(customDiscount) > 0) {
+			if (customDiscountType === 'percentage') {
+				discountAmount = baseAmount * (parseFloat(customDiscount) / 100);
+			} else {
+				discountAmount = Math.min(baseAmount, parseFloat(customDiscount));
+			}
+		} else if (rate) {
+			if (rate.type === 'percentage') {
+				discountAmount = baseAmount * (Number(rate.value) / 100);
+			} else {
+				discountAmount = Math.min(baseAmount, Number(rate.value));
+			}
+		}
+
+		return {
+			base_amount: Number(baseAmount.toFixed(2)),
+			discount_amount: Number(discountAmount.toFixed(2)),
+			total_amount: Number(Math.max(0, baseAmount - discountAmount).toFixed(2)),
+			nights: pricingBreakdown.length,
+			weekday_nights: pricingBreakdown.filter((item) => item.day_type === 'weekday').length,
+			weekend_nights: pricingBreakdown.filter((item) => item.day_type === 'weekend').length,
+			pricing_breakdown: pricingBreakdown,
+		};
+	};
 
 	const disabledDates = (date: Date): boolean => {
 		const today = new Date();
@@ -366,36 +456,12 @@ export default function BookingFormDialog({
 				checkOutDate.setSeconds(0);
 			}
 
-			const room = rooms.find((r) => r.id.toString() === selectedRoomId);
-
-			let roomAmount = 0;
-
-			const rate = selectedRateId !== 'custom' ? rates.find((r) => r.id.toString() === selectedRateId) : null;
-
-			if (room && duration > 0) {
-				roomAmount = room.price * duration;
-
-				if (selectedRateId === 'custom' && customDiscount && parseFloat(customDiscount) > 0) {
-					// Custom discount calculation
-					if (customDiscountType === 'percentage') {
-						roomAmount = roomAmount * (1 - parseFloat(customDiscount) / 100);
-					} else {
-						roomAmount = Math.max(0, roomAmount - parseFloat(customDiscount));
-					}
-				} else if (rate) {
-					// Preset rate calculation
-					if (rate.type === 'percentage') {
-						roomAmount = roomAmount * (1 - rate.value / 100);
-					} else {
-						roomAmount = Math.max(0, roomAmount - rate.value);
-					}
-				}
-			}
+			const pricingPreview = buildPricingPreview();
 
 			setData('check_in', checkInDate.toISOString());
 			setData('check_out', checkOutDate.toISOString());
 
-			setData('total_amount', parseFloat(roomAmount.toFixed(2)));
+			setData('total_amount', pricingPreview.total_amount);
 
 			if (!selectedRoomId) return;
 
@@ -461,6 +527,8 @@ export default function BookingFormDialog({
 		value: purpose,
 		label: purpose,
 	}));
+
+	const pricingPreview = buildPricingPreview();
 
 	const bookingTypeOptions = bookingTypes.map((type) => ({
 		value: type.id.toString(),
@@ -640,7 +708,7 @@ export default function BookingFormDialog({
 
 												{selectedRateId === 'custom' && (
 													<FieldGroup className='flex flex-row gap-2'>
-														{/* <SelectComponent
+														<SelectComponent
 															id='custom_discount_type'
 															label='Type'
 															placeholder='Type'
@@ -650,7 +718,7 @@ export default function BookingFormDialog({
 																{ value: 'percentage', label: 'Percentage %' },
 																{ value: 'exact', label: 'Exact ₱' },
 															]}
-														/> */}
+														/>
 														<InputComponent
 															label={customDiscountType === 'percentage' ? 'Discount (%)' : 'Discount (₱)'}
 															id='custom_discount'
@@ -882,6 +950,18 @@ export default function BookingFormDialog({
 											<div className='flex justify-between'>
 												<span className='text-muted-foreground'>Downpayment:</span>
 												<span>₱{parseFloat(data.downpayment || '0').toFixed(2)}</span>
+											</div>
+											<div className='flex justify-between'>
+												<span className='text-muted-foreground'>Night split:</span>
+												<span>{pricingPreview.weekday_nights} weekday / {pricingPreview.weekend_nights} weekend</span>
+											</div>
+											<div className='flex justify-between'>
+												<span className='text-muted-foreground'>Calculated subtotal:</span>
+												<span>₱{pricingPreview.base_amount.toFixed(2)}</span>
+											</div>
+											<div className='flex justify-between'>
+												<span className='text-muted-foreground'>Calculated discount:</span>
+												<span>-₱{pricingPreview.discount_amount.toFixed(2)}</span>
 											</div>
 											<div className='mt-2 border-t pt-2'>
 												<div className='flex justify-between font-semibold'>
