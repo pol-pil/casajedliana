@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\OverviewController;
 use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Middleware\FrontdeskMiddleware;
 use App\Http\Middleware\AdminMiddleware;
+use App\Http\Controllers\Admin\HotelInfoController;
 
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -79,8 +80,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::middleware(AdminMiddleware::class)->group(function () {
         Route::get('/admin', [OverviewController::class, 'index'])
-    ->name('admin.index');
-        
+            ->name('admin.index');
+
 
         // users management
         Route::get('/admin/users', [AdminUserController::class, 'index'])
@@ -97,8 +98,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('admin.users.destroy');
 
 
-
-        Route::get('/admin/hotel-info', fn() => Inertia::render('AdminPage/HotelInfo'));
+        // hotel info
+        Route::get('/admin/hotel-info', [HotelInfoController::class, 'index']);
+        Route::post('/admin/hotel-info', [HotelInfoController::class, 'store']);
+        Route::get('/admin/backup/download', [HotelInfoController::class, 'backup']);
+        Route::post('/admin/backup/restore', [HotelInfoController::class, 'restore']);
     });
 });
 

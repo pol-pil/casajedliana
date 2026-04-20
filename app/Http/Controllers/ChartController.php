@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Booking;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
+use App\Models\Rate;
 
 class ChartController extends Controller
 {
@@ -22,7 +23,7 @@ class ChartController extends Controller
         | 📊 FETCH BOOKINGS (WITH CHARGES + TYPE)
         |--------------------------------------------------------------------------
         */
-        $bookings = Booking::with(['bookingCharges', 'bookingType'])
+        $bookings = Booking::with(['bookingCharges', 'bookingType', 'rate'])
             ->whereIn('status', $validStatuses)
             ->get();
 
@@ -35,7 +36,8 @@ class ChartController extends Controller
             ->groupBy(fn($b) => $b->check_in->format('m'))
             ->map(function ($group, $month) {
 
-                $revenue = $group->sum(fn($b) =>
+                $revenue = $group->sum(
+                    fn($b) =>
                     $b->total_amount + $b->bookingCharges->sum('total')
                 );
 
@@ -56,7 +58,8 @@ class ChartController extends Controller
             ->groupBy(fn($b) => $b->check_in->format('Y'))
             ->map(function ($group, $year) {
 
-                $revenue = $group->sum(fn($b) =>
+                $revenue = $group->sum(
+                    fn($b) =>
                     $b->total_amount + $b->bookingCharges->sum('total')
                 );
 
@@ -73,7 +76,8 @@ class ChartController extends Controller
         | 💰 TOTAL REVENUE (REAL)
         |--------------------------------------------------------------------------
         */
-        $totalRevenue = $bookings->sum(fn($b) =>
+        $totalRevenue = $bookings->sum(
+            fn($b) =>
             $b->total_amount + $b->bookingCharges->sum('total')
         );
 
@@ -100,7 +104,8 @@ class ChartController extends Controller
             ->count();
 
         // Total room nights sold
-        $roomNights = $bookings->sum(fn($b) =>
+        $roomNights = $bookings->sum(
+            fn($b) =>
             $b->check_in->diffInDays($b->check_out)
         );
 
@@ -136,15 +141,19 @@ class ChartController extends Controller
         | 📊 CLIENT DISTRIBUTION (REAL DATA)
         |--------------------------------------------------------------------------
         */
-        $clientDistribution = $bookings
-            ->groupBy(fn($b) => $b->bookingType->name ?? 'Unknown')
-            ->map(function ($group, $type) {
+        $rates = Rate::all();
+
+        $clientDistribution = $rates
+            ->map(function ($rate) use ($bookings) {
+                $count = $bookings->where('rate_id', $rate->id)->count();
+
                 return [
-                    'name' => $type,
-                    'value' => $group->count(),
+                    'name' => $rate->name,
+                    'value' => $count,
                 ];
             })
-            ->values();
+            ->filter(fn($item) => $item['value'] > 0) // 🔥 HERE
+            ->values(); // 🔥 THEN THIS
 
         /*
         |--------------------------------------------------------------------------
