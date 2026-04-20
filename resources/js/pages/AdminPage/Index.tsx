@@ -12,8 +12,8 @@ import { LogIn, LogOut, CalendarPlus, Ban, Users, Home, Pencil } from 'lucide-re
 import { useDateRange } from '@/contexts/date-range-context';
 
 const breadcrumbs: BreadcrumbItem[] = [
-	{ title: 'Dashboard', href: '/dashboard' },
 	{ title: 'Admin', href: '/admin' },
+	{ title: 'Dashboard', href: '/dashboard' },
 ];
 
 type LogType = 'CHECK_IN' | 'CHECK_OUT' | 'CREATE_BOOKING' | 'UPDATE_BOOKING' | 'CANCEL_BOOKING';
@@ -32,15 +32,13 @@ interface Log {
 const actionColor = (action: LogType) => {
 	switch (action) {
 		case 'CHECK_IN':
-			return 'bg-green-500/20 text-green-400';
+			return 'bg-green-100 text-green-600 dark:bg-green-950 dark:text-green-400';
 		case 'CHECK_OUT':
-			return 'bg-blue-500/20 text-blue-400';
+			return 'bg-blue-100 text-blue-600 dark:bg-blue-950 dark:text-blue-400';
 		case 'CREATE_BOOKING':
-			return 'bg-yellow-500/20 text-yellow-400';
-		case 'UPDATE_BOOKING':
-			return 'bg-purple-500/20 text-purple-400';
+			return 'bg-yellow-100 text-yellow-600 dark:bg-yellow-950 dark:text-yellow-400';
 		case 'CANCEL_BOOKING':
-			return 'bg-red-500/20 text-red-400';
+			return 'bg-red-100 text-red-600 dark:bg-red-950 dark:text-red-400';
 	}
 };
 
@@ -177,8 +175,8 @@ export default function Index() {
 								<h2 className='text-3xl font-bold'>{adminCount}</h2>
 								<p className='text-sm text-muted-foreground'>Admins</p>
 							</div>
-							<div className='flex h-16 w-16 items-center justify-center rounded-full bg-red-100'>
-								<Users className='h-8 w-8 text-red-600' />
+							<div className='flex h-16 w-16 items-center justify-center rounded-full bg-red-100 dark:bg-red-950'>
+								<Users className='h-8 w-8 text-red-600 dark:text-red-400' />
 							</div>
 						</CardContent>
 					</Card>
@@ -190,8 +188,8 @@ export default function Index() {
 								<h2 className='text-3xl font-bold'>{frontdeskCount}</h2>
 								<p className='text-sm text-muted-foreground'>Frontdesk</p>
 							</div>
-							<div className='flex h-16 w-16 items-center justify-center rounded-full bg-blue-100'>
-								<Users className='h-8 w-8 text-blue-600' />
+							<div className='flex h-16 w-16 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-950'>
+								<Users className='h-8 w-8 text-blue-600 dark:text-blue-400' />
 							</div>
 						</CardContent>
 					</Card>
@@ -203,8 +201,8 @@ export default function Index() {
 								<h2 className='text-3xl font-bold'>{totalUsers}</h2>
 								<p className='text-sm text-muted-foreground'>Total Users</p>
 							</div>
-							<div className='flex h-16 w-16 items-center justify-center rounded-full bg-green-100'>
-								<Users className='h-8 w-8 text-green-600' />
+							<div className='flex h-16 w-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-950'>
+								<Users className='h-8 w-8 text-green-600 dark:text-green-400' />
 							</div>
 						</CardContent>
 					</Card>

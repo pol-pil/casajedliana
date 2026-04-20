@@ -9,4 +9,6 @@ export type Room = {
 	amenities: string[];
 	status: Status;
 	price?: number;
+	weekdayRate?: number;
+	weekendRate?: number;
 };

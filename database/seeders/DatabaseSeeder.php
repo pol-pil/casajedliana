@@ -11,6 +11,7 @@ use App\Models\Payment;
 use App\Models\Rate;
 use App\Models\Room;
 use App\Models\User;
+use App\Support\RoomPricing;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 
@@ -93,28 +94,28 @@ class DatabaseSeeder extends Seeder
         // Create rooms
         $rooms = [
             // Standard rooms
-            ['room_number' => '203', 'room_type' => 'Standard', 'capacity' => 2, 'price' => 2950.00],
-            ['room_number' => '204', 'room_type' => 'Standard', 'capacity' => 2, 'price' => 2950.00],
-            ['room_number' => '205', 'room_type' => 'Standard', 'capacity' => 2, 'price' => 2950.00],
-            ['room_number' => '206', 'room_type' => 'Standard', 'capacity' => 2, 'price' => 2950.00],
+            ['room_number' => '203', 'room_type' => 'Standard', 'capacity' => 2, 'weekday_rate' => 2950.00, 'weekend_rate' => 3250.00],
+            ['room_number' => '204', 'room_type' => 'Standard', 'capacity' => 2, 'weekday_rate' => 2950.00, 'weekend_rate' => 3250.00],
+            ['room_number' => '205', 'room_type' => 'Standard', 'capacity' => 2, 'weekday_rate' => 2950.00, 'weekend_rate' => 3250.00],
+            ['room_number' => '206', 'room_type' => 'Standard', 'capacity' => 2, 'weekday_rate' => 2950.00, 'weekend_rate' => 3250.00],
 
             // Suite rooms
-            ['room_number' => '201', 'room_type' => 'Suite', 'capacity' => 2, 'price' => 3985.00],
-            ['room_number' => '202', 'room_type' => 'Suite', 'capacity' => 2, 'price' => 3985.00],
+            ['room_number' => '201', 'room_type' => 'Suite', 'capacity' => 2, 'weekday_rate' => 3985.00, 'weekend_rate' => 4450.00],
+            ['room_number' => '202', 'room_type' => 'Suite', 'capacity' => 2, 'weekday_rate' => 3985.00, 'weekend_rate' => 4450.00],
 
             // Quadro rooms
-            ['room_number' => '207', 'room_type' => 'Quadro', 'capacity' => 4, 'price' => 5450.00],
-            ['room_number' => '208', 'room_type' => 'Quadro', 'capacity' => 4, 'price' => 5450.00],
+            ['room_number' => '207', 'room_type' => 'Quadro', 'capacity' => 4, 'weekday_rate' => 5450.00, 'weekend_rate' => 6050.00],
+            ['room_number' => '208', 'room_type' => 'Quadro', 'capacity' => 4, 'weekday_rate' => 5450.00, 'weekend_rate' => 6050.00],
 
             // Penthouse
-            ['room_number' => '300', 'room_type' => 'Penthouse', 'capacity' => 2, 'price' => 6550.00],
+            ['room_number' => '300', 'room_type' => 'Penthouse', 'capacity' => 2, 'weekday_rate' => 6650.00, 'weekend_rate' => 7300.00],
 
             // Family rooms
-            ['room_number' => '101-102', 'room_type' => 'Family', 'capacity' => 5, 'price' => 5550.00],
-            ['room_number' => '103-104', 'room_type' => 'Family', 'capacity' => 5, 'price' => 5550.00],
+            ['room_number' => '101-102', 'room_type' => 'Family', 'capacity' => 5, 'weekday_rate' => 5550.00, 'weekend_rate' => 6200.00],
+            ['room_number' => '103-104', 'room_type' => 'Family', 'capacity' => 5, 'weekday_rate' => 5550.00, 'weekend_rate' => 6200.00],
 
             // Resthouse
-            ['room_number' => '105', 'room_type' => 'Resthouse', 'capacity' => 8, 'price' => 12500.00],
+            ['room_number' => '105', 'room_type' => 'Resthouse', 'capacity' => 8, 'weekday_rate' => 12500.00, 'weekend_rate' => 13450.00],
         ];
 
         foreach ($rooms as $room) {
@@ -123,7 +124,9 @@ class DatabaseSeeder extends Seeder
                 'room_type' => $room['room_type'],
                 'capacity' => $room['capacity'],
                 'description' => "Beautiful {$room['room_type']} room with amazing views",
-                'price' => $room['price'],
+                'price' => $room['weekday_rate'],
+                'weekday_rate' => $room['weekday_rate'],
+                'weekend_rate' => $room['weekend_rate'],
                 'status' => 'Available',
                 'is_active' => true,
             ]);
@@ -156,10 +159,7 @@ class DatabaseSeeder extends Seeder
             $checkOut = (clone $checkIn)->addDays(rand(1, 10))->addHours(rand(0, 23));
             $nights = $checkIn->diffInDays($checkOut);
 
-            // Calculate total amount: room price * nights * (100 - rate%) / 100
-            $baseAmount = $room->price * $nights;
-            $discountMultiplier = (100 - $rate->value) / 100;
-            $totalAmount = $baseAmount * $discountMultiplier;
+            $pricing = app(RoomPricing::class)->quote($room, $rate, $checkIn, $checkOut);
 
             $booking = Booking::create([
                 'client_id' => $client->id,
@@ -172,7 +172,10 @@ class DatabaseSeeder extends Seeder
                 'remarks' => fake()->optional(0.7)->sentence(),
                 'purpose' => fake()->randomElement(['Leisure', 'Business/Corporate', 'Events/Social', 'Government Event']),
                 'guest_count' => rand(1, $room->capacity),
-                'total_amount' => round($totalAmount, 2),
+                'total_amount' => $pricing['total_amount'],
+                'base_amount' => $pricing['base_amount'],
+                'discount_amount' => $pricing['discount_amount'],
+                'pricing_breakdown' => $pricing['pricing_breakdown'],
                 'payment_status' => fake()->randomElement(['unpaid', 'partial', 'paid']),
                 'status' => fake()->randomElement(['pencil', 'confirmed', 'checked_in', 'checked_out', 'no_show', 'cancelled']),
                 'created_at' => Carbon::now()->subDays(rand(1, 90)),

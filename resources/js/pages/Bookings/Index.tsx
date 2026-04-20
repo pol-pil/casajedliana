@@ -23,17 +23,12 @@ import BookingFormDialog from '@/components/booking-dialog';
 import BookingInfoDialog from '@/components/booking-info-dialog';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import FullCalendar from '@fullcalendar/react';
-import resourceTimelinePlugin from '@fullcalendar/resource-timeline';
-import dayGridPlugin from '@fullcalendar/daygrid';
-import interactionPlugin from '@fullcalendar/interaction';
-import type { EventClickArg, EventContentArg } from '@fullcalendar/core';
+import ResourceTimeline from '@/components/resource-timeline';
 import {
 	getCalendarCheckInClassName,
-	getCalendarEventTheme,
 	getCalendarPaymentBadgeClassName,
 	getCalendarRoomBadgeClassName,
-	getCalendarWrapperClassName,
+	getCalendarEventTheme,
 } from './fullcalendar-theme';
 
 type Booking = {
@@ -53,6 +48,8 @@ type Booking = {
 		id: number;
 		room_number: string;
 		room_type: string;
+		weekday_rate?: number;
+		weekend_rate?: number;
 	};
 	rate: {
 		id: number;
@@ -69,6 +66,20 @@ type Booking = {
 	status: string;
 	payment_status?: string;
 	total_amount: number;
+	pricing_details?: {
+		base_amount: number;
+		discount_amount: number;
+		total_amount: number;
+		nights: number;
+		weekday_nights: number;
+		weekend_nights: number;
+		pricing_breakdown: Array<{
+			date: string;
+			day_name: string;
+			day_type: 'weekday' | 'weekend';
+			amount: number;
+		}>;
+	};
 	remarks: string;
 	balance: number;
 	payments: Array<{
@@ -95,6 +106,9 @@ type Room = {
 	id: number;
 	room_number?: string;
 	room_type?: string;
+	weekday_rate?: number;
+	weekend_rate?: number;
+	price?: number;
 	status?: string;
 };
 
@@ -113,7 +127,6 @@ type PageProps = {
 		totalBookings: number;
 		activeGuests: number;
 		pencilBookings: number;
-		// totalRevenue: number;
 		outstandingBalance: number;
 	};
 	auth?: {
@@ -171,6 +184,8 @@ const statusConfig = {
 	},
 };
 
+
+
 export default function Index() {
 	const [isDialogOpen, setIsDialogOpen] = useState(false);
 	const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({ from: undefined, to: undefined });
@@ -188,7 +203,6 @@ export default function Index() {
 	const [editingBookingId, setEditingBookingId] = useState<number | null>(null);
 	const [activeTab, setActiveTab] = useState<'all' | 'pencil' | 'confirmed' | 'checked_in'>('all');
 	const [roomScope, setRoomScope] = useState<RoomScope>('hotel');
-	const calendarRef = useRef<FullCalendar>(null);
 
 	const emptyForm = {
 		client: {
@@ -214,7 +228,6 @@ export default function Index() {
 
 	const { data, setData, post, put, processing, errors, clearErrors, reset } = useForm(emptyForm);
 
-	// Use the PageProps type
 	const { bookings, calendarBookings, rooms, stats, filters } = usePage<PageProps>().props;
 
 	const [search, setSearch] = useState(filters.search || '');
@@ -223,7 +236,7 @@ export default function Index() {
 	useEffect(() => {
 		if (isFirstRender.current) {
 			isFirstRender.current = false;
-			return; // skip on mount
+			return;
 		}
 
 		const delay = setTimeout(() => {
@@ -262,7 +275,6 @@ export default function Index() {
 
 		Object.values(errors).forEach((message) => {
 			const cleaned = message.replace(/client\./g, '').replace(/\bid\b/gi, '');
-
 			toast.error(cleaned.trim());
 		});
 	};
@@ -310,7 +322,6 @@ export default function Index() {
 
 	const formatTimeInput = (dateString: string) => {
 		const date = new Date(dateString);
-
 		return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
 	};
 
@@ -321,9 +332,7 @@ export default function Index() {
 			icon: AlertCircle,
 			color: 'bg-gray-100 text-gray-800',
 		};
-
 		const Icon = config.icon;
-
 		return (
 			<Badge variant={config.variant} className={cn('flex items-center gap-1', config.color)}>
 				<Icon className='h-3 w-3' />
@@ -335,7 +344,8 @@ export default function Index() {
 	useEffect(() => {
 		if (selectedBooking) {
 			const fresh =
-				bookings.data.find((b) => b.id === selectedBooking.id) ?? calendarBookings.find((b) => b.id === selectedBooking.id);
+				bookings.data.find((b) => b.id === selectedBooking.id) ??
+				calendarBookings.find((b) => b.id === selectedBooking.id);
 			if (fresh) setSelectedBooking(fresh);
 		}
 	}, [bookings, calendarBookings]);
@@ -349,6 +359,7 @@ export default function Index() {
 
 	const filteredBookings = activeTab === 'all' ? bookings.data : bookings.data.filter((b) => b.status === activeTab);
 
+	// ── Calendar resources ────────────────────────────────────────────────────
 	const calendarResources = useMemo(() => {
 		return rooms
 			.filter((room) =>
@@ -363,19 +374,19 @@ export default function Index() {
 			}));
 	}, [rooms, roomScope]);
 
+	// ── Calendar events ───────────────────────────────────────────────────────
 	const calendarEvents = useMemo(() => {
 		return calendarBookings.map((booking) => {
 			const theme = getCalendarEventTheme(booking.status);
-
 			return {
 				id: String(booking.id),
 				resourceId: String(booking.room_id ?? booking.room.id),
-				title: booking.client ? `${booking.client.first_name} ${booking.client.last_name}` : `Booking #${booking.id}`,
+				title: booking.client
+					? `${booking.client.first_name} ${booking.client.last_name}`
+					: `Booking #${booking.id}`,
 				start: booking.check_in,
 				end: booking.check_out,
-				backgroundColor: theme.color,
-				borderColor: theme.color,
-				classNames: [theme.className],
+				backgroundColor: theme.light,
 				extendedProps: {
 					status: booking.status,
 					payment_status: booking.payment_status,
@@ -383,14 +394,15 @@ export default function Index() {
 					total_amount: booking.total_amount,
 					room: booking.room.room_number,
 					room_type: booking.room.room_type,
+					colorLight: theme.light,
+					colorDark: theme.dark,
 				},
 			};
 		});
 	}, [calendarBookings]);
 
-	const handleCalendarEventClick = ({ event }: EventClickArg) => {
-		const booking = calendarBookings.find((calendarBooking) => calendarBooking.id === Number(event.id));
-
+	const handleCalendarEventClick = (event: { id: string }) => {
+		const booking = calendarBookings.find((b) => b.id === Number(event.id));
 		if (booking) {
 			setSelectedBooking(booking);
 			setIsBookingInfoDialogOpen(true);
@@ -401,84 +413,60 @@ export default function Index() {
 		<AppLayout breadcrumbs={breadcrumbs}>
 			<div className='space-y-8 p-6'>
 				<Head title='Bookings' />
-				<div className={getCalendarWrapperClassName()}>
-					<FullCalendar
-						ref={calendarRef}
-						plugins={[resourceTimelinePlugin, dayGridPlugin, interactionPlugin]}
-						initialView='resourceTimelineWeek'
-						resourceOrder=''
-						headerToolbar={{
-							right: 'today prev,next',
-							center: 'title',
-							left: 'resourceTimelineDay,resourceTimelineWeek,dayGridMonth',
-						}}
-						buttonText={{
-							today: 'Today',
-							day: 'Day',
-							week: 'Week',
-							month: 'Month',
-						}}
-						views={{
-							resourceTimelineDay: {
-								slotDuration: '01:00:00',
-								slotMinWidth: 10,
-								slotLabelFormat: { hour: 'numeric', hour12: true },
-							},
-							resourceTimelineWeek: {
-								slotDuration: '24:00:00',
-								slotMinWidth: 50,
-								slotLabelFormat: { weekday: 'long', day: 'numeric' },
-							},
-						}}
-						resources={calendarResources}
-						resourceLabelContent={({ resource }) => (
-							<div className='flex min-w-0 flex-col gap-0.5'>
-								<span className='text-sm leading-tight font-medium'>{resource.title}</span>
-								<span className='text-xs text-muted-foreground'>{resource.extendedProps.roomType}</span>
-							</div>
-						)}
-						events={calendarEvents}
-						eventContent={({ event }: EventContentArg) => {
-							const paymentStatus = event.extendedProps.payment_status as string;
-							const checkIn = new Date(event.extendedProps.check_in as string).toLocaleTimeString([], {
-								hour: '2-digit',
-								minute: '2-digit',
-							});
-							const room = event.extendedProps.room as string;
 
-							const paymentClassName = getCalendarPaymentBadgeClassName(paymentStatus);
-							const checkInClassName = getCalendarCheckInClassName(event.extendedProps.status as string);
-							const roomClassName = getCalendarRoomBadgeClassName(event.extendedProps.room_type as string);
+				{/* Room scope toggle */}
+				{/* <div className='flex items-center gap-2'>
+					<Button
+						variant={roomScope === 'hotel' ? 'default' : 'outline'}
+						size='sm'
+						onClick={() => setRoomScope('hotel')}
+					>
+						Hotel Rooms
+					</Button>
+					<Button
+						variant={roomScope === 'event' ? 'default' : 'outline'}
+						size='sm'
+						onClick={() => setRoomScope('event')}
+					>
+						Event Rooms
+					</Button>
+				</div> */}
 
-							return (
-								<div className={`flex min-w-0 items-center gap-2 rounded-md px-1.5 py-1 ${checkInClassName}`}>
-									<span className='shrink-0 text-[10px] font-semibold tracking-wide uppercase'>{checkIn}</span>
-									{paymentStatus && (
-										<span
-											className={`shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-semibold capitalize ${paymentClassName}`}
-										>
-											{paymentStatus}
-										</span>
-									)}
-									<span className='truncate text-xs font-medium'>{event.title}</span>
-									<span
-										className={`shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-semibold capitalize ${roomClassName}`}
-									>
-										{room}
+				{/* ── Custom Resource Timeline (no license required) ── */}
+				<ResourceTimeline
+					resources={calendarResources}
+					events={calendarEvents}
+					initialView='week'
+					onEventClick={handleCalendarEventClick}
+					eventContent={({ event }) => {
+						const paymentStatus = event.extendedProps?.payment_status as string | undefined;
+						const checkIn = new Date(event.extendedProps?.check_in as string).toLocaleTimeString([], {
+							hour: '2-digit',
+							minute: '2-digit',
+						});
+						const room = event.extendedProps?.room as string;
+						const status = event.extendedProps?.status as string;
+
+						const paymentClassName = getCalendarPaymentBadgeClassName(paymentStatus ?? '');
+						const checkInClassName = getCalendarCheckInClassName(status);
+						const roomClassName = getCalendarRoomBadgeClassName(event.extendedProps?.room_type as string);
+
+						return (
+							<div className={`flex min-w-0 items-center gap-2 rounded-md px-1.5 py-1 h-full ${checkInClassName}`}>
+								<span className='shrink-0 text-[10px] font-semibold tracking-wide uppercase'>{checkIn}</span>
+								{paymentStatus && (
+									<span className={`shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-semibold capitalize ${paymentClassName}`}>
+										{paymentStatus}
 									</span>
-								</div>
-							);
-						}}
-						eventClick={handleCalendarEventClick}
-						lazyFetching={true}
-						eventMaxStack={20}
-						dayMaxEvents={20}
-						height='auto'
-						resourceAreaWidth='8%'
-						resourceAreaHeaderContent='Room'
-						nowIndicator={true}
-					/>
-				</div>
+								)}
+								<span className='truncate text-xs font-medium'>{event.title}</span>
+								{/* <span className={`shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-semibold capitalize ${roomClassName}`}>
+									{room}
+								</span> */}
+							</div>
+						);
+					}}
+				/>
 
 				{/* Stats overview */}
 				<div className='flex-row gap-4 lg:flex'>
@@ -539,13 +527,11 @@ export default function Index() {
 					}}
 				>
 					<TabsList>
-						{tabs.map((tab) => {
-							return (
-								<TabsTrigger className='px-4' key={tab.value} value={tab.value}>
-									{tab.label}
-								</TabsTrigger>
-							);
-						})}
+						{tabs.map((tab) => (
+							<TabsTrigger className='px-4' key={tab.value} value={tab.value}>
+								{tab.label}
+							</TabsTrigger>
+						))}
 					</TabsList>
 				</Tabs>
 
@@ -594,11 +580,11 @@ export default function Index() {
 							</Button>
 						</BookingFormDialog>
 					</div>
+
 					<div className='overflow-auto px-2'>
 						<Table>
 							<TableHeader>
 								<TableRow>
-									{/* <TableHead>Booking #</TableHead> */}
 									<TableHead>Guest</TableHead>
 									<TableHead>Contact</TableHead>
 									<TableHead>Room</TableHead>
@@ -609,94 +595,92 @@ export default function Index() {
 								</TableRow>
 							</TableHeader>
 							<TableBody>
-								{filteredBookings.map((booking) => {
-									return (
-										<TableRow
-											key={booking.id}
-											onClick={() => {
-												setSelectedBooking(booking);
-												setIsBookingInfoDialogOpen(true);
-											}}
-										>
-											<TableCell>
-												<div>
-													<div className='font-medium'>
-														{booking.client.first_name} {booking.client.last_name}
-													</div>
-													{booking.client.email && (
-														<div className='flex items-center gap-1 text-sm text-muted-foreground'>
-															<MailIcon className='h-3 w-3' />
-															{booking.client.email}
-														</div>
-													)}
-												</div>
-											</TableCell>
-											<TableCell>
-												<div className='flex items-center gap-1'>
-													<PhoneIcon className='h-3 w-3' />
-													{booking.client.contact_number}
-												</div>
-											</TableCell>
-											<TableCell>
-												<div>
-													<div className='font-medium'>{booking.room.room_number}</div>
-													<div className='text-sm text-muted-foreground'>{booking.room.room_type}</div>
-												</div>
-											</TableCell>
-											<TableCell>
-												<div>
-													<div className='font-medium'>{formatDate(booking.check_in)}</div>
-													<div className='text-sm text-muted-foreground'>{formatTime(booking.check_in)}</div>
-												</div>
-											</TableCell>
-											<TableCell>
-												<div>
-													<div className='font-medium'>{formatDate(booking.check_out)}</div>
-													<div className='text-sm text-muted-foreground'>{formatTime(booking.check_out)}</div>
-												</div>
-											</TableCell>
-											<TableCell>
-												<StatusBadge
-													status={
-														booking.status as
-															| 'confirmed'
-															| 'pencil'
-															| 'checked_in'
-															| 'checked_out'
-															| 'cancelled'
-															| 'no_show'
-													}
-												/>
-											</TableCell>
-											<TableCell className='text-right'>
+								{filteredBookings.map((booking) => (
+									<TableRow
+										key={booking.id}
+										onClick={() => {
+											setSelectedBooking(booking);
+											setIsBookingInfoDialogOpen(true);
+										}}
+									>
+										<TableCell>
+											<div>
 												<div className='font-medium'>
-													₱{' '}
-													{(
-														Number(booking.total_amount ?? 0) +
-														(booking.booking_charges ?? []).reduce(
-															(sum, charge) => sum + Number(charge.total ?? 0),
-															0,
-														)
-													).toFixed(2)}
+													{booking.client.first_name} {booking.client.last_name}
 												</div>
-												<div className='text-sm text-muted-foreground'>
-													Balance: ₱{' '}
-													{(
-														Number(booking.total_amount ?? 0) +
-														(booking.booking_charges ?? []).reduce(
-															(sum, bookingCharge) => sum + Number(bookingCharge.total ?? 0),
-															0,
-														) -
-														(booking.payments ?? []).reduce(
-															(sum, payment) => sum + Number(payment.amount ?? 0),
-															0,
-														)
-													).toFixed(2)}
-												</div>
-											</TableCell>
-										</TableRow>
-									);
-								})}
+												{booking.client.email && (
+													<div className='flex items-center gap-1 text-sm text-muted-foreground'>
+														<MailIcon className='h-3 w-3' />
+														{booking.client.email}
+													</div>
+												)}
+											</div>
+										</TableCell>
+										<TableCell>
+											<div className='flex items-center gap-1'>
+												<PhoneIcon className='h-3 w-3' />
+												{booking.client.contact_number}
+											</div>
+										</TableCell>
+										<TableCell>
+											<div>
+												<div className='font-medium'>{booking.room.room_number}</div>
+												<div className='text-sm text-muted-foreground'>{booking.room.room_type}</div>
+											</div>
+										</TableCell>
+										<TableCell>
+											<div>
+												<div className='font-medium'>{formatDate(booking.check_in)}</div>
+												<div className='text-sm text-muted-foreground'>{formatTime(booking.check_in)}</div>
+											</div>
+										</TableCell>
+										<TableCell>
+											<div>
+												<div className='font-medium'>{formatDate(booking.check_out)}</div>
+												<div className='text-sm text-muted-foreground'>{formatTime(booking.check_out)}</div>
+											</div>
+										</TableCell>
+										<TableCell>
+											<StatusBadge
+												status={
+													booking.status as
+														| 'confirmed'
+														| 'pencil'
+														| 'checked_in'
+														| 'checked_out'
+														| 'cancelled'
+														| 'no_show'
+												}
+											/>
+										</TableCell>
+										<TableCell className='text-right'>
+											<div className='font-medium'>
+												₱{' '}
+												{(
+													Number(booking.total_amount ?? 0) +
+													(booking.booking_charges ?? []).reduce(
+														(sum, charge) => sum + Number(charge.total ?? 0),
+														0,
+													)
+												).toFixed(2)}
+											</div>
+											<div className='text-sm text-muted-foreground'>
+												Balance: ₱{' '}
+												{(
+													Number(booking.total_amount ?? 0) +
+													(booking.booking_charges ?? []).reduce(
+														(sum, bookingCharge) => sum + Number(bookingCharge.total ?? 0),
+														0,
+													) -
+													(booking.payments ?? []).reduce(
+														(sum, payment) => sum + Number(payment.amount ?? 0),
+														0,
+													)
+												).toFixed(2)}
+											</div>
+										</TableCell>
+									</TableRow>
+								))}
 							</TableBody>
 						</Table>
 					</div>
@@ -715,10 +699,7 @@ export default function Index() {
 										if (prevLink?.url)
 											router.get(
 												prevLink.url,
-												{
-													search,
-													status: activeTab !== 'all' ? activeTab : undefined,
-												},
+												{ search, status: activeTab !== 'all' ? activeTab : undefined },
 												{ preserveState: true, preserveScroll: true },
 											);
 									}}
@@ -734,10 +715,7 @@ export default function Index() {
 										if (nextLink?.url)
 											router.get(
 												nextLink.url,
-												{
-													search,
-													status: activeTab !== 'all' ? activeTab : undefined,
-												},
+												{ search, status: activeTab !== 'all' ? activeTab : undefined },
 												{ preserveState: true, preserveScroll: true },
 											);
 									}}
@@ -750,6 +728,7 @@ export default function Index() {
 					)}
 				</div>
 			</div>
+
 			<BookingInfoDialog
 				open={isBookingInfoDialogOpen}
 				onOpenChange={(open) => {
@@ -760,7 +739,6 @@ export default function Index() {
 				onEdit={(booking) => {
 					setIsEditMode(true);
 					setIsBookingInfoDialogOpen(false);
-
 					setEditingBookingId(booking.id);
 					setSelectedRoomId(booking.room.id.toString());
 					setSelectedRateId(booking.rate?.id?.toString() || '');

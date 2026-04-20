@@ -92,6 +92,9 @@ export default function RoomCard({ room, statusColor, onEdit, onDelete, refreshR
 							{room.price !== undefined && <p className='text-xs text-muted-foreground'>₱{room.price}</p>}
 
 							<p className='text-sm text-muted-foreground'>{room.category}</p>
+							{room.weekdayRate !== undefined && room.weekendRate !== undefined && (
+								<p className='text-xs text-muted-foreground'>Sun-Thu ₱{room.weekdayRate} | Fri-Sat ₱{room.weekendRate}</p>
+							)}
 							<p className='text-sm text-muted-foreground'>Capacity: {room.capacity} Pax</p>
 						</div>
 
@@ -111,6 +114,12 @@ export default function RoomCard({ room, statusColor, onEdit, onDelete, refreshR
 					<div className='mt-4 space-y-3 text-sm'>
 						<p>
 							<strong>Capacity:</strong> {room.capacity} Pax
+						</p>
+						<p>
+							<strong>Weekday Rate:</strong> ₱{room.weekdayRate ?? room.price ?? 0}
+						</p>
+						<p>
+							<strong>Weekend Rate:</strong> ₱{room.weekendRate ?? room.price ?? 0}
 						</p>
 						<p>
 							<strong>Beds:</strong> {bedOnly}

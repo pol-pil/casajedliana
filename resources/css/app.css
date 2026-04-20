@@ -238,7 +238,7 @@
 		@apply bg-background text-foreground;
 	}
 }
-
+/* 
 @layer components {
 	.dashboard-calendar {
 		--fc-border-color: color-mix(in oklch, var(--border) 92%, transparent);
@@ -430,4 +430,4 @@
 			justify-content: center;
 		}
 	}
-}
+} */

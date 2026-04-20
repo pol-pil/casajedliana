@@ -9,6 +9,12 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, BarChart, Bar, Cell } from 'recharts';
 
 import { Wallet, CreditCard, AlertCircle, Banknote, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { BreadcrumbItem } from '@/types';
+
+const breadcrumbs: BreadcrumbItem[] = [
+	{ title: 'Reports', href: '/reports/charts' },
+	{ title: 'Charts', href: '/reports/charts' },
+];
 
 type ChartData = {
 	label: string;
@@ -78,7 +84,7 @@ export default function Charts() {
 	};
 
 	return (
-		<AppLayout>
+		<AppLayout breadcrumbs={breadcrumbs}>
 			<Head title='Charts & Analytics' />
 
 			<div className='space-y-8 p-6'>

@@ -12,8 +12,11 @@ type Props = {
 	capacity: number;
 	setCapacity: (v: number) => void;
 
-	price: number;
-	setPrice: (v: number) => void;
+	weekdayRate: number;
+	setWeekdayRate: (v: number) => void;
+
+	weekendRate: number;
+	setWeekendRate: (v: number) => void;
 
 	bedType: string;
 	setBedType: (v: string) => void;
@@ -34,8 +37,10 @@ export default function RoomFormFields({
 	setRoomType,
 	capacity,
 	setCapacity,
-	price,
-	setPrice,
+	weekdayRate,
+	setWeekdayRate,
+	weekendRate,
+	setWeekendRate,
 	bedType,
 	setBedType,
 	amenities,
@@ -79,8 +84,15 @@ export default function RoomFormFields({
 				</div>
 
 				<div className='space-y-1'>
-					<label className='text-sm font-medium'>Price</label>
-					<Input type='number' value={price} onChange={(e) => setPrice(Number(e.target.value))} />
+					<label className='text-sm font-medium'>Weekday Rate</label>
+					<Input type='number' value={weekdayRate} onChange={(e) => setWeekdayRate(Number(e.target.value))} />
+				</div>
+			</div>
+
+			<div className='grid grid-cols-2 gap-4'>
+				<div className='space-y-1'>
+					<label className='text-sm font-medium'>Weekend Rate</label>
+					<Input type='number' value={weekendRate} onChange={(e) => setWeekendRate(Number(e.target.value))} />
 				</div>
 			</div>
 

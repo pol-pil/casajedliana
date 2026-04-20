@@ -55,11 +55,11 @@ export default function UserTable({
 									<td className='px-4 py-3'>{user.email}</td>
 
 									<td className='px-4 py-3'>
-										<Badge variant={getRoleVariant(user.role)}>{user.role}</Badge>
+										<Badge className='capitalize' variant={getRoleVariant(user.role)}>{user.role}</Badge>
 									</td>
 
 									<td className='px-4 py-3'>
-										<Badge variant={getStatusVariant(user.status)}>{user.status}</Badge>
+										<Badge className='capitalize' variant={getStatusVariant(user.status)}>{user.status}</Badge>
 									</td>
 
 									<td className='px-4 py-3'>

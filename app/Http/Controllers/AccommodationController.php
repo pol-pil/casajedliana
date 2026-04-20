@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreRoomRequest;
+use App\Http\Requests\UpdateRoomRequest;
 use App\Models\Booking;
 use App\Models\Room;
 use Carbon\Carbon;
@@ -26,6 +28,8 @@ class AccommodationController extends Controller
             'room_type',
             'capacity',
             'price',
+            'weekday_rate',
+            'weekend_rate',
             'description',
             'status'
         )
@@ -91,44 +95,36 @@ class AccommodationController extends Controller
         return back()->with('success', 'Room operational status updated.');
     }
 
-    public function store(Request $request)
+    public function store(StoreRoomRequest $request)
     {
-        $request->validate([
-            'room_number' => 'required|unique:rooms,room_number',
-            'room_type' => 'required|string|max:255',
-            'capacity' => 'required|integer|min:1',
-            'price' => 'required|numeric|min:0',
-            'description' => 'nullable|string',
-        ]);
+        $validated = $request->validated();
 
         Room::create([
-            'room_number' => $request->room_number,
-            'room_type' => $request->room_type,
-            'capacity' => $request->capacity,
-            'price' => $request->price,
-            'description' => $request->description,
+            'room_number' => $validated['room_number'],
+            'room_type' => $validated['room_type'],
+            'capacity' => $validated['capacity'],
+            'price' => $validated['weekday_rate'],
+            'weekday_rate' => $validated['weekday_rate'],
+            'weekend_rate' => $validated['weekend_rate'],
+            'description' => $validated['description'] ?? null,
             'status' => 'Available',
         ]);
 
         return back()->with('success', 'Room added successfully.');
     }
 
-    public function update(Request $request, Room $room)
+    public function update(UpdateRoomRequest $request, Room $room)
     {
-        $request->validate([
-            'room_number' => 'required|string|max:50|unique:rooms,room_number,' . $room->id,
-            'room_type' => 'required|string|max:255',
-            'capacity' => 'required|integer|min:1',
-            'price' => 'required|numeric|min:0',
-            'description' => 'nullable|string',
-        ]);
+        $validated = $request->validated();
 
         $room->update([
-            'room_number' => $request->room_number,
-            'room_type' => $request->room_type,
-            'capacity' => $request->capacity,
-            'price' => $request->price,
-            'description' => $request->description,
+            'room_number' => $validated['room_number'],
+            'room_type' => $validated['room_type'],
+            'capacity' => $validated['capacity'],
+            'price' => $validated['weekday_rate'],
+            'weekday_rate' => $validated['weekday_rate'],
+            'weekend_rate' => $validated['weekend_rate'],
+            'description' => $validated['description'] ?? null,
         ]);
 
         return back()->with('success', 'Room updated successfully.');
