@@ -184,8 +184,6 @@ const statusConfig = {
 	},
 };
 
-
-
 export default function Index() {
 	const [isDialogOpen, setIsDialogOpen] = useState(false);
 	const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({ from: undefined, to: undefined });
@@ -230,9 +228,23 @@ export default function Index() {
 
 	const { bookings, calendarBookings, rooms, stats, filters } = usePage<PageProps>().props;
 
+	const page = usePage() as any;
+	const url = page?.url || '';
+
 	const [search, setSearch] = useState(filters.search || '');
 	const isFirstRender = useRef(true);
 
+	useEffect(() => {
+		if (!url) return;
+
+		if (url.includes('create=true')) {
+			setIsDialogOpen(true);
+
+			window.history.replaceState({}, '', '/bookings');
+		}
+	}, [url]);
+
+	
 	useEffect(() => {
 		if (isFirstRender.current) {
 			isFirstRender.current = false;
@@ -344,8 +356,7 @@ export default function Index() {
 	useEffect(() => {
 		if (selectedBooking) {
 			const fresh =
-				bookings.data.find((b) => b.id === selectedBooking.id) ??
-				calendarBookings.find((b) => b.id === selectedBooking.id);
+				bookings.data.find((b) => b.id === selectedBooking.id) ?? calendarBookings.find((b) => b.id === selectedBooking.id);
 			if (fresh) setSelectedBooking(fresh);
 		}
 	}, [bookings, calendarBookings]);
@@ -381,9 +392,7 @@ export default function Index() {
 			return {
 				id: String(booking.id),
 				resourceId: String(booking.room_id ?? booking.room.id),
-				title: booking.client
-					? `${booking.client.first_name} ${booking.client.last_name}`
-					: `Booking #${booking.id}`,
+				title: booking.client ? `${booking.client.first_name} ${booking.client.last_name}` : `Booking #${booking.id}`,
 				start: booking.check_in,
 				end: booking.check_out,
 				backgroundColor: theme.light,
@@ -452,10 +461,12 @@ export default function Index() {
 						const roomClassName = getCalendarRoomBadgeClassName(event.extendedProps?.room_type as string);
 
 						return (
-							<div className={`flex min-w-0 items-center gap-2 rounded-md px-1.5 py-1 h-full ${checkInClassName}`}>
+							<div className={`flex h-full min-w-0 items-center gap-2 rounded-md px-1.5 py-1 ${checkInClassName}`}>
 								<span className='shrink-0 text-[10px] font-semibold tracking-wide uppercase'>{checkIn}</span>
 								{paymentStatus && (
-									<span className={`shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-semibold capitalize ${paymentClassName}`}>
+									<span
+										className={`shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-semibold capitalize ${paymentClassName}`}
+									>
 										{paymentStatus}
 									</span>
 								)}
@@ -672,10 +683,7 @@ export default function Index() {
 														(sum, bookingCharge) => sum + Number(bookingCharge.total ?? 0),
 														0,
 													) -
-													(booking.payments ?? []).reduce(
-														(sum, payment) => sum + Number(payment.amount ?? 0),
-														0,
-													)
+													(booking.payments ?? []).reduce((sum, payment) => sum + Number(payment.amount ?? 0), 0)
 												).toFixed(2)}
 											</div>
 										</TableCell>

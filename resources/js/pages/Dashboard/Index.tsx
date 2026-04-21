@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
-import { Head, usePage } from '@inertiajs/react';
+import { Head, usePage, router } from '@inertiajs/react';
 import { format } from 'date-fns';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -139,6 +139,14 @@ export default function Dashboard() {
 		}))
 		.filter((room) => (activeFilter === 'All' ? true : room.status === activeFilter));
 
+	function handleNewReservation() {
+		router.visit('/bookings?create=true');
+	}
+
+	function handleSearchPage() {
+		router.visit('/reports/history');
+	}
+
 	return (
 		<AppLayout breadcrumbs={breadcrumbs} showDatePicker>
 			<Head title='Dashboard' />
@@ -203,43 +211,30 @@ export default function Dashboard() {
 				</div>
 
 				{/* RIGHT SIDE - QUICK ACTION */}
-				{/* RIGHT SIDE - QUICK ACTION */}
 				<div className='flex flex-col'>
-					<div className='mt-auto lg:mt-60'>
+					<div className='mt-auto lg:mt-100'>
 						<Card>
 							<CardHeader>
 								<CardTitle>Quick Action</CardTitle>
 							</CardHeader>
 
 							<CardContent className='grid grid-cols-2 gap-3'>
-								<Button variant='outline' className='flex h-24 flex-col items-center justify-center gap-2'>
+								<Button
+									onClick={handleNewReservation}
+									variant='outline'
+									className='flex h-24 flex-col items-center justify-center gap-2'
+								>
 									<Plus className='h-5 w-5' />
 									<span className='text-xs'>New Reservation</span>
 								</Button>
 
-								<Button variant='secondary' className='flex h-24 flex-col items-center justify-center gap-2'>
+								<Button
+									onClick={handleSearchPage}
+									variant='secondary'
+									className='flex h-24 flex-col items-center justify-center gap-2'
+								>
 									<Search className='h-5 w-5' />
 									<span className='text-xs'>Search</span>
-								</Button>
-
-								<Button variant='secondary' className='flex h-24 flex-col items-center justify-center gap-2'>
-									<LogIn className='h-5 w-5' />
-									<span className='text-xs'>Check-In</span>
-								</Button>
-
-								<Button variant='secondary' className='flex h-24 flex-col items-center justify-center gap-2'>
-									<LogOut className='h-5 w-5' />
-									<span className='text-xs'>Check-Out</span>
-								</Button>
-
-								<Button variant='secondary' className='flex h-24 flex-col items-center justify-center gap-2'>
-									<Package className='h-5 w-5' />
-									<span className='text-xs'>Create Package</span>
-								</Button>
-
-								<Button variant='secondary' className='flex h-24 flex-col items-center justify-center gap-2'>
-									<BedDouble className='h-5 w-5' />
-									<span className='text-xs'>Manage Rooms</span>
 								</Button>
 							</CardContent>
 						</Card>
