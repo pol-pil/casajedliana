@@ -133,12 +133,13 @@ export function AppSidebarHeader({
 	}, []);
 
 	return (
-		<header className='flex h-16 shrink-0 items-center gap-2 border-b border-sidebar-border/50 px-6 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 md:px-4'>
+		<header className='flex h-14 shrink-0 items-center gap-2 border-b border-sidebar-border/50 px-6 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 md:px-4'>
 			<div className='flex w-full items-center justify-between'>
 				<div className='flex flex-row items-center gap-2'>
-					<SidebarTrigger className='-ml-1' />
-					<Breadcrumbs breadcrumbs={breadcrumbs} />
+					<SidebarTrigger className='-ml-1 size-9' />
 					<AppearanceToggleButton/>
+					<Breadcrumbs breadcrumbs={breadcrumbs} />
+					
 				</div>
 				<div className='absolute left-1/2 -translate-x-1/2 items-center justify-center text-center text-sm'>
 					<p>{greeting}!</p>
@@ -146,7 +147,7 @@ export function AppSidebarHeader({
 					<p>{formattedTime}</p>
 					{weather && (
 						<p>
-							{weather.icon} {weather.temp}°C
+							{weather.icon} {weather.temp}<span className='text-xs align-top'> °C</span>
 						</p>
 					)}
 					</div>

@@ -364,7 +364,9 @@ export default function BookingFormDialog({
 				date: cursor.toISOString().slice(0, 10),
 				day_name: cursor.toLocaleDateString('en-US', { weekday: 'long' }),
 				day_type: isWeekend ? 'weekend' : 'weekday',
-				amount: isWeekend ? Number(selectedRoom.weekend_rate ?? selectedRoom.price) : Number(selectedRoom.weekday_rate ?? selectedRoom.price),
+				amount: isWeekend
+					? Number(selectedRoom.weekend_rate ?? selectedRoom.price)
+					: Number(selectedRoom.weekday_rate ?? selectedRoom.price),
 			});
 		} else {
 			while (cursor < end) {
@@ -373,7 +375,9 @@ export default function BookingFormDialog({
 					date: cursor.toISOString().slice(0, 10),
 					day_name: cursor.toLocaleDateString('en-US', { weekday: 'long' }),
 					day_type: isWeekend ? 'weekend' : 'weekday',
-					amount: isWeekend ? Number(selectedRoom.weekend_rate ?? selectedRoom.price) : Number(selectedRoom.weekday_rate ?? selectedRoom.price),
+					amount: isWeekend
+						? Number(selectedRoom.weekend_rate ?? selectedRoom.price)
+						: Number(selectedRoom.weekday_rate ?? selectedRoom.price),
 				});
 				cursor.setDate(cursor.getDate() + 1);
 			}
@@ -411,55 +415,44 @@ export default function BookingFormDialog({
 	const disabledDates = (date: Date): boolean => {
 		const today = new Date();
 		today.setHours(0, 0, 0, 0);
-		
+
 		if (date < today) return true;
-	
+
 		if (!selectedRoomId) return false;
-	
+
 		const room = rooms.find((r) => r.id.toString() === selectedRoomId);
 		if (room && ['maintenance', 'reserved'].includes(room.status)) return true;
-	
+
 		const blocked = roomBlockedDates[selectedRoomId] ?? [];
 		return blocked.some(({ from, to, booking_id }) => {
 			// allow sariling booking kapag edit
 			if (isEditMode && selectedBooking && booking_id === selectedBooking.id) return false;
-	
+
 			const fromDate = new Date(from);
 			const toDate = new Date(to);
 			fromDate.setHours(0, 0, 0, 0);
 			toDate.setHours(0, 0, 0, 0);
-	
+
 			return date >= fromDate && date <= toDate;
 		});
 	};
 	useEffect(() => {
 		if (dateRange.from && dateRange.to) {
-			const fromDate = new Date(dateRange.from);
-			const toDate = new Date(dateRange.to);
+			const pad = (n: number) => String(n).padStart(2, '0');
+			const fromDate = dateRange.from;
+			const checkInLocal = `${fromDate.getFullYear()}-${pad(fromDate.getMonth() + 1)}-${pad(fromDate.getDate())}T${checkInTime}:00`;
+			setData('check_in', checkInLocal);
+
+			const toDate = dateRange.to;
+			const checkOutLocal = `${toDate.getFullYear()}-${pad(toDate.getMonth() + 1)}-${pad(toDate.getDate())}T${checkOutTime}:00`;
+			setData('check_out', checkOutLocal);
 
 			fromDate.setHours(0, 0, 0, 0);
 			toDate.setHours(0, 0, 0, 0);
 			const timeDiff = toDate.getTime() - fromDate.getTime();
 			const duration = Math.max(1, Math.ceil(timeDiff / (1000 * 3600 * 24)));
-			const checkInDate = new Date(dateRange.from);
-			if (checkInTime) {
-				const [hours, minutes] = checkInTime.split(':');
-				checkInDate.setHours(Number(hours));
-				checkInDate.setMinutes(Number(minutes));
-				checkInDate.setSeconds(0);
-			}
-			const checkOutDate = new Date(dateRange.to);
-			if (checkOutTime) {
-				const [hours, minutes] = checkOutTime.split(':');
-				checkOutDate.setHours(Number(hours));
-				checkOutDate.setMinutes(Number(minutes));
-				checkOutDate.setSeconds(0);
-			}
 
 			const pricingPreview = buildPricingPreview();
-
-			setData('check_in', checkInDate.toISOString());
-			setData('check_out', checkOutDate.toISOString());
 
 			setData('total_amount', pricingPreview.total_amount);
 
@@ -497,13 +490,13 @@ export default function BookingFormDialog({
 					if (isEditMode && selectedBooking && booking_id === selectedBooking.id) {
 						return false;
 					}
-				
+
 					const fd = new Date(f);
 					fd.setHours(0, 0, 0, 0);
-				
+
 					const td = new Date(t);
 					td.setHours(0, 0, 0, 0);
-				
+
 					return from <= td && to >= fd;
 				});
 				if (isBlocked) blocked.add(room.id.toString());
@@ -953,7 +946,9 @@ export default function BookingFormDialog({
 											</div>
 											<div className='flex justify-between'>
 												<span className='text-muted-foreground'>Night split:</span>
-												<span>{pricingPreview.weekday_nights} weekday / {pricingPreview.weekend_nights} weekend</span>
+												<span>
+													{pricingPreview.weekday_nights} weekday / {pricingPreview.weekend_nights} weekend
+												</span>
 											</div>
 											<div className='flex justify-between'>
 												<span className='text-muted-foreground'>Calculated subtotal:</span>

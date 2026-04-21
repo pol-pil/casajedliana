@@ -23,7 +23,7 @@ class DatabaseSeeder extends Seeder
             'Agoda',
             'Airbnb',
             'Booking.com',
-            'Complementary (Event Package)',
+            'Complimentary (Event Package)',
             'Facebook',
             'Instagram',
             'Phone Call',
@@ -40,7 +40,7 @@ class DatabaseSeeder extends Seeder
         // Create rates
         $rates = [
             ['name' => 'Regular', 'value' => 0, 'type' => 'percentage'],
-            ['name' => 'Complementary', 'value' => 100, 'type' => 'percentage'],
+            ['name' => 'Complimentary', 'value' => 100, 'type' => 'percentage'],
             ['name' => 'Supplier Discount', 'value' => 10, 'type' => 'percentage'],
             ['name' => 'Referral', 'value' => 5, 'type' => 'percentage'],
             ['name' => 'Special Owners Discount', 'value' => 15, 'type' => 'percentage'],

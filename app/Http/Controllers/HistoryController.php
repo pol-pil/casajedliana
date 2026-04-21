@@ -38,7 +38,7 @@ class HistoryController extends Controller
           });
 })
             ->orderBy('updated_at', 'desc')
-            ->paginate(10)
+            ->paginate(12)
             ->withQueryString();
     
         return Inertia::render('reports/history', [

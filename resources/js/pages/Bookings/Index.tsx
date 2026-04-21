@@ -184,8 +184,6 @@ const statusConfig = {
 	},
 };
 
-
-
 export default function Index() {
 	const [isDialogOpen, setIsDialogOpen] = useState(false);
 	const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({ from: undefined, to: undefined });
@@ -344,8 +342,7 @@ export default function Index() {
 	useEffect(() => {
 		if (selectedBooking) {
 			const fresh =
-				bookings.data.find((b) => b.id === selectedBooking.id) ??
-				calendarBookings.find((b) => b.id === selectedBooking.id);
+				bookings.data.find((b) => b.id === selectedBooking.id) ?? calendarBookings.find((b) => b.id === selectedBooking.id);
 			if (fresh) setSelectedBooking(fresh);
 		}
 	}, [bookings, calendarBookings]);
@@ -381,9 +378,7 @@ export default function Index() {
 			return {
 				id: String(booking.id),
 				resourceId: String(booking.room_id ?? booking.room.id),
-				title: booking.client
-					? `${booking.client.first_name} ${booking.client.last_name}`
-					: `Booking #${booking.id}`,
+				title: booking.client ? `${booking.client.first_name} ${booking.client.last_name}` : `Booking #${booking.id}`,
 				start: booking.check_in,
 				end: booking.check_out,
 				backgroundColor: theme.light,
@@ -452,10 +447,12 @@ export default function Index() {
 						const roomClassName = getCalendarRoomBadgeClassName(event.extendedProps?.room_type as string);
 
 						return (
-							<div className={`flex min-w-0 items-center gap-2 rounded-md px-1.5 py-1 h-full ${checkInClassName}`}>
+							<div className={`flex h-full min-w-0 items-center gap-2 rounded-md px-1.5 py-1 ${checkInClassName}`}>
 								<span className='shrink-0 text-[10px] font-semibold tracking-wide uppercase'>{checkIn}</span>
 								{paymentStatus && (
-									<span className={`shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-semibold capitalize ${paymentClassName}`}>
+									<span
+										className={`shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-semibold capitalize ${paymentClassName}`}
+									>
 										{paymentStatus}
 									</span>
 								)}
@@ -468,264 +465,265 @@ export default function Index() {
 					}}
 				/>
 
-				{/* Stats overview */}
-				<div className='flex-row gap-4 lg:flex'>
-					<div className='flex-1 rounded-lg border bg-card p-4'>
-						<div className='flex items-center justify-between'>
-							<div>
-								<p className='text-sm font-medium text-muted-foreground'>Total Bookings</p>
-								<p className='text-2xl font-bold'>{stats.totalBookings}</p>
-							</div>
-							<div className='rounded-full bg-primary/40 p-3'>
-								<UserIcon className='h-6 w-6 text-primary-foreground' />
-							</div>
-						</div>
-					</div>
-					<div className='flex-1 rounded-lg border bg-card p-4'>
-						<div className='flex items-center justify-between'>
-							<div>
-								<p className='text-sm font-medium text-muted-foreground'>Active Guests</p>
-								<p className='text-2xl font-bold'>{stats.activeGuests}</p>
-							</div>
-							<div className='rounded-full bg-blue-100 p-3 dark:bg-blue-950'>
-								<CheckCircleIcon className='h-6 w-6 text-blue-600 dark:text-blue-300' />
+				<div className='space-y-4'>
+					{/* Stats overview */}
+					<div className='flex-row gap-4 lg:flex'>
+						<div className='flex-1 rounded-lg border bg-card p-4'>
+							<div className='flex items-center justify-between'>
+								<div>
+									<p className='text-sm font-medium text-muted-foreground'>Total Bookings</p>
+									<p className='text-2xl font-bold'>{stats.totalBookings}</p>
+								</div>
+								<div className='rounded-full bg-primary/40 p-3'>
+									<UserIcon className='h-6 w-6 text-primary-foreground' />
+								</div>
 							</div>
 						</div>
-					</div>
-					<div className='flex-1 rounded-lg border bg-card p-4'>
-						<div className='flex items-center justify-between'>
-							<div>
-								<p className='text-sm font-medium text-muted-foreground'>Pencil</p>
-								<p className='text-2xl font-bold'>{stats.pencilBookings}</p>
-							</div>
-							<div className='rounded-full bg-yellow-100 p-3 dark:bg-yellow-950'>
-								<ClockIcon className='h-6 w-6 text-yellow-600 dark:text-yellow-400' />
-							</div>
-						</div>
-					</div>
-					<div className='flex-1 rounded-lg border bg-card p-4'>
-						<div className='flex items-center justify-between'>
-							<div>
-								<p className='text-sm font-medium text-muted-foreground'>Outstanding Balance</p>
-								<p className='text-2xl font-bold'>
-									₱{stats.outstandingBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-								</p>
-							</div>
-							<div className='rounded-full bg-green-100 p-3 dark:bg-green-950'>
-								<PhilippinePeso className='h-6 w-6 text-green-600 dark:text-green-400' />
+						<div className='flex-1 rounded-lg border bg-card p-4'>
+							<div className='flex items-center justify-between'>
+								<div>
+									<p className='text-sm font-medium text-muted-foreground'>Active Guests</p>
+									<p className='text-2xl font-bold'>{stats.activeGuests}</p>
+								</div>
+								<div className='rounded-full bg-blue-100 p-3 dark:bg-blue-950'>
+									<CheckCircleIcon className='h-6 w-6 text-blue-600 dark:text-blue-300' />
+								</div>
 							</div>
 						</div>
-					</div>
-				</div>
-
-				<Tabs
-					className='mb-2'
-					value={activeTab}
-					onValueChange={(value) => {
-						setActiveTab(value as any);
-						router.get('/bookings', { status: value }, { preserveState: true, preserveScroll: true });
-					}}
-				>
-					<TabsList>
-						{tabs.map((tab) => (
-							<TabsTrigger className='px-4' key={tab.value} value={tab.value}>
-								{tab.label}
-							</TabsTrigger>
-						))}
-					</TabsList>
-				</Tabs>
-
-				{/* Bookings table */}
-				<div className='rounded-lg border'>
-					<div className='flex flex-row items-center justify-between border-b p-4'>
-						<div className='flex flex-row items-center gap-8'>
-							<h2 className='text-lg font-semibold'>Recent Bookings</h2>
-							<Input
-								placeholder='Search guest...'
-								value={search}
-								onChange={(e) => setSearch(e.target.value)}
-								className='w-64'
-							/>
+						<div className='flex-1 rounded-lg border bg-card p-4'>
+							<div className='flex items-center justify-between'>
+								<div>
+									<p className='text-sm font-medium text-muted-foreground'>Pencil</p>
+									<p className='text-2xl font-bold'>{stats.pencilBookings}</p>
+								</div>
+								<div className='rounded-full bg-yellow-100 p-3 dark:bg-yellow-950'>
+									<ClockIcon className='h-6 w-6 text-yellow-600 dark:text-yellow-400' />
+								</div>
+							</div>
 						</div>
-						<BookingFormDialog
-							data={data}
-							setData={setData}
-							processing={processing}
-							errors={errors}
-							isDialogOpen={isDialogOpen}
-							setIsDialogOpen={setIsDialogOpen}
-							handleSubmit={handleSubmit}
-							resetForm={resetForm}
-							clearErrors={clearErrors}
-							isEditMode={isEditMode}
-							selectedBooking={selectedBooking}
-							selectedRoomId={selectedRoomId}
-							setSelectedRoomId={setSelectedRoomId}
-							selectedRateId={selectedRateId}
-							setSelectedRateId={setSelectedRateId}
-							selectedBookingType={selectedBookingType}
-							setSelectedBookingType={setSelectedBookingType}
-							guestCount={guestCount}
-							setGuestCount={setGuestCount}
-							dateRange={dateRange}
-							setDateRange={setDateRange}
-							checkInTime={checkInTime}
-							setCheckInTime={setCheckInTime}
-							checkOutTime={checkOutTime}
-							setCheckOutTime={setCheckOutTime}
-						>
-							<Button className='flex items-center'>
-								<Plus className='h-4 w-4' />
-								New Booking
-							</Button>
-						</BookingFormDialog>
+						<div className='flex-1 rounded-lg border bg-card p-4'>
+							<div className='flex items-center justify-between'>
+								<div>
+									<p className='text-sm font-medium text-muted-foreground'>Outstanding Balance</p>
+									<p className='text-2xl font-bold'>
+										₱{stats.outstandingBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+									</p>
+								</div>
+								<div className='rounded-full bg-green-100 p-3 dark:bg-green-950'>
+									<PhilippinePeso className='h-6 w-6 text-green-600 dark:text-green-400' />
+								</div>
+							</div>
+						</div>
 					</div>
 
-					<div className='overflow-auto px-2'>
-						<Table>
-							<TableHeader>
-								<TableRow>
-									<TableHead>Guest</TableHead>
-									<TableHead>Contact</TableHead>
-									<TableHead>Room</TableHead>
-									<TableHead>Check-in</TableHead>
-									<TableHead>Check-out</TableHead>
-									<TableHead>Status</TableHead>
-									<TableHead className='text-right'>Amount</TableHead>
-								</TableRow>
-							</TableHeader>
-							<TableBody>
-								{filteredBookings.map((booking) => (
-									<TableRow
-										key={booking.id}
-										onClick={() => {
-											setSelectedBooking(booking);
-											setIsBookingInfoDialogOpen(true);
-										}}
-									>
-										<TableCell>
-											<div>
-												<div className='font-medium'>
-													{booking.client.first_name} {booking.client.last_name}
-												</div>
-												{booking.client.email && (
-													<div className='flex items-center gap-1 text-sm text-muted-foreground'>
-														<MailIcon className='h-3 w-3' />
-														{booking.client.email}
-													</div>
-												)}
-											</div>
-										</TableCell>
-										<TableCell>
-											<div className='flex items-center gap-1'>
-												<PhoneIcon className='h-3 w-3' />
-												{booking.client.contact_number}
-											</div>
-										</TableCell>
-										<TableCell>
-											<div>
-												<div className='font-medium'>{booking.room.room_number}</div>
-												<div className='text-sm text-muted-foreground'>{booking.room.room_type}</div>
-											</div>
-										</TableCell>
-										<TableCell>
-											<div>
-												<div className='font-medium'>{formatDate(booking.check_in)}</div>
-												<div className='text-sm text-muted-foreground'>{formatTime(booking.check_in)}</div>
-											</div>
-										</TableCell>
-										<TableCell>
-											<div>
-												<div className='font-medium'>{formatDate(booking.check_out)}</div>
-												<div className='text-sm text-muted-foreground'>{formatTime(booking.check_out)}</div>
-											</div>
-										</TableCell>
-										<TableCell>
-											<StatusBadge
-												status={
-													booking.status as
-														| 'confirmed'
-														| 'pencil'
-														| 'checked_in'
-														| 'checked_out'
-														| 'cancelled'
-														| 'no_show'
-												}
-											/>
-										</TableCell>
-										<TableCell className='text-right'>
-											<div className='font-medium'>
-												₱{' '}
-												{(
-													Number(booking.total_amount ?? 0) +
-													(booking.booking_charges ?? []).reduce(
-														(sum, charge) => sum + Number(charge.total ?? 0),
-														0,
-													)
-												).toFixed(2)}
-											</div>
-											<div className='text-sm text-muted-foreground'>
-												Balance: ₱{' '}
-												{(
-													Number(booking.total_amount ?? 0) +
-													(booking.booking_charges ?? []).reduce(
-														(sum, bookingCharge) => sum + Number(bookingCharge.total ?? 0),
-														0,
-													) -
-													(booking.payments ?? []).reduce(
-														(sum, payment) => sum + Number(payment.amount ?? 0),
-														0,
-													)
-												).toFixed(2)}
-											</div>
-										</TableCell>
+					{/* Bookings table */}
+					<div className='rounded-lg border'>
+						<div className='flex flex-row items-center justify-between border-b p-4'>
+							<div className='flex flex-row items-center gap-8'>
+								<h2 className='text-lg font-semibold'>Recent Bookings</h2>
+								<Input
+									placeholder='Search guest...'
+									value={search}
+									onChange={(e) => setSearch(e.target.value)}
+									className='w-64'
+								/>
+							</div>
+
+							<Tabs
+								value={activeTab}
+								onValueChange={(value) => {
+									setActiveTab(value as any);
+									router.get('/bookings', { status: value }, { preserveState: true, preserveScroll: true });
+								}}
+							>
+								<TabsList>
+									{tabs.map((tab) => (
+										<TabsTrigger className='px-4' key={tab.value} value={tab.value}>
+											{tab.label}
+										</TabsTrigger>
+									))}
+								</TabsList>
+							</Tabs>
+							<BookingFormDialog
+								data={data}
+								setData={setData}
+								processing={processing}
+								errors={errors}
+								isDialogOpen={isDialogOpen}
+								setIsDialogOpen={setIsDialogOpen}
+								handleSubmit={handleSubmit}
+								resetForm={resetForm}
+								clearErrors={clearErrors}
+								isEditMode={isEditMode}
+								selectedBooking={selectedBooking}
+								selectedRoomId={selectedRoomId}
+								setSelectedRoomId={setSelectedRoomId}
+								selectedRateId={selectedRateId}
+								setSelectedRateId={setSelectedRateId}
+								selectedBookingType={selectedBookingType}
+								setSelectedBookingType={setSelectedBookingType}
+								guestCount={guestCount}
+								setGuestCount={setGuestCount}
+								dateRange={dateRange}
+								setDateRange={setDateRange}
+								checkInTime={checkInTime}
+								setCheckInTime={setCheckInTime}
+								checkOutTime={checkOutTime}
+								setCheckOutTime={setCheckOutTime}
+							>
+								<Button className='fixed top-4 right-6 z-20 flex items-center border-1 border-white/50 shadow-lg backdrop-blur-xs bg-[#c5b593]/60 dark:bg-[#fff2d6]/70'>
+									<Plus className='h-4 w-4' />
+									New Booking
+								</Button>
+							</BookingFormDialog>
+						</div>
+
+						<div className='overflow-auto px-2'>
+							<Table>
+								<TableHeader>
+									<TableRow>
+										<TableHead>Guest</TableHead>
+										<TableHead>Contact</TableHead>
+										<TableHead>Room</TableHead>
+										<TableHead>Check-in</TableHead>
+										<TableHead>Check-out</TableHead>
+										<TableHead>Status</TableHead>
+										<TableHead className='text-right'>Amount</TableHead>
 									</TableRow>
-								))}
-							</TableBody>
-						</Table>
-					</div>
-
-					{bookings.links && bookings.links.length > 3 && (
-						<div className='flex items-center justify-between border-t px-4 py-4'>
-							<div className='text-sm text-muted-foreground'>
-								Page {bookings.current_page || 1} of {bookings.last_page || 1}
-							</div>
-							<div className='flex items-center space-x-2'>
-								<Button
-									variant='outline'
-									size='sm'
-									onClick={() => {
-										const prevLink = bookings.links.find((link) => link.label === '&laquo; Previous');
-										if (prevLink?.url)
-											router.get(
-												prevLink.url,
-												{ search, status: activeTab !== 'all' ? activeTab : undefined },
-												{ preserveState: true, preserveScroll: true },
-											);
-									}}
-									disabled={!bookings.links.find((link) => link.label === '&laquo; Previous')?.url}
-								>
-									Previous
-								</Button>
-								<Button
-									variant='outline'
-									size='sm'
-									onClick={() => {
-										const nextLink = bookings.links.find((link) => link.label === 'Next &raquo;');
-										if (nextLink?.url)
-											router.get(
-												nextLink.url,
-												{ search, status: activeTab !== 'all' ? activeTab : undefined },
-												{ preserveState: true, preserveScroll: true },
-											);
-									}}
-									disabled={!bookings.links.find((link) => link.label === 'Next &raquo;')?.url}
-								>
-									Next
-								</Button>
-							</div>
+								</TableHeader>
+								<TableBody>
+									{filteredBookings.map((booking) => (
+										<TableRow
+											key={booking.id}
+											onClick={() => {
+												setSelectedBooking(booking);
+												setIsBookingInfoDialogOpen(true);
+											}}
+										>
+											<TableCell>
+												<div>
+													<div className='font-medium'>
+														{booking.client.first_name} {booking.client.last_name}
+													</div>
+													{booking.client.email && (
+														<div className='flex items-center gap-1 text-sm text-muted-foreground'>
+															<MailIcon className='h-3 w-3' />
+															{booking.client.email}
+														</div>
+													)}
+												</div>
+											</TableCell>
+											<TableCell>
+												<div className='flex items-center gap-1'>
+													<PhoneIcon className='h-3 w-3' />
+													{booking.client.contact_number}
+												</div>
+											</TableCell>
+											<TableCell>
+												<div>
+													<div className='font-medium'>{booking.room.room_number}</div>
+													<div className='text-sm text-muted-foreground'>{booking.room.room_type}</div>
+												</div>
+											</TableCell>
+											<TableCell>
+												<div>
+													<div className='font-medium'>{formatDate(booking.check_in)}</div>
+													<div className='text-sm text-muted-foreground'>{formatTime(booking.check_in)}</div>
+												</div>
+											</TableCell>
+											<TableCell>
+												<div>
+													<div className='font-medium'>{formatDate(booking.check_out)}</div>
+													<div className='text-sm text-muted-foreground'>{formatTime(booking.check_out)}</div>
+												</div>
+											</TableCell>
+											<TableCell>
+												<StatusBadge
+													status={
+														booking.status as
+															| 'confirmed'
+															| 'pencil'
+															| 'checked_in'
+															| 'checked_out'
+															| 'cancelled'
+															| 'no_show'
+													}
+												/>
+											</TableCell>
+											<TableCell className='text-right'>
+												<div className='font-medium'>
+													₱{' '}
+													{(
+														Number(booking.total_amount ?? 0) +
+														(booking.booking_charges ?? []).reduce(
+															(sum, charge) => sum + Number(charge.total ?? 0),
+															0,
+														)
+													).toFixed(2)}
+												</div>
+												<div className='text-sm text-muted-foreground'>
+													Balance: ₱{' '}
+													{(
+														Number(booking.total_amount ?? 0) +
+														(booking.booking_charges ?? []).reduce(
+															(sum, bookingCharge) => sum + Number(bookingCharge.total ?? 0),
+															0,
+														) -
+														(booking.payments ?? []).reduce(
+															(sum, payment) => sum + Number(payment.amount ?? 0),
+															0,
+														)
+													).toFixed(2)}
+												</div>
+											</TableCell>
+										</TableRow>
+									))}
+								</TableBody>
+							</Table>
 						</div>
-					)}
+
+						{bookings.links && bookings.links.length > 3 && (
+							<div className='flex items-center justify-between border-t px-4 py-4'>
+								<div className='text-sm text-muted-foreground'>
+									Page {bookings.current_page || 1} of {bookings.last_page || 1}
+								</div>
+								<div className='flex items-center space-x-2'>
+									<Button
+										variant='outline'
+										size='sm'
+										onClick={() => {
+											const prevLink = bookings.links.find((link) => link.label === '&laquo; Previous');
+											if (prevLink?.url)
+												router.get(
+													prevLink.url,
+													{ search, status: activeTab !== 'all' ? activeTab : undefined },
+													{ preserveState: true, preserveScroll: true },
+												);
+										}}
+										disabled={!bookings.links.find((link) => link.label === '&laquo; Previous')?.url}
+									>
+										Previous
+									</Button>
+									<Button
+										variant='outline'
+										size='sm'
+										onClick={() => {
+											const nextLink = bookings.links.find((link) => link.label === 'Next &raquo;');
+											if (nextLink?.url)
+												router.get(
+													nextLink.url,
+													{ search, status: activeTab !== 'all' ? activeTab : undefined },
+													{ preserveState: true, preserveScroll: true },
+												);
+										}}
+										disabled={!bookings.links.find((link) => link.label === 'Next &raquo;')?.url}
+									>
+										Next
+									</Button>
+								</div>
+							</div>
+						)}
+					</div>
 				</div>
 			</div>
 

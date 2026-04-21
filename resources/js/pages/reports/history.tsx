@@ -159,46 +159,46 @@ export default function History() {
 			<Head title='History' />
 
 			<div className='p-6'>
-				<Tabs
-					className='mb-2'
-					value={activeTab}
-					onValueChange={(value) => {
-						setActiveTab(value as any);
-
-						router.get(
-							'/reports/history',
-							{
-								status: value,
-								search,
-								start: range?.from ? format(range.from, 'yyyy-MM-dd') : undefined,
-								end: range?.to ? format(range.to, 'yyyy-MM-dd') : undefined,
-							},
-							{ preserveState: true, replace: true },
-						);
-					}}
-				>
-					<TabsList>
-						{tabs.map((tab) => {
-							return (
-								<TabsTrigger className='px-4' key={tab.value} value={tab.value}>
-									{tab.label}
-								</TabsTrigger>
-							);
-						})}
-					</TabsList>
-				</Tabs>
-
 				<div className='rounded-lg border'>
-					<div className='flex flex-row items-center gap-8 border-b p-4'>
-						<h2 className='text-lg font-semibold'>Booking History</h2>
-						<div className='flex justify-between'>
-							<Input
-								placeholder='Search guest...'
-								value={search}
-								onChange={(e) => setSearch(e.target.value)}
-								className='w-64'
-							/>
+					<div className='flex flex-row items-center gap-8 border-b p-4 justify-between'>
+						<div className='flex flex-row items-center gap-8'>
+							<h2 className='text-lg font-semibold'>Booking History</h2>
+							<div className='flex justify-between'>
+								<Input
+									placeholder='Search guest...'
+									value={search}
+									onChange={(e) => setSearch(e.target.value)}
+									className='w-64'
+								/>
+							</div>
 						</div>
+						<Tabs
+							value={activeTab}
+							onValueChange={(value) => {
+								setActiveTab(value as any);
+
+								router.get(
+									'/reports/history',
+									{
+										status: value,
+										search,
+										start: range?.from ? format(range.from, 'yyyy-MM-dd') : undefined,
+										end: range?.to ? format(range.to, 'yyyy-MM-dd') : undefined,
+									},
+									{ preserveState: true, replace: true },
+								);
+							}}
+						>
+							<TabsList>
+								{tabs.map((tab) => {
+									return (
+										<TabsTrigger className='px-4' key={tab.value} value={tab.value}>
+											{tab.label}
+										</TabsTrigger>
+									);
+								})}
+							</TabsList>
+						</Tabs>
 					</div>
 
 					<div className='overflow-auto px-2'>
@@ -240,7 +240,7 @@ export default function History() {
 														{booking.client?.first_name ?? '—'} {booking.client?.last_name ?? ''}
 													</div>
 													{booking.client?.email && (
-														<div className='flex gap-1 text-sm text-muted-foreground items-center'>
+														<div className='flex items-center gap-1 text-sm text-muted-foreground'>
 															<MailIcon className='h-3 w-3' />
 															{booking.client.email}
 														</div>
