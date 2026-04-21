@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { DoorOpen, LogOut, Lock, Check } from 'lucide-react';
+import { DoorOpen, Lock, Check, Plus, Search, LogIn, LogOut, Package, BedDouble } from 'lucide-react';
 import { useDateRange } from '@/contexts/date-range-context';
 
 type RoomStatus = 'Available' | 'Reserved' | 'Occupied' | 'Maintenance';
@@ -203,47 +203,48 @@ export default function Dashboard() {
 				</div>
 
 				{/* RIGHT SIDE - QUICK ACTION */}
-					<div className='flex flex-col'>
-						<div className='mt-auto lg:mt-60'>
-							<Card>
-								<CardHeader>
-									<CardTitle>Quick Action</CardTitle>
-								</CardHeader>
+				{/* RIGHT SIDE - QUICK ACTION */}
+				<div className='flex flex-col'>
+					<div className='mt-auto lg:mt-60'>
+						<Card>
+							<CardHeader>
+								<CardTitle>Quick Action</CardTitle>
+							</CardHeader>
 
-								<CardContent className='grid grid-cols-2 gap-3'>
-									<Button variant='outline' className='flex h-24 flex-col gap-2'>
-										<span>＋</span>
-										<span className='text-xs'>New Reservation</span>
-									</Button>
+							<CardContent className='grid grid-cols-2 gap-3'>
+								<Button variant='outline' className='flex h-24 flex-col items-center justify-center gap-2'>
+									<Plus className='h-5 w-5' />
+									<span className='text-xs'>New Reservation</span>
+								</Button>
 
-									<Button variant='secondary' className='flex h-24 flex-col gap-2'>
-										<span>🔍</span>
-										<span className='text-xs'>Search</span>
-									</Button>
+								<Button variant='secondary' className='flex h-24 flex-col items-center justify-center gap-2'>
+									<Search className='h-5 w-5' />
+									<span className='text-xs'>Search</span>
+								</Button>
 
-									<Button variant='secondary' className='flex h-24 flex-col gap-2'>
-										<span>📖</span>
-										<span className='text-xs'>Check-In</span>
-									</Button>
+								<Button variant='secondary' className='flex h-24 flex-col items-center justify-center gap-2'>
+									<LogIn className='h-5 w-5' />
+									<span className='text-xs'>Check-In</span>
+								</Button>
 
-									<Button variant='secondary' className='flex h-24 flex-col gap-2'>
-										<span>🚪</span>
-										<span className='text-xs'>Check-Out</span>
-									</Button>
+								<Button variant='secondary' className='flex h-24 flex-col items-center justify-center gap-2'>
+									<LogOut className='h-5 w-5' />
+									<span className='text-xs'>Check-Out</span>
+								</Button>
 
-									<Button variant='secondary' className='flex h-24 flex-col gap-2'>
-										<span>📦</span>
-										<span className='text-xs'>Create Package</span>
-									</Button>
+								<Button variant='secondary' className='flex h-24 flex-col items-center justify-center gap-2'>
+									<Package className='h-5 w-5' />
+									<span className='text-xs'>Create Package</span>
+								</Button>
 
-									<Button variant='secondary' className='flex h-24 flex-col gap-2'>
-										<span>🛏️</span>
-										<span className='text-xs'>Manage Rooms</span>
-									</Button>
-								</CardContent>
-							</Card>
-						</div>
+								<Button variant='secondary' className='flex h-24 flex-col items-center justify-center gap-2'>
+									<BedDouble className='h-5 w-5' />
+									<span className='text-xs'>Manage Rooms</span>
+								</Button>
+							</CardContent>
+						</Card>
 					</div>
+				</div>
 
 				{/* ── Arrivals / Departures table ── */}
 				<div className='lg:col-span-4'>
