@@ -162,7 +162,7 @@ export function AppSidebarHeader({
 									: 'Select Dates'}
 							</Button>
 						</PopoverTrigger>
-						<PopoverContent className='w-auto p-4' align='end'>
+						<PopoverContent className='w-auto p-4 dark:bg-primary-foreground/80 backdrop-blur' align='end'>
 							<Calendar mode='range' selected={range} onSelect={applyRange} numberOfMonths={2} />
 
 							<div className='flex justify-between pt-2'>

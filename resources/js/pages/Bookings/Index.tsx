@@ -571,7 +571,7 @@ export default function Index() {
 								checkOutTime={checkOutTime}
 								setCheckOutTime={setCheckOutTime}
 							>
-								<Button className='fixed top-4 right-6 z-20 flex items-center border-1 border-white/50 shadow-lg backdrop-blur-xs bg-[#c5b593]/60 dark:bg-[#fff2d6]/70'>
+								<Button className='fixed top-4 right-6 z-20 flex items-center border-1 border-white/50 bg-[#c5b593]/60 shadow-lg backdrop-blur-xs hover:cursor-pointer hover:bg-[#c5b593]/40 dark:bg-[#fff2d6]/70 dark:hover:bg-[#fff2d6]/90'>
 									<Plus className='h-4 w-4' />
 									New Booking
 								</Button>

@@ -210,7 +210,7 @@ export default function BookingInfoDialog({ open, onOpenChange, selectedBooking,
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className='lg:min-w-200'>
+			<DialogContent className='lg:min-w-200 dark:bg-primary-foreground/40 backdrop-blur-xs'>
 				<div className='lg:flex'>
 					{/* Left Column */}
 					<div className='mr-4 flex-4 space-y-4 px-4 pr-8 lg:border-r-1'>

@@ -31,7 +31,7 @@ export default function EditUserDialog({
 }: Props) {
 	return (
 		<Dialog open={open} onOpenChange={setOpen}>
-			<DialogContent>
+			<DialogContent className='dark:bg-primary-foreground/80 backdrop-blur-xs'>
 				<DialogHeader>
 					<DialogTitle>Edit User</DialogTitle>
 				</DialogHeader>

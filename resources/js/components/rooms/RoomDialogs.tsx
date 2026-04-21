@@ -38,7 +38,7 @@ export default function RoomDialogs(props: any) {
 		<>
 			{/* ADD */}
 			<Dialog open={addRoomOpen} onOpenChange={setAddRoomOpen}>
-				<DialogContent className='max-w-lg'>
+				<DialogContent className='max-w-lg dark:bg-primary-foreground/80 backdrop-blur-xs'>
 					<DialogHeader>
 						<DialogTitle>Add New Room</DialogTitle>
 					</DialogHeader>
@@ -71,7 +71,7 @@ export default function RoomDialogs(props: any) {
 
 			{/* EDIT */}
 			<Dialog open={editRoomOpen} onOpenChange={setEditRoomOpen}>
-				<DialogContent className='max-w-lg'>
+				<DialogContent className='max-w-lg dark:bg-primary-foreground/80 backdrop-blur-xs'>
 					<DialogHeader>
 						<DialogTitle>Edit Room</DialogTitle>
 					</DialogHeader>

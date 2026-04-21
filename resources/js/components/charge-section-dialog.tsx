@@ -78,7 +78,7 @@ export default function ChargeSectionDialog({ open, onOpenChange, editingCharge 
 					Add Charge
 				</Button>
 			</DialogTrigger>
-			<DialogContent className='max-h-[90vh] min-w-[90vw] overflow-y-auto lg:min-w-md'>
+			<DialogContent className='max-h-[90vh] min-w-[90vw] overflow-y-auto lg:min-w-md dark:bg-primary-foreground/80 backdrop-blur-xs'>
 				<form onSubmit={handleSubmit}>
 					<FieldGroup>
 						<FieldSet>

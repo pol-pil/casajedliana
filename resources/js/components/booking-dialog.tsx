@@ -237,7 +237,7 @@ const FindClientsDialog = ({
 				onOpenChange(isOpen);
 			}}
 		>
-			<DialogContent onCloseAutoFocus={(event) => event.preventDefault()}>
+			<DialogContent onCloseAutoFocus={(event) => event.preventDefault()} className='dark:bg-primary-foreground/60 backdrop-blur-xs'>
 				<DialogHeader className='flex flex-row items-center gap-4'>
 					<DialogTitle>Find Client</DialogTitle>
 					<Input
@@ -570,7 +570,7 @@ export default function BookingFormDialog({
 			<DialogTrigger asChild>{children}</DialogTrigger>
 
 			<DialogContent
-				className='max-h-[90vh] min-w-[90vw] overflow-y-auto lg:min-w-5xl'
+				className='max-h-[90vh] min-w-[90vw] overflow-y-auto lg:min-w-5xl dark:bg-primary-foreground/80 backdrop-blur-xs'
 				onCloseAutoFocus={(event) => event.preventDefault()}
 			>
 				<form onSubmit={handleSubmit}>

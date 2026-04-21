@@ -23,7 +23,7 @@ export default function CreateUserDialog({ open, setOpen, form, setForm, onSubmi
 				</Button>
 			</DialogTrigger>
 
-			<DialogContent>
+			<DialogContent className='dark:bg-primary-foreground/80 backdrop-blur-xs'>
 				<DialogHeader>
 					<DialogTitle>Create User</DialogTitle>
 				</DialogHeader>
