@@ -96,7 +96,7 @@ export function AppSidebar() {
                                     <ChevronDown className={`ml-auto h-4 w-4 transition-transform ${openReports ? 'rotate-180' : ''}`} />
                                 </SidebarMenuButton>
                             </CollapsibleTrigger>
-                            <CollapsibleContent className='mt-1 ml-6 space-y-1'>
+                            <CollapsibleContent className='mt-1 ml-2 space-y-1'>
                                 <SidebarMenuButton asChild isActive={url.startsWith('/reports/charts')}>
                                     <Link href='/reports/charts'>
                                         <ChartPie className='mr-2 h-4 w-4' />
@@ -125,7 +125,7 @@ export function AppSidebar() {
                                         <ChevronDown className={`ml-auto h-4 w-4 transition-transform ${openAdmin ? 'rotate-180' : ''}`} />
                                     </SidebarMenuButton>
                                 </CollapsibleTrigger>
-                                <CollapsibleContent className='mt-1 ml-6 space-y-1'>
+                                <CollapsibleContent className='mt-1 ml-2 space-y-1'>
                                     {adminNavItems.map((item) => (
                                         <SidebarMenuButton key={item.href} asChild isActive={url === item.href}>
                                             <Link href={item.href}>

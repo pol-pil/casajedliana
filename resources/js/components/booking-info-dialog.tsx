@@ -210,7 +210,7 @@ export default function BookingInfoDialog({ open, onOpenChange, selectedBooking,
 
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
-			<DialogContent className='lg:min-w-200 dark:bg-primary-foreground/40 backdrop-blur-xs'>
+			<DialogContent className='backdrop-blur-xs lg:min-w-200 dark:bg-primary-foreground/40'>
 				<div className='lg:flex'>
 					{/* Left Column */}
 					<div className='mr-4 flex-4 space-y-4 px-4 pr-8 lg:border-r-1'>
@@ -383,13 +383,19 @@ export default function BookingInfoDialog({ open, onOpenChange, selectedBooking,
 								<DialogHeader className='font-semibold'>Bill</DialogHeader>
 								<div className='flex flex-row gap-2'>
 									<Button
+										variant='outline'
 										className='h-6 items-center text-xs'
 										size='sm'
 										onClick={() => setIsAddBookingChargeDialogOpen(true)}
 									>
 										<Plus className='size-3' /> Charge
 									</Button>
-									<Button className='h-6 items-center text-xs' size='sm' onClick={() => setIsAddPaymentDialogOpen(true)}>
+									<Button
+										variant='outline'
+										className='h-6 items-center text-xs'
+										size='sm'
+										onClick={() => setIsAddPaymentDialogOpen(true)}
+									>
 										<Plus className='size-3' /> Payment
 									</Button>
 								</div>
@@ -398,9 +404,11 @@ export default function BookingInfoDialog({ open, onOpenChange, selectedBooking,
 								<div className='flex justify-between text-primary-foreground dark:text-primary'>
 									<span className='items-center'>
 										Room {selectedBooking?.room?.room_number}
-                                        <span className='text-xs pl-1'>({summary.weekday > 0 && `${summary.weekday} Weekday`}
-										{summary.weekday > 0 && summary.weekend > 0 && ' / '}
-										{summary.weekend > 0 && `${summary.weekend} Weekend`})</span>
+										<span className='pl-1 text-xs'>
+											({summary.weekday > 0 && `${summary.weekday} Weekday`}
+											{summary.weekday > 0 && summary.weekend > 0 && ' / '}
+											{summary.weekend > 0 && `${summary.weekend} Weekend`})
+										</span>
 									</span>
 									<span>
 										₱{' '}
@@ -410,7 +418,9 @@ export default function BookingInfoDialog({ open, onOpenChange, selectedBooking,
 									</span>
 								</div>
 								<div className='flex justify-between'>
-									<span>Discount<span className='text-xs pl-1'>({selectedBooking?.rate?.name || 'N/A'})</span></span>
+									<span>
+										Discount<span className='pl-1 text-xs'>({selectedBooking?.rate?.name || 'N/A'})</span>
+									</span>
 									<span>-₱ {Number(selectedBooking?.pricing_details?.discount_amount ?? 0).toFixed(2)}</span>
 								</div>
 								{(selectedBooking?.booking_charges ?? [])
