@@ -5,14 +5,14 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\HotelSetting;
-use Illuminate\Support\Facades\Storage; // ✅ IMPORTANT
-use Inertia\Inertia; // ✅ IMPORTANT
+use Illuminate\Support\Facades\Storage;
+use Inertia\Inertia;
 
 class HotelInfoController extends Controller
 {
     public function index()
     {
-        return Inertia::render('AdminPage/HotelInfo'); // ✅ safer
+        return Inertia::render('AdminPage/HotelInfo');
     }
 
     public function store(Request $request)
@@ -22,69 +22,79 @@ class HotelInfoController extends Controller
             'logo' => 'nullable|file|mimes:jpg,jpeg,png,svg|max:2048',
         ]);
 
-        $hotel = HotelSetting::first();
-
-        if (!$hotel) {
-            $hotel = new HotelSetting();
-        }
+        $hotel = HotelSetting::first() ?? new HotelSetting();
 
         $hotel->hotel_name = $request->hotel_name;
 
-        // ✅ HANDLE LOGO
+        // HANDLE LOGO
         if ($request->hasFile('logo')) {
 
-            // delete old logo
             if ($hotel->logo && Storage::disk('public')->exists($hotel->logo)) {
                 Storage::disk('public')->delete($hotel->logo);
             }
 
-            // store new logo
             $path = $request->file('logo')->store('logos', 'public');
-
             $hotel->logo = $path;
         }
 
         $hotel->save();
 
-        return back();
+        return back()->with('success', 'Hotel info saved');
     }
 
+    // =========================
+    // 🔥 BACKUP DATABASE
+    // =========================
     public function backup()
     {
-        $db = config('database.connections.mysql.database');
+        $db   = config('database.connections.mysql.database');
         $user = config('database.connections.mysql.username');
         $pass = config('database.connections.mysql.password');
 
         $filename = 'backup_' . now()->format('Y-m-d_H-i-s') . '.sql';
         $path = storage_path("app/{$filename}");
 
-        // ⚠️ Windows (XAMPP)
-        $mysqldump = "C:\\xampp\\mysql\\bin\\mysqldump";
+        // ✅ XAMPP PATH (adjust if needed)
+        $mysqldump = '"C:\\xampp\\mysql\\bin\\mysqldump.exe"';
 
-        $command = "{$mysqldump} --user={$user} --password={$pass} {$db} > {$path}";
-        exec($command);
+        // ✅ IMPORTANT: include data + structure
+        $command = "{$mysqldump} --user={$user} --password=\"{$pass}\" --databases {$db} --routines --triggers > \"{$path}\"";
+
+        exec($command, $output, $result);
+
+        // ❌ if failed
+        if ($result !== 0 || !file_exists($path)) {
+            return back()->with('error', 'Backup failed. Check mysqldump path.');
+        }
 
         return response()->download($path)->deleteFileAfterSend(true);
     }
 
-
+    // =========================
+    // 🔥 RESTORE DATABASE
+    // =========================
     public function restore(Request $request)
     {
         $request->validate([
             'backup' => 'required|file|mimes:sql',
         ]);
 
-        $file = $request->file('backup')->getPathname();
+        $file = $request->file('backup')->getRealPath();
 
-        $db = config('database.connections.mysql.database');
+        $db   = config('database.connections.mysql.database');
         $user = config('database.connections.mysql.username');
         $pass = config('database.connections.mysql.password');
 
-        // ⚠️ Windows (XAMPP)
-        $mysql = "C:\\xampp\\mysql\\bin\\mysql";
+        // ✅ XAMPP PATH
+        $mysql = '"C:\\xampp\\mysql\\bin\\mysql.exe"';
 
-        $command = "{$mysql} --user={$user} --password={$pass} {$db} < {$file}";
-        exec($command);
+        $command = "{$mysql} --user={$user} --password=\"{$pass}\" {$db} < \"{$file}\"";
+
+        exec($command, $output, $result);
+
+        if ($result !== 0) {
+            return back()->with('error', 'Restore failed. Check file or MySQL path.');
+        }
 
         return back()->with('success', 'Database restored successfully');
     }

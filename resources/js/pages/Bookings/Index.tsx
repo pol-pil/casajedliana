@@ -229,9 +229,23 @@ export default function Index() {
 
 	const { bookings, calendarBookings, rooms, stats, filters } = usePage<PageProps>().props;
 
+	const page = usePage() as any;
+	const url = page?.url || '';
+
 	const [search, setSearch] = useState(filters.search || '');
 	const isFirstRender = useRef(true);
 
+	useEffect(() => {
+		if (!url) return;
+
+		if (url.includes('create=true')) {
+			setIsDialogOpen(true);
+
+			window.history.replaceState({}, '', '/bookings');
+		}
+	}, [url]);
+
+	
 	useEffect(() => {
 		if (isFirstRender.current) {
 			isFirstRender.current = false;

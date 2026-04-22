@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
-import { Head, usePage} from '@inertiajs/react';
+import { Head, usePage, router } from '@inertiajs/react';
 import { format } from 'date-fns';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { DoorOpen, LogOut, Lock, Check } from 'lucide-react';
+import { DoorOpen, Lock, Check, Plus, Search, LogIn, LogOut, Package, BedDouble } from 'lucide-react';
 import { useDateRange } from '@/contexts/date-range-context';
 
 type RoomStatus = 'Available' | 'Reserved' | 'Occupied' | 'Maintenance';
@@ -139,6 +139,14 @@ export default function Dashboard() {
 		}))
 		.filter((room) => (activeFilter === 'All' ? true : room.status === activeFilter));
 
+	function handleNewReservation() {
+		router.visit('/bookings?create=true');
+	}
+
+	function handleSearchPage() {
+		router.visit('/reports/history');
+	}
+
 	return (
 		<AppLayout breadcrumbs={breadcrumbs} showDatePicker>
 			<Head title='Dashboard' />
@@ -200,8 +208,41 @@ export default function Dashboard() {
 							</div>
 						))}
 					</div>
+				</div>
 
-					{/* ── Arrivals / Departures table ── */}
+				{/* RIGHT SIDE - QUICK ACTION */}
+				<div className='flex flex-col'>
+					<div className='mt-auto lg:mt-100'>
+						<Card>
+							<CardHeader>
+								<CardTitle>Quick Action</CardTitle>
+							</CardHeader>
+
+							<CardContent className='grid grid-cols-2 gap-3'>
+								<Button
+									onClick={handleNewReservation}
+									variant='outline'
+									className='flex h-24 flex-col items-center justify-center gap-2'
+								>
+									<Plus className='h-5 w-5' />
+									<span className='text-xs'>New Reservation</span>
+								</Button>
+
+								<Button
+									onClick={handleSearchPage}
+									variant='secondary'
+									className='flex h-24 flex-col items-center justify-center gap-2'
+								>
+									<Search className='h-5 w-5' />
+									<span className='text-xs'>Search</span>
+								</Button>
+							</CardContent>
+						</Card>
+					</div>
+				</div>
+
+				{/* ── Arrivals / Departures table ── */}
+				<div className='lg:col-span-4'>
 					<Card>
 						<CardHeader className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
 							<CardTitle>Arrival / Departure</CardTitle>
@@ -214,7 +255,7 @@ export default function Dashboard() {
 						</CardHeader>
 						<CardContent>
 							<div className='w-full overflow-x-auto'>
-								<table className='w-full min-w-[900px] border-separate border-spacing-y-1 text-sm'>
+								<table className='w-full min-w-[1000px] border-separate border-spacing-y-1 text-sm'>
 									<thead>
 										<tr className='border-b text-left'>
 											<th className='py-2 whitespace-nowrap'>Check-in Date</th>
