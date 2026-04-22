@@ -1,14 +1,14 @@
 import { Head, usePage } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-
+import { Tooltip as UiTooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, BarChart, Bar, Cell } from 'recharts';
 
-import { Wallet, CreditCard, AlertCircle, Banknote, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { Wallet, CreditCard, AlertCircle, Banknote, ArrowUpRight, ArrowDownRight, Info } from 'lucide-react';
+
 import { BreadcrumbItem } from '@/types';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -29,10 +29,10 @@ type Distribution = {
 type PageProps = {
 	monthlyData: ChartData[];
 	yearlyData: ChartData[];
-	clientDistribution: Distribution[]; // ✅ NEW
+	clientDistribution: Distribution[];
 	kpis: {
 		revenue: number;
-		payments: number;
+		expected: number;
 		balance: number;
 		cash: number;
 		adr: number;
@@ -46,36 +46,38 @@ export default function Charts() {
 
 	const [view, setView] = useState<'monthly' | 'yearly'>('monthly');
 
-	const chartData = view === 'monthly' ? monthlyData : yearlyData;
+	const chartData = useMemo(() => {
+		return view === 'monthly' ? monthlyData : yearlyData;
+	}, [view, monthlyData, yearlyData]);
 
 	/*
-    |--------------------------------------------------------------------------
-    | 🎨 Dynamic Colors (auto assign)
-    |--------------------------------------------------------------------------
-    */
-	const colors = ['#3b82f6', '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444'];
+  |--------------------------------------------------------------------------
+  | 🎨 Colors
+  |--------------------------------------------------------------------------
+  */
+	const { distributionPercent, topDistribution } = useMemo(() => {
+		const colors = ['#3b82f6', '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444'];
 
-	const distribution = clientDistribution.map((item, index) => ({
-		...item,
-		color: colors[index % colors.length],
-	}));
-
-	/*
-    |--------------------------------------------------------------------------
-    | 📊 Convert to % (for chart display)
-    |--------------------------------------------------------------------------
-    */
-
-	const total = distribution.reduce((sum, item) => sum + item.value, 0);
-
-	const distributionPercent = distribution
-		.map((item) => ({
+		const distribution = clientDistribution.map((item, index) => ({
 			...item,
-			value: total > 0 ? Math.round((item.value / total) * 100) : 0,
-		}))
-		.sort((a, b) => b.value - a.value);
+			color: colors[index % colors.length],
+		}));
 
-	const topDistribution = distributionPercent.slice(0, 5);
+		const total = distribution.reduce((sum, item) => sum + item.value, 0);
+
+		const percent = distribution
+			.map((item) => ({
+				...item,
+				percentage: total > 0 ? Math.round((item.value / total) * 100) : 0,
+				count: item.value, // 👈 keep original
+			}))
+			.sort((a, b) => b.value - a.value);
+
+		return {
+			distributionPercent: percent,
+			topDistribution: percent.slice(0, 5),
+		};
+	}, [clientDistribution]);
 
 	const getTrend = (value: number) => {
 		if (value > 0) return 'up';
@@ -104,47 +106,82 @@ export default function Charts() {
 				</div>
 
 				{/* KPI CARDS */}
-				<div className='grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4'>
-					<Card>
-						<CardHeader className='flex items-center gap-2 pb-2'>
-							<Wallet className='h-4 w-4 text-blue-500' />
-							<CardTitle className='text-xs text-muted-foreground uppercase'>Revenue</CardTitle>
-						</CardHeader>
-						<CardContent>
-							<p className='text-xl font-bold sm:text-2xl'>₱ {kpis.revenue.toLocaleString()}</p>
-						</CardContent>
-					</Card>
+				<TooltipProvider>
+					<div className='grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4'>
+						<UiTooltip>
+							<TooltipTrigger asChild>
+								<Card className='cursor-pointer'>
+									<CardHeader className='flex items-center gap-2 pb-2'>
+										<Wallet className='h-4 w-4 text-blue-500' />
+										<CardTitle className='text-xs text-muted-foreground uppercase'>Revenue (Collected)</CardTitle>
+									</CardHeader>
+									<CardContent>
+										<p className='text-xl font-bold sm:text-2xl'>₱ {kpis.revenue.toLocaleString()}</p>
+									</CardContent>
+								</Card>
+							</TooltipTrigger>
 
-					<Card>
-						<CardHeader className='flex items-center gap-2 pb-2'>
-							<CreditCard className='h-4 w-4 text-green-500' />
-							<CardTitle className='text-xs text-muted-foreground uppercase'>Payments</CardTitle>
-						</CardHeader>
-						<CardContent>
-							<p className='text-xl font-bold sm:text-2xl'>₱ {kpis.payments.toLocaleString()}</p>
-						</CardContent>
-					</Card>
+							<TooltipContent className='rounded-md border bg-white px-3 py-2 shadow-sm dark:bg-neutral-900'>
+								<p className='text-sm text-muted-foreground'>Total actual cash received from payments.</p>
+							</TooltipContent>
+						</UiTooltip>
 
-					<Card>
-						<CardHeader className='flex items-center gap-2 pb-2'>
-							<AlertCircle className='h-4 w-4 text-red-500' />
-							<CardTitle className='text-xs text-muted-foreground uppercase'>Balance</CardTitle>
-						</CardHeader>
-						<CardContent>
-							<p className='text-xl font-bold sm:text-2xl'>₱ {kpis.balance.toLocaleString()}</p>
-						</CardContent>
-					</Card>
+						<UiTooltip>
+							<TooltipTrigger asChild>
+								<Card className='cursor-pointer'>
+									<CardHeader className='flex items-center gap-2 pb-2'>
+										<CreditCard className='h-4 w-4 text-green-500' />
+										<CardTitle className='text-xs text-muted-foreground uppercase'>Expected Revenue</CardTitle>
+									</CardHeader>
 
-					<Card>
-						<CardHeader className='flex items-center gap-2 pb-2'>
-							<Banknote className='h-4 w-4 text-yellow-500' />
-							<CardTitle className='text-xs text-muted-foreground uppercase'>Cash</CardTitle>
-						</CardHeader>
-						<CardContent>
-							<p className='text-xl font-bold sm:text-2xl'>₱ {kpis.cash.toLocaleString()}</p>
-						</CardContent>
-					</Card>
-				</div>
+									<CardContent>
+										<p className='text-xl font-bold sm:text-2xl'>₱ {kpis.expected.toLocaleString()}</p>
+									</CardContent>
+								</Card>
+							</TooltipTrigger>
+
+							<TooltipContent className='rounded-md border bg-white px-3 py-2 shadow-sm dark:bg-neutral-900'>
+								<p className='text-sm text-muted-foreground'>Total value of all bookings including charges.</p>
+							</TooltipContent>
+						</UiTooltip>
+
+						<UiTooltip>
+							<TooltipTrigger asChild>
+								<Card className='cursor-pointer'>
+									<CardHeader className='flex items-center gap-2 pb-2'>
+										<AlertCircle className='h-4 w-4 text-red-500' />
+										<CardTitle className='text-xs text-muted-foreground uppercase'>Outstanding Balance</CardTitle>
+									</CardHeader>
+									<CardContent>
+										<p className='text-xl font-bold sm:text-2xl'>₱ {kpis.balance.toLocaleString()}</p>
+									</CardContent>
+								</Card>
+							</TooltipTrigger>
+
+							<TooltipContent className='rounded-md border bg-white px-3 py-2 shadow-sm dark:bg-neutral-900'>
+								<p className='text-sm text-muted-foreground'>Unpaid amount remaining from all bookings.</p>
+							</TooltipContent>
+						</UiTooltip>
+
+						<UiTooltip>
+							<TooltipTrigger asChild>
+								<Card className='cursor-pointer'>
+									<CardHeader className='flex items-center gap-2 pb-2'>
+										<Banknote className='h-4 w-4 text-yellow-500' />
+										<CardTitle className='text-xs text-muted-foreground uppercase'>Cash Collected</CardTitle>
+									</CardHeader>
+									<CardContent>
+										<p className='text-xl font-bold sm:text-2xl'>₱ {kpis.cash.toLocaleString()}</p>
+									</CardContent>
+								</Card>
+							</TooltipTrigger>
+
+							<TooltipContent className='rounded-md border bg-white px-3 py-2 shadow-sm dark:bg-neutral-900'>
+								<p className='text-sm text-muted-foreground'>Payments received specifically via cash method.</p>
+							</TooltipContent>
+						</UiTooltip>
+					</div>
+				</TooltipProvider>
 
 				{/* MAIN CHART */}
 				<div className='grid grid-cols-1 gap-6 lg:grid-cols-3'>
@@ -155,98 +192,174 @@ export default function Charts() {
 
 						<CardContent>
 							<div className='h-[400px] w-full'>
-								<ResponsiveContainer>
-									<LineChart data={chartData}>
-										<CartesianGrid strokeDasharray='3 3' vertical={false} />
-										<XAxis dataKey='label' />
-										<YAxis />
-										<Tooltip />
-										<Line type='monotone' dataKey='revenue' stroke='#3b82f6' strokeWidth={3} dot={false} />
-									</LineChart>
-								</ResponsiveContainer>
+								{chartData.length === 0 ? (
+									<div className='flex h-full items-center justify-center text-muted-foreground'>No data available</div>
+								) : (
+									<ResponsiveContainer>
+										<LineChart data={chartData}>
+											<CartesianGrid strokeDasharray='3 3' vertical={false} />
+											<XAxis dataKey='label' />
+
+											{/* ✅ FIX: force proper scaling */}
+											<YAxis domain={[0, 'auto']} />
+
+											{/* ✅ FIX: better tooltip (we’ll improve more below) */}
+											<Tooltip
+												content={({ active, payload, label }) => {
+													if (active && payload && payload.length) {
+														return (
+															<div className='rounded-md border bg-white px-3 py-2 shadow-sm dark:bg-neutral-900'>
+																<p className='text-sm font-medium'>{label}</p>
+																<p className='text-sm text-blue-500'>
+																	₱ {Number(payload?.[0]?.value || 0).toLocaleString()}
+																</p>
+															</div>
+														);
+													}
+													return null;
+												}}
+											/>
+
+											{/* ✅ FIX: make line visible */}
+											<Line
+												type='monotone'
+												dataKey='revenue'
+												stroke='#3b82f6'
+												strokeWidth={3}
+												dot={{ r: 4 }} // 👈 IMPORTANT
+												activeDot={{ r: 6 }} // 👈 hover effect
+											/>
+										</LineChart>
+									</ResponsiveContainer>
+								)}
 							</div>
 						</CardContent>
 					</Card>
 
 					{/* SIDE KPIs */}
-					<div className='space-y-4'>
-						<Card>
-							<CardHeader>
-								<CardTitle className='text-xs text-muted-foreground'>ADR</CardTitle>
-							</CardHeader>
-							<CardContent className='flex items-center justify-between'>
-								<span>₱ {kpis.adr.toLocaleString()}</span>
+					<TooltipProvider>
+						<div className='space-y-4'>
+							<Card>
+								<CardHeader>
+									<CardTitle className='text-xs text-muted-foreground'>ADR (Avg Daily Rate)</CardTitle>
+								</CardHeader>
+								<CardContent className='flex items-center justify-between'>
+									<UiTooltip>
+										<TooltipTrigger asChild>
+											<span className='cursor-pointer'>₱ {kpis.adr.toLocaleString()}</span>
+										</TooltipTrigger>
+										<TooltipContent className='rounded-md border bg-white px-3 py-2 shadow-sm dark:bg-neutral-900'>
+											<p className='text-sm text-muted-foreground'>
+												Average Daily Rate — average revenue earned per occupied room.
+											</p>
+										</TooltipContent>
+									</UiTooltip>
+									{getTrend(kpis.adr) === 'up' && <ArrowUpRight className='h-4 w-4 text-green-500' />}
+									{getTrend(kpis.adr) === 'down' && <ArrowDownRight className='h-4 w-4 text-red-500' />}
+								</CardContent>
+							</Card>
 
-								{getTrend(kpis.adr) === 'up' && <ArrowUpRight className='h-4 w-4 text-green-500' />}
-								{getTrend(kpis.adr) === 'down' && <ArrowDownRight className='h-4 w-4 text-red-500' />}
-							</CardContent>
-						</Card>
+							<Card>
+								<CardHeader>
+									<CardTitle className='text-xs text-muted-foreground'>RevPAR (Revenue / Room)</CardTitle>
+								</CardHeader>
+								<CardContent className='flex items-center justify-between'>
+									<UiTooltip>
+										<TooltipTrigger asChild>
+											<span className='cursor-pointer'>₱ {kpis.revpar.toLocaleString()}</span>
+										</TooltipTrigger>
 
-						<Card>
-							<CardHeader>
-								<CardTitle className='text-xs text-muted-foreground'>RevPAR</CardTitle>
-							</CardHeader>
-							<CardContent className='flex items-center justify-between'>
-								<span>₱ {kpis.revpar.toLocaleString()}</span>
+										<TooltipContent className='rounded-md border bg-white px-3 py-2 shadow-sm dark:bg-neutral-900'>
+											<p className='text-sm text-muted-foreground'>
+												Revenue Per Available Room — calculated as ADR × occupancy rate.
+											</p>
+										</TooltipContent>
+									</UiTooltip>
+									{getTrend(kpis.revpar) === 'up' && <ArrowUpRight className='h-4 w-4 text-green-500' />}
+									{getTrend(kpis.revpar) === 'down' && <ArrowDownRight className='h-4 w-4 text-red-500' />}
+								</CardContent>
+							</Card>
 
-								{getTrend(kpis.revpar) === 'up' && <ArrowUpRight className='h-4 w-4 text-green-500' />}
-								{getTrend(kpis.revpar) === 'down' && <ArrowDownRight className='h-4 w-4 text-red-500' />}
-							</CardContent>
-						</Card>
+							<Card>
+								<CardHeader>
+									<CardTitle className='text-xs text-muted-foreground'>Occupancy (Room Usage %)</CardTitle>
+								</CardHeader>
+								<CardContent className='flex items-center justify-between'>
+									<UiTooltip>
+										<TooltipTrigger asChild>
+											<span className='cursor-pointer'>{kpis.occupancy}%</span>
+										</TooltipTrigger>
 
-						<Card>
-							<CardHeader>
-								<CardTitle className='text-xs text-muted-foreground'>Occupancy</CardTitle>
-							</CardHeader>
-							<CardContent className='flex items-center justify-between'>
-								<span>{kpis.occupancy}%</span>
-
-								{getTrend(kpis.occupancy) === 'up' && <ArrowUpRight className='h-4 w-4 text-green-500' />}
-								{getTrend(kpis.occupancy) === 'down' && <ArrowDownRight className='h-4 w-4 text-red-500' />}
-							</CardContent>
-						</Card>
-					</div>
+										<TooltipContent className='rounded-md border bg-white px-3 py-2 shadow-sm dark:bg-neutral-900'>
+											<p className='text-sm text-muted-foreground'>
+												Occupancy Rate — percentage of available rooms that are currently occupied.
+											</p>
+										</TooltipContent>
+									</UiTooltip>
+									{getTrend(kpis.occupancy) === 'up' && <ArrowUpRight className='h-4 w-4 text-green-500' />}
+									{getTrend(kpis.occupancy) === 'down' && <ArrowDownRight className='h-4 w-4 text-red-500' />}
+								</CardContent>
+							</Card>
+						</div>
+					</TooltipProvider>
 				</div>
 
-				{/* Discount DISTRIBUTION */}
+				{/* DISTRIBUTION */}
 				<Card>
 					<CardHeader>
 						<CardTitle>Discount Distribution</CardTitle>
 					</CardHeader>
 
-					<CardContent className='grid grid-cols-1 items-center gap-6 border-t px-4 py-4 lg:grid-cols-[1.5fr_1fr]'>
-						<div className='h-[320px] w-full md:h-[380px]'>
-							<ResponsiveContainer>
-								<BarChart
-									layout='vertical'
-									data={topDistribution}
-									margin={{right: 10}}
-									barSize={50}
-									barCategoryGap='10%'
-								>
-									<CartesianGrid strokeDasharray='3 3' horizontal={false} />
+					<CardContent className='grid grid-cols-1 gap-6 border-t px-4 py-4 lg:grid-cols-[1.5fr_1fr]'>
+						<div className='h-[320px] w-full'>
+							{topDistribution.length === 0 ? (
+								<div className='flex h-full items-center justify-center text-muted-foreground'>No distribution data</div>
+							) : (
+								<ResponsiveContainer>
+									<BarChart
+										layout='vertical'
+										data={topDistribution}
+										margin={{ right: 10 }}
+										barSize={50}
+										barCategoryGap='10%'
+									>
+										<CartesianGrid strokeDasharray='3 3' horizontal={false} />
+										<XAxis type='number' tickFormatter={(v) => `${v}%`} />
+										<YAxis type='category' dataKey='name' width={180} tick={{ fontSize: 17 }} />
+										<Tooltip
+											content={({ active, payload }) => {
+												if (active && payload && payload.length) {
+													const item = payload[0]?.payload;
 
-									<XAxis type='number' tickFormatter={(v) => `${v}%`} />
+													return (
+														<div className='rounded-md border bg-white px-3 py-2 shadow-sm dark:bg-neutral-900'>
+															{/* ✅ Correct title */}
+															<p className='text-xs text-muted-foreground'>{item?.name}</p>
 
-									<YAxis type='category' dataKey='name' width={180} tick={{ fontSize: 17 }} />
+															{/* ✅ Show actual count (not %) */}
+															<p className='text-sm font-semibold text-blue-500'>{item?.count} bookings</p>
+														</div>
+													);
+												}
+												return null;
+											}}
+										/>
 
-									<Tooltip formatter={(v: number) => `${v}%`} />
-
-									<Bar dataKey='value' radius={[8, 8, 8, 8]}>
-										{topDistribution.map((item, i) => (
-											<Cell key={i} fill={item.color} />
-										))}
-									</Bar>
-								</BarChart>
-							</ResponsiveContainer>
+										<Bar dataKey='percentage' radius={[8, 8, 8, 8]}>
+											{topDistribution.map((item, i) => (
+												<Cell key={i} fill={item.color} />
+											))}
+										</Bar>
+									</BarChart>
+								</ResponsiveContainer>
+							)}
 						</div>
+
 						<div className='space-y-2 text-sm'>
 							{distributionPercent.map((item) => (
 								<div key={item.name} className='flex items-center justify-between'>
-									<span className='max-w-[160px] overflow-hidden text-ellipsis whitespace-nowrap' title={item.name}>
-										{item.name}
-									</span>
-									<span style={{ color: item.color }}>{item.value}%</span>
+									<span className='max-w-[160px] overflow-hidden text-ellipsis whitespace-nowrap'>{item.name}</span>
+									<span style={{ color: item.color }}>{item.percentage}%</span>
 								</div>
 							))}
 						</div>
