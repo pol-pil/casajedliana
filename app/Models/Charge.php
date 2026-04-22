@@ -14,9 +14,12 @@ class Charge extends Model
         'value',
         'type',
         'is_active',
+        'is_custom',
     ];
 
     protected $casts = [
         'value' => 'decimal:2',
+        'is_active' => 'boolean',
+        'is_custom' => 'boolean',
     ];
 }

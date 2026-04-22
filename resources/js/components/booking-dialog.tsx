@@ -708,8 +708,8 @@ export default function BookingFormDialog({
 															value={customDiscountType}
 															onChange={(value) => setCustomDiscountType(value as 'percentage' | 'exact')}
 															options={[
-																{ value: 'percentage', label: 'Percentage %' },
-																{ value: 'exact', label: 'Exact ₱' },
+																{ value: 'percentage', label: 'Percentage' },
+																{ value: 'exact', label: 'Exact' },
 															]}
 														/>
 														<InputComponent

@@ -18,22 +18,16 @@ type Discount = {
 export function DiscountChart({ discounts }: { discounts: Discount[] }) {
 	const id = 'discount-pie';
 
-	const chartData = discounts.map((d, index) => ({
-		name: d.name,
-		total: d.totalDiscount,
-		value: d.value,
-		fill: `var(--chart-${(index % 10) + 1})`,
-	}));
-
-	// fallback
-	if (chartData.length === 0) {
-		chartData.push({
-			name: 'No Data',
-			total: 1,
-			value: 0,
-			fill: 'var(--chart-1)',
-		});
-	}
+	const chartData = React.useMemo(
+		() =>
+			discounts.map((discount, index) => ({
+				name: discount.name,
+				total: discount.totalDiscount,
+				value: discount.value,
+				fill: `var(--chart-${(index % 10) + 1})`,
+			})),
+		[discounts],
+	);
 
 	const chartConfig: ChartConfig = {
 		total: { label: 'Total Discount' },
@@ -52,9 +46,38 @@ export function DiscountChart({ discounts }: { discounts: Discount[] }) {
 
 	const [active, setActive] = React.useState(chartData[0]?.name || '');
 
-	const activeIndex = React.useMemo(() => chartData.findIndex((d) => d.name === active), [active, chartData]);
+	React.useEffect(() => {
+		if (!chartData.length) {
+			setActive('');
+			return;
+		}
+
+		if (!chartData.some((item) => item.name === active)) {
+			setActive(chartData[0].name);
+		}
+	}, [active, chartData]);
+
+	const activeIndex = React.useMemo(() => {
+		const index = chartData.findIndex((item) => item.name === active);
+
+		return index >= 0 ? index : 0;
+	}, [active, chartData]);
 
 	const discountNames = React.useMemo(() => chartData.map((d) => d.name), [chartData]);
+
+	if (!discounts.length || total <= 0) {
+		return (
+			<Card>
+				<CardHeader>
+					<CardTitle>Total Discount</CardTitle>
+					<CardDescription>No discount data available for the selected dates</CardDescription>
+				</CardHeader>
+				<CardContent className='flex h-[300px] items-center justify-center'>
+					<p className='text-muted-foreground'>Select a different date range to view discount usage</p>
+				</CardContent>
+			</Card>
+		);
+	}
 
 	return (
 		<Card data-chart={id}>
@@ -118,6 +141,10 @@ export function DiscountChart({ discounts }: { discounts: Discount[] }) {
 								content={({ viewBox }) => {
 									if (viewBox && 'cx' in viewBox && 'cy' in viewBox) {
 										const activeData = chartData[activeIndex];
+										if (!activeData) {
+											return null;
+										}
+
 										const percentage = ((activeData.total / total) * 100).toFixed(1);
 
 										return (

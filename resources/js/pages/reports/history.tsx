@@ -33,7 +33,13 @@ type Booking = {
 	check_out: string;
 	status: string;
 	total_amount: number;
-	payments?: any[];
+	payments?: Array<{
+		id: number;
+		amount: number;
+		payment_type: string;
+		payment_method: string;
+		created_at: string;
+	}>;
 	booking_charges?: any[];
 };
 

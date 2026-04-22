@@ -86,6 +86,7 @@ type Booking = {
 		amount: number;
 		payment_type: string;
 		payment_method: string;
+		created_at: string;
 	}>;
 	booking_charges?: Array<{
 		id: number;
@@ -145,17 +146,31 @@ interface BookingInfoDialogProps {
 	onOpenChange: (open: boolean) => void;
 	selectedBooking: Booking | null;
 	onEdit: (booking: Booking) => void;
+	showEditButton?: boolean;
 }
 
-export default function BookingInfoDialog({ open, onOpenChange, selectedBooking, onEdit }: BookingInfoDialogProps) {
+export default function BookingInfoDialog({
+	open,
+	onOpenChange,
+	selectedBooking,
+	onEdit,
+	showEditButton = true,
+}: BookingInfoDialogProps) {
 	const [isAddBookingChargeDialogOpen, setIsAddBookingChargeDialogOpen] = useState(false);
 	const [isAddPaymentDialogOpen, setIsAddPaymentDialogOpen] = useState(false);
+	const [selectedPayment, setSelectedPayment] = useState<Booking['payments'][number] | null>(null);
 
 	const formatDate = (dateString: string) =>
 		new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
 	const formatTime = (dateString: string) =>
 		new Date(dateString).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+
+	const formatPaymentLabel = (value: string) =>
+		value
+			.split('_')
+			.map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+			.join(' ');
 
 	const StatusBadge = ({ status }: { status: keyof typeof statusConfig }) => {
 		const config = statusConfig[status] ?? {
@@ -454,10 +469,15 @@ export default function BookingInfoDialog({ open, onOpenChange, selectedBooking,
 									</span>
 								</div>
 								{selectedBooking?.payments?.map((payment) => (
-									<div key={payment.id} className='flex justify-between'>
-										<span>{payment.payment_type.charAt(0).toUpperCase() + payment.payment_type.slice(1)}</span>
+									<button
+										key={payment.id}
+										type='button'
+										className='flex w-full justify-between rounded-md text-left transition hover:bg-muted/60'
+										onClick={() => setSelectedPayment(payment)}
+									>
+										<span>{formatPaymentLabel(payment.payment_type)}</span>
 										<span>-{payment.amount}</span>
-									</div>
+									</button>
 								))}
 								<Separator className='my-2' />
 								<div className='flex justify-between font-bold text-primary-foreground dark:text-primary'>
@@ -477,14 +497,57 @@ export default function BookingInfoDialog({ open, onOpenChange, selectedBooking,
 				</div>
 
 				<DialogFooter className='-mt-8'>
-					<DialogClose asChild>
-						<Button type='button' variant='outline' onClick={() => selectedBooking && onEdit(selectedBooking)}>
-							Edit
-						</Button>
-					</DialogClose>
+					{showEditButton && (
+						<DialogClose asChild>
+							<Button type='button' variant='outline' onClick={() => selectedBooking && onEdit(selectedBooking)}>
+								Edit
+							</Button>
+						</DialogClose>
+					)}
 					{selectedBooking?.id !== undefined && <SoaPdf booking_id={selectedBooking.id} />}
 				</DialogFooter>
 			</DialogContent>
+
+			<Dialog open={selectedPayment !== null} onOpenChange={(isOpen) => !isOpen && setSelectedPayment(null)}>
+				<DialogContent className='max-h-[90vh] min-w-[90vw] overflow-y-auto lg:min-w-md dark:bg-primary-foreground/80 backdrop-blur-xs'>
+					<div className='space-y-4'>
+						<DialogHeader>
+							<span>Payment Info</span>
+						</DialogHeader>
+						<DialogDescription className='space-y-2'>
+							<div className='flex justify-between gap-4'>
+								<span>Reference No.</span>
+								<span>PID-{selectedPayment?.id}</span>
+							</div>
+							<div className='flex justify-between gap-4'>
+								<span>Amount</span>
+								<span>₱ {Number(selectedPayment?.amount ?? 0).toFixed(2)}</span>
+							</div>
+							<div className='flex justify-between gap-4'>
+								<span>Payment Method</span>
+								<span>{selectedPayment ? formatPaymentLabel(selectedPayment.payment_method) : ''}</span>
+							</div>
+							<div className='flex justify-between gap-4'>
+								<span>Payment Type</span>
+								<span>{selectedPayment ? formatPaymentLabel(selectedPayment.payment_type) : ''}</span>
+							</div>
+							<div className='flex justify-between gap-4'>
+								<span>Payment Date</span>
+								<span>
+									{selectedPayment?.created_at
+										? `${formatDate(selectedPayment.created_at)} ${formatTime(selectedPayment.created_at)}`
+										: ''}
+								</span>
+							</div>
+						</DialogDescription>
+						<DialogFooter>
+							<Button type='button' variant='outline' onClick={() => setSelectedPayment(null)}>
+								Close
+							</Button>
+						</DialogFooter>
+					</div>
+				</DialogContent>
+			</Dialog>
 		</Dialog>
 	);
 }

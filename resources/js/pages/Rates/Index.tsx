@@ -34,7 +34,9 @@ type PageData = {
 	rates: Rate[];
 	charges: Charge[];
 	bookingTypes: BookingType[];
-	stats: Stats;
+	chartRates: Rate[];
+	chartStats: Stats;
+	chartDiscounts: Discount[];
 };
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -52,23 +54,24 @@ type Discount = {
 };
 
 export default function Index() {
-	const { rates, charges, bookingTypes, stats, discounts } = usePage().props as unknown as {
+	const { rates, charges, bookingTypes, chartRates, chartStats, chartDiscounts } = usePage().props as unknown as {
 		rates: Rate[];
 		charges: Charge[];
 		bookingTypes: BookingType[];
-		stats: Stats;
-		discounts: Discount[];
+		chartRates: Rate[];
+		chartStats: Stats;
+		chartDiscounts: Discount[];
 	};
 
 	return (
-		<AppLayout breadcrumbs={breadcrumbs}>
+		<AppLayout breadcrumbs={breadcrumbs} showDatePicker>
 			<div className='px-8 py-4 xl:overflow-hidden'>
 				<Head title='Configurations' />
 
 				<div className='grid h-full gap-4 xl:grid-cols-3'>
 					{/* Column 1 */}
 					<div className='flex h-full flex-col space-y-4 overflow-hidden'>
-						<RatesChart rates={rates} totalBookings={stats.totalBookings} />
+						<RatesChart rates={chartRates} totalBookings={chartStats.totalBookings} />
 						<div className='flex-1'>
 							<RatesSection rates={rates} />
 						</div>
@@ -76,7 +79,7 @@ export default function Index() {
 
 					{/* Column 2 */}
 					<div className='flex h-full flex-col space-y-4 overflow-hidden'>
-						<DiscountChart discounts={discounts} />
+						<DiscountChart discounts={chartDiscounts} />
 						<div className='flex-1'>
 							<BookingTypesSection bookingTypes={bookingTypes} />
 						</div>

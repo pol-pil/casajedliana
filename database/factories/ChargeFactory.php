@@ -43,6 +43,7 @@ class ChargeFactory extends Factory
             'value' => $charge['value'],
             'type' => $charge['type'],
             'is_active' => true,
+            'is_custom' => false,
         ];
     }
 }

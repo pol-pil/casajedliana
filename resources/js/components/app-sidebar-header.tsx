@@ -124,11 +124,11 @@ export function AppSidebarHeader({
 	
 		// Only fetch if no cache OR older than 15 mins
 		const shouldFetch =
-			!cached || Date.now() - JSON.parse(cached).timestamp > 1000 * 60 * 15;
+			!cached || Date.now() - JSON.parse(cached).timestamp > 1000 * 60 * 1;
 	
 		if (shouldFetch) fetchWeather();
 	
-		const interval = setInterval(fetchWeather, 1000 * 60 * 15);
+		const interval = setInterval(fetchWeather, 1000 * 60 * 1);
 		return () => clearInterval(interval);
 	}, []);
 

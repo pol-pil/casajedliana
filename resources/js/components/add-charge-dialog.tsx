@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { router, useForm, usePage } from '@inertiajs/react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogFooter } from './ui/dialog';
@@ -6,7 +6,6 @@ import { Field, FieldGroup, FieldLabel, FieldLegend, FieldSeparator, FieldSet } 
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from './ui/select';
 import { Input } from './ui/input';
 import { Button } from './ui/button';
-import ChargeSectionDialog from './charge-section-dialog';
 
 type AddChargeDialogProps = {
 	open: boolean;
@@ -21,10 +20,12 @@ type Charge = {
 	type: 'amenity' | 'damage';
 };
 
+type PageProps = {
+	charges: Charge[];
+};
+
 export default function AddChargeDialog({ open, onOpenChange, bookingId }: AddChargeDialogProps) {
-	const { charges } = usePage().props as any;
-	const [isChargeDialogOpen, setIsChargeDialogOpen] = useState(false);
-	const [editingCharge, setEditingCharge] = useState<Charge | null>(null);
+	const { charges } = usePage<PageProps>().props;
 
 	const { data, setData, post, processing, reset } = useForm({
 		booking_id: bookingId || '',
@@ -32,19 +33,22 @@ export default function AddChargeDialog({ open, onOpenChange, bookingId }: AddCh
 		quantity: '1',
 		value: '',
 		total: '',
+		custom_charge_name: '',
+		custom_charge_type: 'amenity',
 	});
 
-	// Sync booking ID when changed
 	useEffect(() => {
 		if (bookingId) {
 			setData('booking_id', bookingId);
 		}
-	}, [bookingId]);
+	}, [bookingId, setData]);
 
+	const isCustomCharge = data.charge_id === 'custom';
 	const totalAmount = (parseFloat(data.value) || 0) * (parseInt(data.quantity) || 0);
 
-	const handleSubmit = (e: React.FormEvent) => {
-		e.preventDefault();
+	const handleSubmit = (event: React.FormEvent) => {
+		event.preventDefault();
+		setData('total', totalAmount.toString());
 
 		post('/booking-charges', {
 			onSuccess: () => {
@@ -62,18 +66,20 @@ export default function AddChargeDialog({ open, onOpenChange, bookingId }: AddCh
 		<Dialog
 			open={open}
 			onOpenChange={(isOpen) => {
-				if (!isOpen) reset();
+				if (!isOpen) {
+					reset();
+				}
+
 				onOpenChange(isOpen);
 			}}
 		>
-			<DialogContent className='max-h-[90vh] min-w-[90vw] overflow-y-auto lg:min-w-md dark:bg-primary-foreground/80 backdrop-blur-xs'>
+			<DialogContent className='max-h-[90vh] min-w-[90vw] overflow-y-auto backdrop-blur-xs lg:min-w-md dark:bg-primary-foreground/80'>
 				<form onSubmit={handleSubmit}>
 					<FieldGroup>
 						<FieldSet>
 							<FieldLegend>Add Booking Charge</FieldLegend>
 							<FieldSeparator />
 
-							{/* Charge Select */}
 							<Field>
 								<FieldLabel>Charge Item</FieldLabel>
 								<Select
@@ -81,10 +87,12 @@ export default function AddChargeDialog({ open, onOpenChange, bookingId }: AddCh
 									onValueChange={(value) => {
 										setData('charge_id', value);
 
-										const selected = charges.find((c: any) => c.id.toString() === value);
+										const selectedCharge = charges.find((charge) => charge.id.toString() === value);
 
-										if (selected) {
-											setData('value', selected.value.toString());
+										if (selectedCharge) {
+											setData('value', selectedCharge.value.toString());
+										} else if (value === 'custom') {
+											setData('value', '');
 										}
 									}}
 								>
@@ -93,45 +101,82 @@ export default function AddChargeDialog({ open, onOpenChange, bookingId }: AddCh
 									</SelectTrigger>
 
 									<SelectContent>
-										{/* Amenity */}
 										<SelectGroup>
 											<SelectLabel className='text-xs text-gray-400'>Amenity</SelectLabel>
 											{charges
-												.filter((c: any) => c.type === 'amenity')
-												.map((c: any) => (
-													<SelectItem key={c.id} value={c.id.toString()}>
-														<span>{c.name}</span>
-														<span className='text-muted-foreground'>₱{c.value}</span>
+												.filter((charge) => charge.type === 'amenity')
+												.map((charge) => (
+													<SelectItem key={charge.id} value={charge.id.toString()}>
+														<span>{charge.name}</span>
+														<span className='text-muted-foreground'>PHP {charge.value}</span>
 													</SelectItem>
 												))}
 										</SelectGroup>
 
-										{/* Damage */}
 										<SelectGroup>
 											<SelectLabel className='pt-4 text-xs text-gray-400'>Damage</SelectLabel>
 											{charges
-												.filter((c: any) => c.type === 'damage')
-												.map((c: any) => (
-													<SelectItem key={c.id} value={c.id.toString()}>
-														<span>{c.name}</span>
-														<span className='text-muted-foreground'>₱{c.value}</span>
+												.filter((charge) => charge.type === 'damage')
+												.map((charge) => (
+													<SelectItem key={charge.id} value={charge.id.toString()}>
+														<span>{charge.name}</span>
+														<span className='text-muted-foreground'>PHP {charge.value}</span>
 													</SelectItem>
 												))}
 										</SelectGroup>
-										<div className='flex justify-end p-1'>
-											<Button
-												type='button'
-												className='text-sm'
-												onClick={() => {router.visit('/rates'); setIsChargeDialogOpen(false);}}
-											>
+
+										<SelectGroup>
+											<SelectLabel className='pt-4 text-xs text-gray-400'>Custom</SelectLabel>
+											<SelectItem value='custom'>Custom Charge</SelectItem>
+										</SelectGroup>
+
+										{/* <div className='flex justify-end p-1'>
+											<Button type='button' className='text-sm' onClick={() => router.visit('/rates')}>
 												+ Add New Charge
 											</Button>
-										</div>
+										</div> */}
 									</SelectContent>
 								</Select>
 							</Field>
 
-							{/* Quantity + Total */}
+							{isCustomCharge && (
+								<FieldGroup className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+									<Field className='md:col-span-2'>
+										<FieldLabel>Custom Charge Name</FieldLabel>
+										<Input
+											value={data.custom_charge_name}
+											onChange={(event) => setData('custom_charge_name', event.target.value)}
+											required={isCustomCharge}
+										/>
+									</Field>
+
+									<Field>
+										<FieldLabel>Charge Type</FieldLabel>
+										<Select value={data.custom_charge_type} onValueChange={(value) => setData('custom_charge_type', value)}>
+											<SelectTrigger>
+												<SelectValue placeholder='Select charge type' />
+											</SelectTrigger>
+											<SelectContent>
+												<SelectItem value='amenity'>Amenity</SelectItem>
+												<SelectItem value='damage'>Damage</SelectItem>
+											</SelectContent>
+										</Select>
+									</Field>
+
+									<Field>
+										<FieldLabel>Value</FieldLabel>
+										<Input
+											type='number'
+											min='0'
+											step='0.01'
+											value={data.value}
+											onChange={(event) => setData('value', event.target.value)}
+											required={isCustomCharge}
+										/>
+									</Field>
+								</FieldGroup>
+							)}
+
 							<FieldGroup className='grid grid-cols-2 gap-4'>
 								<Field>
 									<FieldLabel>Quantity</FieldLabel>
@@ -139,7 +184,7 @@ export default function AddChargeDialog({ open, onOpenChange, bookingId }: AddCh
 										type='number'
 										min='1'
 										value={data.quantity}
-										onChange={(e) => setData('quantity', e.target.value)}
+										onChange={(event) => setData('quantity', event.target.value)}
 										required
 									/>
 								</Field>
@@ -159,7 +204,7 @@ export default function AddChargeDialog({ open, onOpenChange, bookingId }: AddCh
 							Cancel
 						</Button>
 
-						<Button type='submit' disabled={processing} onClick={() => setData('total', totalAmount.toString())}>
+						<Button type='submit' disabled={processing}>
 							{processing ? 'Adding...' : 'Add Charge'}
 						</Button>
 					</DialogFooter>

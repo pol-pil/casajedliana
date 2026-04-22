@@ -25,31 +25,24 @@ export function RatesChart({ rates, totalBookings = 0 }: RatesChartProps) {
 	const id = 'pie-interactive';
 
 	// Filter rates that have been used in bookings
-	const usedRates = rates.filter((rate) => (rate.bookings_count || 0) > 0);
+	const usedRates = React.useMemo(() => rates.filter((rate) => (rate.bookings_count || 0) > 0), [rates]);
 
 	// Create data for the chart
-	const chartData = usedRates.map((rate, index) => {
-		// Generate colors based on index
-		const colorIndex = (index % 10) + 1;
-		return {
-			name: rate.name,
-			bookings: rate.bookings_count || 0,
-			fill: `var(--chart-${colorIndex})`,
-			value: rate.value,
-			type: rate.type,
-		};
-	});
+	const chartData = React.useMemo(
+		() =>
+			usedRates.map((rate, index) => {
+				const colorIndex = (index % 10) + 1;
 
-	// If no data, show placeholder
-	if (chartData.length === 0) {
-		chartData.push({
-			name: 'No Data',
-			bookings: 1,
-			fill: 'var(--chart-1)',
-			value: 0,
-			type: 'fixed',
-		});
-	}
+				return {
+					name: rate.name,
+					bookings: rate.bookings_count || 0,
+					fill: `var(--chart-${colorIndex})`,
+					value: rate.value,
+					type: rate.type,
+				};
+			}),
+		[usedRates],
+	);
 
 	// Generate chart config dynamically
 	const chartConfig = React.useMemo(() => {
@@ -72,16 +65,29 @@ export function RatesChart({ rates, totalBookings = 0 }: RatesChartProps) {
 
 	const [activeRate, setActiveRate] = React.useState(chartData[0]?.name || '');
 
-	const activeIndex = React.useMemo(() => chartData.findIndex((item) => item.name === activeRate), [activeRate, chartData]);
+	React.useEffect(() => {
+		if (!chartData.length) {
+			setActiveRate('');
+			return;
+		}
+
+		if (!chartData.some((item) => item.name === activeRate)) {
+			setActiveRate(chartData[0].name);
+		}
+	}, [activeRate, chartData]);
+
+	const activeIndex = React.useMemo(() => {
+		const index = chartData.findIndex((item) => item.name === activeRate);
+
+		return index >= 0 ? index : 0;
+	}, [activeRate, chartData]);
 
 	const rateNames = React.useMemo(() => chartData.map((item) => item.name), [chartData]);
 
-	const totalBookingsCount = React.useMemo(() => {
-		return chartData.reduce((acc, curr) => acc + curr.bookings, 0);
-	}, [chartData]);
+	const totalBookingsCount = React.useMemo(() => chartData.reduce((acc, curr) => acc + curr.bookings, 0), [chartData]);
 
 	// If no real data, show placeholder message
-	if (!rates || rates.length === 0 || totalBookingsCount === 0) {
+	if (!rates.length || !usedRates.length || totalBookings <= 0) {
 		return (
 			<Card className='flex flex-col'>
 				<CardHeader>
@@ -161,6 +167,10 @@ export function RatesChart({ rates, totalBookings = 0 }: RatesChartProps) {
 								content={({ viewBox }) => {
 									if (viewBox && 'cx' in viewBox && 'cy' in viewBox) {
 										const activeData = chartData[activeIndex];
+										if (!activeData) {
+											return null;
+										}
+
 										const percentage = ((activeData.bookings / totalBookingsCount) * 100).toFixed(1);
 
 										return (

@@ -87,6 +87,7 @@ type Booking = {
 		amount: number;
 		payment_type: string;
 		payment_method: string;
+		created_at: string;
 	}>;
 	booking_charges?: Array<{
 		id: number;

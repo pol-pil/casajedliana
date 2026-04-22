@@ -6,43 +6,76 @@ use App\Models\Booking;
 use App\Models\BookingType;
 use App\Models\Charge;
 use App\Models\Rate;
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class RatesController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $start = $request->get('start')
+            ? Carbon::parse($request->get('start'))->toDateString()
+            : null;
+
+        $end = $request->get('end')
+            ? Carbon::parse($request->get('end'))->toDateString()
+            : null;
+
         return Inertia::render('Rates/Index', [
-            'rates' => Rate::withCount('bookings')->orderBy('value')->where('is_custom', false)->get(),
-            'charges' => Charge::orderBy('value')->get(),
-            'bookingTypes' => BookingType::orderBy('name')->get(),
-            'stats' => [
-                'totalBookings' => Booking::count(),
-            ],
-            'discounts' => Rate::where('type', 'percentage')
+            'rates' => Rate::query()
                 ->where('is_custom', false)
                 ->orderBy('value')
-                ->with(['bookings.room'])
+                ->get(),
+            'charges' => Charge::query()
+                ->where('is_custom', false)
+                ->orderBy('value')
+                ->get(),
+            'bookingTypes' => BookingType::orderBy('name')->get(),
+            'chartRates' => Rate::query()
+                ->where('is_custom', false)
+                ->withCount([
+                    'bookings' => fn ($query) => $this->applyDateRange($query, $start, $end),
+                ])
+                ->orderBy('value')
+                ->get(),
+            'chartStats' => [
+                'totalBookings' => $this->applyDateRange(Booking::query(), $start, $end)->count(),
+            ],
+            'chartDiscounts' => Rate::query()
+                ->where('type', 'percentage')
+                ->where('is_custom', false)
+                ->orderBy('value')
+                ->with([
+                    'bookings' => fn ($query) => $this->applyDateRange($query, $start, $end),
+                ])
                 ->get()
-                ->map(function ($rate) {
-                    $totalDiscount = $rate->bookings->sum(function ($booking) use ($rate) {
-                        $checkIn  = \Carbon\Carbon::parse($booking->check_in);
-                        $checkOut = \Carbon\Carbon::parse($booking->check_out);
-                        $nights   = max(1, round($checkOut->diffInDays($checkIn), 0));
-                        $total    = $booking->room->price * $nights;
+                ->map(function (Rate $rate): array {
+                    $totalDiscount = $rate->bookings->sum(
+                        fn (Booking $booking): float => (float) ($booking->discount_amount ?? 0)
+                    );
 
-                        return $total * ($rate->value / 100);
-                    });
-
-        return [
-            'id'             => $rate->id,
-            'name'           => $rate->name,
-            'value'          => $rate->value,
-            'totalDiscount'  => round($totalDiscount, 2),
-        ];
-    }),
+                    return [
+                        'id' => $rate->id,
+                        'name' => $rate->name,
+                        'value' => $rate->value,
+                        'totalDiscount' => round($totalDiscount, 2),
+                    ];
+                }),
         ]);
+    }
+
+    private function applyDateRange(Builder|Relation $query, ?string $start, ?string $end): Builder|Relation
+    {
+        if (! $start || ! $end) {
+            return $query;
+        }
+
+        return $query
+            ->whereDate('check_in', '<=', $end)
+            ->whereDate('check_out', '>', $start);
     }
 
     // Rate Methods

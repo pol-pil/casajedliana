@@ -442,7 +442,7 @@ export default function ResourceTimeline({ resources, events, eventContent, onEv
 
 													<TooltipContent
 														side='left'
-														className='border dark:border-white/10 border-black/10 bg-[#f2ede3]/60 dark:bg-neutral-900/40 text-primary-foreground dark:text-white shadow-lg backdrop-blur-xs'>
+														className='border dark:border-white/10 border-black/10 bg-[#f2ede3]/60 dark:bg-neutral-900/50 text-primary-foreground dark:text-white shadow-lg backdrop-blur-xs'>
 														<div className='flex flex-col items-center gap-1 text-xs'>
 															<div className='font-semibold'>{ev.title}</div>
                                                             <div className='w-full h-[.5px] bg-gray-500/50' />

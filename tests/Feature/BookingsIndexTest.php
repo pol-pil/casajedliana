@@ -143,3 +143,36 @@ test('checked in booking dates can be updated before checkout', function () {
         ->and($booking->check_out->toDateTimeString())->toBe($newCheckOut->toDateTimeString())
         ->and($booking->status)->toBe('checked_in');
 });
+
+test('custom booking charge creates a hidden custom charge record', function () {
+    $user = User::factory()->create([
+        'role' => 'frontdesk',
+    ]);
+
+    $booking = Booking::factory()->create([
+        'payment_status' => 'unpaid',
+    ]);
+
+    $this->actingAs($user)
+        ->post(route('booking-charges.store'), [
+            'booking_id' => $booking->id,
+            'charge_id' => 'custom',
+            'custom_charge_name' => 'Mini Bar',
+            'custom_charge_type' => 'amenity',
+            'quantity' => 2,
+            'value' => 125.50,
+            'total' => 251,
+        ])
+        ->assertRedirect(route('bookings.index'));
+
+    $customCharge = Charge::query()->where('name', 'Mini Bar')->first();
+    $bookingCharge = BookingCharge::query()->where('booking_id', $booking->id)->first();
+
+    expect($customCharge)->not->toBeNull()
+        ->and($customCharge->is_custom)->toBeTrue()
+        ->and((float) $customCharge->value)->toBe(125.5)
+        ->and($bookingCharge)->not->toBeNull()
+        ->and($bookingCharge->charge_id)->toBe($customCharge->id)
+        ->and($bookingCharge->quantity)->toBe(2)
+        ->and((float) $bookingCharge->total)->toBe(251.0);
+});

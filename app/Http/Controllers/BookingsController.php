@@ -105,7 +105,10 @@ class BookingsController extends Controller
 
         $rooms = Room::orderBy('room_number')->get();
         $rates = Rate::where('is_active', true)->get();
-        $charges = Charge::where('is_active', true)->get();
+        $charges = Charge::query()
+            ->where('is_active', true)
+            ->where('is_custom', false)
+            ->get();
         $clients = Client::when($searchName, function ($query, $searchName) {
             $query->where('first_name', 'like', "%{$searchName}%")
                 ->orWhere('last_name', 'like', "%{$searchName}%");
