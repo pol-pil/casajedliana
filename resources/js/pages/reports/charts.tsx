@@ -29,8 +29,8 @@ type Distribution = {
 type PageProps = {
 	monthlyData: ChartData[];
 	yearlyData: ChartData[];
-	clientDistribution: Distribution[];
-	kpis: {
+
+	monthlyKpis: {
 		revenue: number;
 		expected: number;
 		balance: number;
@@ -39,16 +39,37 @@ type PageProps = {
 		revpar: number;
 		occupancy: number;
 	};
+
+	yearlyKpis: {
+		revenue: number;
+		expected: number;
+		balance: number;
+		cash: number;
+		adr: number;
+		revpar: number;
+		occupancy: number;
+	};
+
+	monthlyDistribution: Distribution[];
+	yearlyDistribution: Distribution[];
 };
 
 export default function Charts() {
-	const { monthlyData, yearlyData, kpis, clientDistribution } = usePage<PageProps>().props;
+	const { monthlyData, yearlyData, monthlyKpis, yearlyKpis, monthlyDistribution, yearlyDistribution } = usePage<PageProps>().props;
 
 	const [view, setView] = useState<'monthly' | 'yearly'>('monthly');
 
 	const chartData = useMemo(() => {
 		return view === 'monthly' ? monthlyData : yearlyData;
 	}, [view, monthlyData, yearlyData]);
+
+	const kpis = useMemo(() => {
+		return view === 'monthly' ? monthlyKpis : yearlyKpis;
+	}, [view, monthlyKpis, yearlyKpis]);
+
+	const distributionSource = useMemo(() => {
+		return view === 'monthly' ? monthlyDistribution : yearlyDistribution;
+	}, [view, monthlyDistribution, yearlyDistribution]);
 
 	/*
   |--------------------------------------------------------------------------
@@ -58,7 +79,7 @@ export default function Charts() {
 	const { distributionPercent, topDistribution } = useMemo(() => {
 		const colors = ['#3b82f6', '#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444'];
 
-		const distribution = clientDistribution.map((item, index) => ({
+		const distribution = distributionSource.map((item, index) => ({
 			...item,
 			color: colors[index % colors.length],
 		}));
@@ -77,7 +98,7 @@ export default function Charts() {
 			distributionPercent: percent,
 			topDistribution: percent.slice(0, 5),
 		};
-	}, [clientDistribution]);
+	}, [distributionSource]);
 
 	const getTrend = (value: number) => {
 		if (value > 0) return 'up';
