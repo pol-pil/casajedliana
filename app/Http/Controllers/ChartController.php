@@ -14,7 +14,7 @@ class ChartController extends Controller
     {
         /*
         |--------------------------------------------------------------------------
-        | 📊 BOOKINGS (for balance + expected)
+        | 📊 BASE DATA
         |--------------------------------------------------------------------------
         */
         $validStatuses = ['confirmed', 'checked_in', 'checked_out'];
@@ -24,143 +24,185 @@ class ChartController extends Controller
             'payments',
             'rate'
         ])
-            ->whereIn('status', $validStatuses)
-            ->whereYear('check_in', now()->year)
-            ->get();
+        ->whereIn('status', $validStatuses)
+        ->get();
+
+        $currentYear = now()->year;
 
         /*
         |--------------------------------------------------------------------------
-        | 💰 MONTHLY REVENUE (REAL CASH FLOW)
+        | 💰 MONTHLY REVENUE (DB SAFE)
         |--------------------------------------------------------------------------
         */
-        $monthly = Payment::selectRaw("
-                DATE_FORMAT(created_at, '%b') as label,
-                MONTH(created_at) as month,
-                SUM(amount) as revenue
-            ")
-            ->whereYear('created_at', now()->year)
-            ->groupBy('label', 'month')
-            ->orderBy('month')
+        $monthly = Payment::selectRaw(
+                $this->dateFormat('created_at', 'Y-m', 'ym') . ', SUM(amount) as revenue'
+            )
+            ->whereYear('created_at', $currentYear)
+            ->groupBy('ym')
+            ->orderBy('ym')
+            ->get()
+            ->map(function ($row) {
+                [$year, $month] = explode('-', $row->ym);
+
+                return [
+                    'label' => date('M', mktime(0, 0, 0, (int) $month, 1)),
+                    'revenue' => (float) $row->revenue,
+                ];
+            });
+
+        /*
+        |--------------------------------------------------------------------------
+        | 💰 YEARLY REVENUE (DB SAFE)
+        |--------------------------------------------------------------------------
+        */
+        $yearly = Payment::selectRaw(
+                $this->dateFormat('created_at', 'Y', 'year') . ', SUM(amount) as revenue'
+            )
+            ->groupBy('year')
+            ->orderBy('year')
             ->get()
             ->map(fn($row) => [
-                'label' => $row->label,
+                'label' => (string) $row->year,
                 'revenue' => (float) $row->revenue,
             ]);
 
         /*
         |--------------------------------------------------------------------------
-        | 💰 YEARLY REVENUE (REAL CASH FLOW)
+        | 📊 MONTHLY BOOKINGS (FILTERED)
         |--------------------------------------------------------------------------
         */
-        $yearly = Payment::selectRaw("
-                YEAR(created_at) as label,
-                SUM(amount) as revenue
-            ")
-            ->groupBy('label')
-            ->orderBy('label')
-            ->get()
-            ->map(fn($row) => [
-                'label' => (string) $row->label,
-                'revenue' => (float) $row->revenue,
-            ]);
-
-        /*
-        |--------------------------------------------------------------------------
-        | 💰 TOTAL REVENUE (ACTUAL CASH)
-        |--------------------------------------------------------------------------
-        */
-        $totalRevenue = Payment::sum('amount');
-
-        /*
-        |--------------------------------------------------------------------------
-        | 💰 EXPECTED REVENUE
-        |--------------------------------------------------------------------------
-        */
-        $expectedRevenue = $bookings->sum(function ($b) {
-            return $b->total_amount + $b->bookingCharges->sum('total');
-        });
-
-        /*
-        |--------------------------------------------------------------------------
-        | 💰 CASH ONLY
-        |--------------------------------------------------------------------------
-        */
-        $cashPayments = Payment::where('payment_method', 'cash')
-            ->sum('amount');
-
-        /*
-        |--------------------------------------------------------------------------
-        | 💰 BALANCE
-        |--------------------------------------------------------------------------
-        */
-        $balance = $bookings->sum(function ($b) {
-            $expected = $b->total_amount + $b->bookingCharges->sum('total');
-            $paid = $b->payments->sum('amount');
-
-            return max($expected - $paid, 0);
-        });
-
-        /*
-        |--------------------------------------------------------------------------
-        | 🛏️ ROOM METRICS
-        |--------------------------------------------------------------------------
-        */
-        $totalRooms = DB::table('rooms')
-            ->where('is_active', true)
-            ->count();
-
-        $roomNights = $bookings->sum(
-            fn($b) => $b->check_in->diffInDays($b->check_out)
+        $monthlyBookings = $bookings->filter(fn($b) =>
+            $b->check_in->year == $currentYear
         );
 
-        $days = now()->dayOfYear;
-        $availableRoomNights = $totalRooms * $days;
-
         /*
         |--------------------------------------------------------------------------
-        | 📈 KPIs
+        | 📊 PAYMENTS
         |--------------------------------------------------------------------------
         */
-        $adr = $roomNights > 0 ? $totalRevenue / $roomNights : 0;
-
-        $occupancy = $availableRoomNights > 0
-            ? ($roomNights / $availableRoomNights) * 100
-            : 0;
-
-        $revpar = $availableRoomNights > 0
-            ? $totalRevenue / $availableRoomNights
-            : 0;
+        $monthlyPayments = Payment::whereYear('created_at', $currentYear)->get();
+        $allPayments = Payment::all();
 
         /*
         |--------------------------------------------------------------------------
-        | 📊 CLIENT DISTRIBUTION
+        | 💰 KPI CALCULATOR FUNCTION
+        |--------------------------------------------------------------------------
+        */
+        $calculateKpis = function ($bookingsSet, $paymentsSet) {
+
+            $revenue = $paymentsSet->sum('amount');
+
+            $expected = $bookingsSet->sum(fn($b) =>
+                $b->total_amount + $b->bookingCharges->sum('total')
+            );
+
+            $balance = $bookingsSet->sum(function ($b) {
+                $expected = $b->total_amount + $b->bookingCharges->sum('total');
+                $paid = $b->payments->sum('amount');
+                return max($expected - $paid, 0);
+            });
+
+            $cash = $paymentsSet
+                ->where('payment_method', 'cash')
+                ->sum('amount');
+
+            $totalRooms = DB::table('rooms')->where('is_active', true)->count();
+
+            $roomNights = $bookingsSet->sum(
+                fn($b) => $b->check_in->diffInDays($b->check_out)
+            );
+
+            $days = now()->dayOfYear;
+            $availableRoomNights = $totalRooms * $days;
+
+            $adr = $roomNights > 0 ? $revenue / $roomNights : 0;
+
+            $occupancy = $availableRoomNights > 0
+                ? ($roomNights / $availableRoomNights) * 100
+                : 0;
+
+            $revpar = $availableRoomNights > 0
+                ? $revenue / $availableRoomNights
+                : 0;
+
+            return [
+                'revenue' => round($revenue, 2),
+                'expected' => round($expected, 2),
+                'balance' => round($balance, 2),
+                'cash' => round($cash, 2),
+                'adr' => round($adr, 2),
+                'revpar' => round($revpar, 2),
+                'occupancy' => round($occupancy, 2),
+            ];
+        };
+
+        /*
+        |--------------------------------------------------------------------------
+        | 📊 KPIs
+        |--------------------------------------------------------------------------
+        */
+        $monthlyKpis = $calculateKpis($monthlyBookings, $monthlyPayments);
+        $yearlyKpis = $calculateKpis($bookings, $allPayments);
+
+        /*
+        |--------------------------------------------------------------------------
+        | 📊 DISTRIBUTION
         |--------------------------------------------------------------------------
         */
         $rates = Rate::all();
 
-        $clientDistribution = $rates
-            ->map(function ($rate) use ($bookings) {
-                return [
+        $buildDistribution = function ($bookingSet) use ($rates) {
+            return $rates
+                ->map(fn($rate) => [
                     'name' => $rate->name,
-                    'value' => $bookings->where('rate_id', $rate->id)->count(),
-                ];
-            })
-            ->filter(fn($item) => $item['value'] > 0)
-            ->values();
+                    'value' => $bookingSet->where('rate_id', $rate->id)->count(),
+                ])
+                ->filter(fn($item) => $item['value'] > 0)
+                ->values();
+        };
 
+        $monthlyDistribution = $buildDistribution($monthlyBookings);
+        $yearlyDistribution = $buildDistribution($bookings);
+
+        /*
+        |--------------------------------------------------------------------------
+        | 🚀 RESPONSE
+        |--------------------------------------------------------------------------
+        */
         return Inertia::render('reports/charts', [
             'monthlyData' => $monthly,
             'yearlyData' => $yearly,
-            'clientDistribution' => $clientDistribution,
-            'kpis' => [
-                'revenue' => round($totalRevenue, 2),
-                'expected' => round($expectedRevenue, 2),
-                'balance' => round($balance, 2),
-                'cash' => round($cashPayments, 2),
-                'adr' => round($adr, 2),
-                'revpar' => round($revpar, 2),
-                'occupancy' => round($occupancy, 2),
-            ],
+
+            'monthlyKpis' => $monthlyKpis,
+            'yearlyKpis' => $yearlyKpis,
+
+            'monthlyDistribution' => $monthlyDistribution,
+            'yearlyDistribution' => $yearlyDistribution,
         ]);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | 🧠 DB-AGNOSTIC DATE FORMAT
+    |--------------------------------------------------------------------------
+    */
+    private function dateFormat(string $column, string $format, string $alias): string
+    {
+        $driver = DB::connection()->getDriverName();
+
+        return match (true) {
+            $driver === 'sqlite' => match ($format) {
+                'Y-m' => "strftime('%Y-%m', {$column}) as {$alias}",
+                'Y'   => "strftime('%Y', {$column}) as {$alias}",
+            },
+            $driver === 'pgsql' => match ($format) {
+                'Y-m' => "TO_CHAR({$column}, 'YYYY-MM') as {$alias}",
+                'Y'   => "TO_CHAR({$column}, 'YYYY') as {$alias}",
+            },
+            default => match ($format) { // MySQL / MariaDB
+                'Y-m' => "DATE_FORMAT({$column}, '%Y-%m') as {$alias}",
+                'Y'   => "DATE_FORMAT({$column}, '%Y') as {$alias}",
+            },
+        };
     }
 }
