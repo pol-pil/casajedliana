@@ -159,6 +159,11 @@ class BookingsController extends Controller
 
         $validated = $request->validated();
         $room = Room::query()->findOrFail($validated['room_id']);
+        if (strtolower($room->status) === 'maintenance') {
+            return back()->withErrors([
+                'room_id' => 'This room is under maintenance and cannot be booked.'
+            ]);
+        }
         $rate = Rate::query()->findOrFail($request->input('rate_id'));
         $pricing = $this->roomPricing->quote($room, $rate, $validated['check_in'], $validated['check_out']);
 
@@ -221,7 +226,7 @@ class BookingsController extends Controller
             } else {
                 $booking->payment_status = 'unpaid';
             }
-            
+
             $booking->refreshPaymentStatus();
 
             $booking->save();

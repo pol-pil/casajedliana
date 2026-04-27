@@ -24,8 +24,8 @@ class ChartController extends Controller
             'payments',
             'rate'
         ])
-        ->whereIn('status', $validStatuses)
-        ->get();
+            ->whereIn('status', $validStatuses)
+            ->get();
 
         $currentYear = now()->year;
 
@@ -34,44 +34,45 @@ class ChartController extends Controller
         | 💰 MONTHLY REVENUE (DB SAFE)
         |--------------------------------------------------------------------------
         */
-        $monthly = Payment::selectRaw(
-                $this->dateFormat('created_at', 'Y-m', 'ym') . ', SUM(amount) as revenue'
-            )
-            ->whereYear('created_at', $currentYear)
-            ->groupBy('ym')
-            ->orderBy('ym')
-            ->get()
-            ->map(function ($row) {
-                [$year, $month] = explode('-', $row->ym);
+        $currentMonth = now()->month;
 
-                return [
-                    'label' => date('M', mktime(0, 0, 0, (int) $month, 1)),
-                    'revenue' => (float) $row->revenue,
-                ];
+        $monthly = collect(range(1, $currentMonth))->map(function ($month) use ($bookings, $currentYear) {
+
+            $monthBookings = $bookings->filter(function ($b) use ($month, $currentYear) {
+                return $b->check_in->year == $currentYear
+                    && $b->check_in->month == $month;
             });
+
+            $revenue = $monthBookings->sum(fn($b) => $b->payments->sum('amount'));
+
+            return [
+                'label' => date('M', mktime(0, 0, 0, $month, 1)),
+                'revenue' => round($revenue, 2),
+            ];
+        });
 
         /*
         |--------------------------------------------------------------------------
         | 💰 YEARLY REVENUE (DB SAFE)
         |--------------------------------------------------------------------------
         */
-        $yearly = Payment::selectRaw(
-                $this->dateFormat('created_at', 'Y', 'year') . ', SUM(amount) as revenue'
-            )
-            ->groupBy('year')
-            ->orderBy('year')
-            ->get()
-            ->map(fn($row) => [
-                'label' => (string) $row->year,
-                'revenue' => (float) $row->revenue,
-            ]);
+        $yearly = $bookings
+            ->groupBy(fn($b) => $b->check_in->format('Y'))
+            ->map(function ($group, $year) {
+                return [
+                    'label' => (string) $year,
+                    'revenue' => $group->sum(fn($b) => $b->payments->sum('amount')),
+                ];
+            })
+            ->values();
 
         /*
         |--------------------------------------------------------------------------
         | 📊 MONTHLY BOOKINGS (FILTERED)
         |--------------------------------------------------------------------------
         */
-        $monthlyBookings = $bookings->filter(fn($b) =>
+        $monthlyBookings = $bookings->filter(
+            fn($b) =>
             $b->check_in->year == $currentYear
         );
 
@@ -80,8 +81,15 @@ class ChartController extends Controller
         | 📊 PAYMENTS
         |--------------------------------------------------------------------------
         */
-        $monthlyPayments = Payment::whereYear('created_at', $currentYear)->get();
-        $allPayments = Payment::all();
+        $monthlyPayments = Payment::whereYear('created_at', $currentYear)
+            ->whereHas('booking', function ($q) {
+                $q->whereIn('status', ['confirmed', 'checked_in', 'checked_out']);
+            })
+            ->get();
+
+        $allPayments = Payment::whereHas('booking', function ($q) {
+            $q->whereIn('status', ['confirmed', 'checked_in', 'checked_out']);
+        })->get();
 
         /*
         |--------------------------------------------------------------------------
@@ -90,9 +98,12 @@ class ChartController extends Controller
         */
         $calculateKpis = function ($bookingsSet, $paymentsSet) {
 
-            $revenue = $paymentsSet->sum('amount');
+            $revenue = $bookingsSet->sum(function ($b) {
+                return $b->payments->sum('amount');
+            });
 
-            $expected = $bookingsSet->sum(fn($b) =>
+            $expected = $bookingsSet->sum(
+                fn($b) =>
                 $b->total_amount + $b->bookingCharges->sum('total')
             );
 
@@ -102,8 +113,10 @@ class ChartController extends Controller
                 return max($expected - $paid, 0);
             });
 
-            $cash = $paymentsSet
-                ->where('payment_method', 'cash')
+            $cash = Payment::where('payment_method', 'cash')
+                ->whereHas('booking', function ($q) {
+                    $q->whereIn('status', ['confirmed', 'checked_in', 'checked_out']);
+                })
                 ->sum('amount');
 
             $totalRooms = DB::table('rooms')->where('is_active', true)->count();
