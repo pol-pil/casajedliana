@@ -130,16 +130,22 @@ class AccommodationController extends Controller
         return back()->with('success', 'Room updated successfully.');
     }
 
-    public function destroy(Room $room)
-    {
-        $hasBookings = Booking::where('room_id', $room->id)->exists();
+   public function destroy(Room $room)
+{
+    // Only block deletion if there's an active or upcoming booking
+    $activeBookings = Booking::where('room_id', $room->id)
+        ->whereIn('status', ['confirmed', 'checked_in', 'reserved'])
+        ->exists();
 
-        if ($hasBookings) {
-            return back()->withErrors('Cannot delete a room with existing bookings.');
-        }
-
-        $room->delete();
-
-        return back()->with('success', 'Room deleted successfully.');
+    if ($activeBookings) {
+        // We use a key 'message' or 'error' to pass to the frontend
+        return back()->withErrors([
+            'delete' => 'Cannot delete room: It has an active or upcoming reservation.'
+        ]);
     }
+
+    $room->delete();
+
+    return back()->with('success', 'Room deleted successfully.');
+}
 }
