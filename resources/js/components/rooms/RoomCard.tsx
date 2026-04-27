@@ -23,7 +23,7 @@ export default function RoomCard({ room, statusColor, onEdit, onDelete, refreshR
 
 	return (
 		<Dialog>
-			<Card className='relative flex h-48 flex-col justify-between p-6 text-center transition hover:shadow-lg'>
+			<Card className='relative flex min-h-[180px] sm:min-h-[200px] flex-col justify-between p-6 text-center transition hover:shadow-lg'>
 				{/* ACTION MENU */}
 				<div className='absolute top-4 right-4 z-10'>
 					<DropdownMenu>
