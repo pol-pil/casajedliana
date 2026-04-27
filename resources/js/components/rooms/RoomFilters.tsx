@@ -27,8 +27,8 @@ export default function RoomFilters({
 						<SelectItem value='Suite'>Suite</SelectItem>
 						<SelectItem value='Quadro'>Quadro</SelectItem>
 						<SelectItem value='Family'>Family</SelectItem>
-						<SelectItem value='PentHouse'>Pent House</SelectItem>
-						<SelectItem value='RestHouse'>Rest House</SelectItem>
+						<SelectItem value='Penthouse'>Pent House</SelectItem>
+						<SelectItem value='Resthouse'>Rest House</SelectItem>
 					</SelectContent>
 				</Select>
 			</div>

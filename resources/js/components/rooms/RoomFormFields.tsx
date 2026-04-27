@@ -69,8 +69,8 @@ export default function RoomFormFields({
 							<SelectItem value='Suite'>Suite</SelectItem>
 							<SelectItem value='Quadro'>Quadro</SelectItem>
 							<SelectItem value='Family'>Family</SelectItem>
-							<SelectItem value='Pent House'>Pent House</SelectItem>
-							<SelectItem value='Rest House'>Rest House</SelectItem>
+							<SelectItem value='Penthouse'>Pent House</SelectItem>
+							<SelectItem value='Resthouse'>Rest House</SelectItem>
 						</SelectContent>
 					</Select>
 				</div>
