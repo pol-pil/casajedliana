@@ -396,7 +396,7 @@ export default function ResourceTimeline({ resources, events, eventContent, onEv
 													key={i}
 													className={cn(
 														'h-full flex-shrink-0 border-r',
-														todaySlot ? 'border-primary/20 bg-primary/[0.04]' : 'border-border/30',
+														todaySlot ? 'border-primary bg-primary/[0.3] dark:border-primary/10' : 'border-primary dark:border-primary/10',
 													)}
 													style={{ width: slotWidth }}
 												/>

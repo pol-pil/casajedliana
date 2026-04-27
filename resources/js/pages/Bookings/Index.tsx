@@ -195,8 +195,8 @@ export default function Index() {
 	const [isBookingInfoDialogOpen, setIsBookingInfoDialogOpen] = useState(false);
 	const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
 
-	const [checkInTime, setCheckInTime] = useState('08:00');
-	const [checkOutTime, setCheckOutTime] = useState('17:00');
+	const [checkInTime, setCheckInTime] = useState('14:00');
+	const [checkOutTime, setCheckOutTime] = useState('12:00');
 
 	const [isEditMode, setIsEditMode] = useState(false);
 	const [editingBookingId, setEditingBookingId] = useState<number | null>(null);
@@ -245,7 +245,7 @@ export default function Index() {
 		}
 	}, [url]);
 
-	
+
 	useEffect(() => {
 		if (isFirstRender.current) {
 			isFirstRender.current = false;
@@ -277,8 +277,8 @@ export default function Index() {
 		setSelectedBookingType('');
 		setGuestCount('1');
 		setData(emptyForm);
-		setCheckInTime('08:00');
-		setCheckOutTime('17:00');
+		setCheckInTime('14:00');
+		setCheckOutTime('12:00');
 		clearErrors();
 		reset();
 	};

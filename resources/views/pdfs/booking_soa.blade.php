@@ -152,7 +152,7 @@
 			.icontext span {
 				vertical-align: middle;
 			}
-			
+
 		</style>
 	</head>
 
@@ -230,7 +230,7 @@
 						<td>{{ number_format($nights, 0) }}</td>
 					</tr>
 					<tr>
-						<td>Weekday / Weekend</td>
+						<td>Rate Plan</td>
 						<td><span style="font-family: DejaVu Sans">₱</span> {{ number_format((float) $booking->room->weekday_rate, 2) }} / <span style="font-family: DejaVu Sans">₱</span> {{ number_format((float) $booking->room->weekend_rate, 2) }}</td>
 						<td>Night Split</td>
 						<td>{{ $pricing['weekday_nights'] }} weekday / {{ $pricing['weekend_nights'] }} weekend</td>

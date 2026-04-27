@@ -1,0 +1,857 @@
+CASA JEDLIANA PAGE-BY-PAGE DOCUMENTATION
+App-specific pages only
+Excluded:
+- settings pages
+- Laravel starter/default pages
+- auth default pages
+
+==================================================
+1. DASHBOARD PAGE
+==================================================
+
+Route:
+- `/dashboard`
+
+Frontend file:
+- `resources/js/pages/Dashboard/Index.tsx`
+
+Backend file:
+- `app/Http/Controllers/DashboardController.php`
+
+Rendered Inertia page:
+- `Dashboard/Index`
+
+Purpose:
+- gives frontdesk staff a live operational overview for the selected date range
+
+Server-side data flow:
+- controller reads `start` and `end` query parameters
+- defaults to today and tomorrow when parameters are missing
+- loads rooms with conditional booking overlap counts
+- loads active bookings, check-ins, and check-outs
+- maps bookings through `refreshPaymentStatus()`
+- returns props:
+  - `startDate`
+  - `endDate`
+  - `rooms`
+  - `bookings`
+  - `checkIns`
+  - `checkOuts`
+
+Important frontend state:
+- `roomScope`
+- `activeFilter`
+- `search`
+
+Important frontend hooks/utilities:
+- `usePage`
+- `useDateRange`
+- `useMemo`
+- `useState`
+- Inertia `router`
+- `date-fns/format`
+
+Important page logic:
+- `bookingOverlapsRange()` checks whether a booking overlaps the selected date context
+- `occupiedRoomIds` is memoized from overlapping bookings
+- `availableCount` is derived from room list minus occupied room IDs
+- room list is split by scope:
+  - hotel rooms
+  - event rooms
+- room list is filtered by status tab before rendering
+
+Important UI sections:
+- summary cards for check-ins, check-outs, unavailable, available
+- room scope toggle
+- room status tabs
+- room status grid
+- quick action card
+- arrival/departure table
+
+Important components used:
+- `AppLayout`
+- `Head`
+- `Card`
+- `CardContent`
+- `CardHeader`
+- `CardTitle`
+- `Badge`
+- `Input`
+- `Button`
+- `Tabs`
+- `TabsList`
+- `TabsTrigger`
+
+Important data shown:
+- room number
+- room type
+- room status
+- guest full name
+- check-in date/time
+- check-out date/time
+- booking status
+- payment badge
+
+Important navigation/actions:
+- `router.visit('/bookings?create=true')`
+- `router.visit('/reports/history')`
+
+Technical notes:
+- room status is normalized on the server to `Available`, `Reserved`, `Occupied`, or `Maintenance`
+- selected date range comes from shared context rather than a page-local picker
+- the page uses derived room occupancy rather than directly trusting persisted display status for the chosen range
+
+==================================================
+2. BOOKINGS PAGE
+==================================================
+
+Route:
+- `/bookings`
+
+Frontend file:
+- `resources/js/pages/Bookings/Index.tsx`
+
+Backend file:
+- `app/Http/Controllers/BookingsController.php`
+
+Rendered Inertia page:
+- `Bookings/Index`
+
+Purpose:
+- central booking workspace for reservation scheduling, editing, status tracking, and balance monitoring
+
+Server-side data flow:
+- controller reads:
+  - `start`
+  - `end`
+  - `search`
+  - `searchName`
+  - `status`
+- loads paginated bookings with eager-loaded relations:
+  - `client`
+  - `room`
+  - `payments`
+  - `bookingType`
+  - `bookingCharges.charge`
+  - `rate`
+- loads non-paginated `calendarBookings`
+- computes `stats`
+- loads supporting datasets:
+  - `rooms`
+  - `rates`
+  - `charges`
+  - `bookingTypes`
+  - `clients`
+  - `roomBlockedDates`
+- returns props:
+  - `bookings`
+  - `calendarBookings`
+  - `stats`
+  - `rooms`
+  - `rates`
+  - `charges`
+  - `bookingTypes`
+  - `clients`
+  - `roomBlockedDates`
+  - `filters`
+
+Important frontend state:
+- `isDialogOpen`
+- `dateRange`
+- `selectedRoomId`
+- `guestCount`
+- `selectedRateId`
+- `selectedBookingType`
+- `isBookingInfoDialogOpen`
+- `selectedBooking`
+- `checkInTime`
+- `checkOutTime`
+- `isEditMode`
+- `editingBookingId`
+- `activeTab`
+- `roomScope`
+- `search`
+
+Important frontend hooks/utilities:
+- Inertia `useForm`
+- Inertia `usePage`
+- Inertia `router`
+- `useEffect`
+- `useMemo`
+- `useRef`
+- `toast` from `sonner`
+
+Important page logic:
+- auto-opens booking form when current URL contains `create=true`
+- debounced guest search triggers `router.get('/bookings', ...)`
+- same dialog handles create and edit flows
+- selected booking is refreshed when props update
+- booking table is filtered locally by active tab after server filtering
+- calendar resources are generated from room list
+- calendar events are generated from booking list
+
+Important UI sections:
+- room/resource timeline
+- booking statistics cards
+- search + status tabs row
+- floating new booking button
+- bookings table
+- pagination controls
+- booking info modal
+- booking form modal
+
+Important components used:
+- `AppLayout`
+- `ResourceTimeline`
+- `BookingFormDialog`
+- `BookingInfoDialog`
+- `Table`
+- `Tabs`
+- `Input`
+- `Button`
+- `Badge`
+
+Important data shown:
+- guest name
+- guest email
+- guest contact number
+- room number
+- room type
+- check-in and check-out timestamps
+- booking status
+- total amount
+- computed balance
+- payment status in calendar event chips
+
+Important server actions/endpoints tied to the page:
+- `POST /bookings`
+- `PUT /bookings/{booking}`
+- `PATCH /bookings/{booking}/status`
+- `GET /bookings/{booking}/print`
+
+Important backend logic:
+- `RoomPricing` service is injected into controller constructor
+- custom discounts can create a custom `Rate` record dynamically
+- client is created with `firstOrCreate()` using contact number
+- booking totals use computed pricing breakdown
+- room status is synced through `syncRoomStatus()`
+- activity logs are inserted for create/update/status changes
+- payment status is recalculated after downpayment and updates
+
+Technical notes:
+- page mixes paginated table data and non-paginated calendar data
+- timeline rendering depends on helper theme functions in `fullcalendar-theme.ts`
+- booking balance includes booking charges minus payments
+- modal editing preloads form data from selected booking object
+
+==================================================
+3. ROOMS PAGE
+==================================================
+
+Route:
+- `/rooms`
+
+Frontend file:
+- `resources/js/pages/Accommodations/Index.tsx`
+
+Backend file:
+- `app/Http/Controllers/AccommodationController.php`
+
+Rendered Inertia page:
+- `Accommodations/Index`
+
+Purpose:
+- manages room inventory, operational availability, and room metadata
+
+Server-side data flow:
+- controller reads `start` and `end`
+- loads rooms with overlap counts:
+  - `reserved_count`
+  - `occupied_count`
+- normalizes room status based on booking overlap
+- returns props:
+  - `rooms`
+  - `startDate`
+  - `endDate`
+
+Important frontend state:
+- dialog open states for add/edit/delete
+- form states for room fields:
+  - `roomNumber`
+  - `roomType`
+  - `capacity`
+  - `weekdayRate`
+  - `weekendRate`
+  - `description`
+  - `bedType`
+  - `amenities`
+- `selectedRoom`
+- `range`
+- `search`
+- `activeStatus`
+- `activeCategory`
+
+Important frontend hooks/utilities:
+- `usePage`
+- `router`
+- `useMemo`
+- `useState`
+- `useEffect`
+- `date-fns/format`
+
+Important page logic:
+- room data is normalized from snake_case server props into frontend room objects
+- room description is composed from bed type plus amenities
+- filtered rooms support:
+  - keyword search
+  - status filtering
+  - category filtering
+- filtered rooms are regrouped by category before rendering
+- date changes trigger `router.get('/rooms', { start, end })`
+
+Important UI sections:
+- page header
+- room search input
+- filter controls
+- grouped room category sections
+- room cards
+- shared room dialogs container
+
+Important components used:
+- `AppLayout`
+- `RoomHeader`
+- `RoomFilters`
+- `RoomCard`
+- `RoomDialogs`
+
+Important data shown:
+- room number
+- room category
+- room capacity
+- weekday rate
+- weekend rate
+- status
+- description/beds
+
+Important server actions/endpoints tied to the page:
+- `POST /rooms`
+- `PATCH /rooms/{room}`
+- `DELETE /rooms/{room}`
+- `PATCH /rooms/{room}/status`
+
+Important backend logic:
+- create/update uses dedicated form requests:
+  - `StoreRoomRequest`
+  - `UpdateRoomRequest`
+- maintenance status is blocked when an active booking exists
+- delete is blocked when bookings already exist for the room
+- room `price` is synced from weekday rate on save
+
+Technical notes:
+- breadcrumbs in this page point to admin context even though route is `/rooms`
+- room category labels are frontend-derived from `room_type`
+- the page keeps server date state and local date state aligned
+
+==================================================
+4. CONFIGURATIONS PAGE
+==================================================
+
+Route:
+- `/rates`
+
+Frontend file:
+- `resources/js/pages/Rates/Index.tsx`
+
+Backend file:
+- `app/Http/Controllers/RatesController.php`
+
+Rendered Inertia page:
+- `Rates/Index`
+
+Purpose:
+- manages reusable commercial configuration used by bookings and reporting
+
+Server-side data flow:
+- controller optionally reads `start` and `end`
+- returns props:
+  - `rates`
+  - `charges`
+  - `bookingTypes`
+  - `chartRates`
+  - `chartStats`
+  - `chartDiscounts`
+
+Important backend queries:
+- rates exclude `is_custom = true`
+- charges exclude `is_custom = true`
+- chart counts are filtered through `applyDateRange()`
+- discount chart only uses percentage rates
+
+Important frontend structure:
+- left column:
+  - rates chart
+  - rates section
+- middle column:
+  - discount chart
+  - booking types section
+- right column:
+  - charges section
+
+Important components used:
+- `AppLayout`
+- `RatesChart`
+- `DiscountChart`
+- `RatesSection`
+- `BookingTypesSection`
+- `ChargesSection`
+
+Important server actions/endpoints tied to the page:
+- `POST /rates`
+- `PUT /rates/{rate}`
+- `DELETE /rates/{rate}`
+- `POST /charges`
+- `PUT /charges/{charge}`
+- `DELETE /charges/{charge}`
+- `POST /booking-types`
+- `PUT /booking-types/{bookingType}`
+- `DELETE /booking-types/{bookingType}`
+
+Important backend logic:
+- rate validation enforces `fixed|percentage`
+- charge validation enforces `amenity|damage`
+- booking type delete is blocked when related bookings exist
+- chart discount totals are calculated from booking `discount_amount`
+
+Important data shown:
+- rate names
+- rate values
+- rate type
+- charge names
+- charge values
+- charge type
+- booking type names
+- chart booking counts
+- chart total discount amounts
+
+Technical notes:
+- this page is both a CRUD page and a reporting summary page
+- chart props are already server-aggregated before reaching React
+
+==================================================
+5. REPORTS CHARTS PAGE
+==================================================
+
+Route:
+- `/reports/charts`
+
+Frontend file:
+- `resources/js/pages/reports/charts.tsx`
+
+Backend file:
+- `app/Http/Controllers/ChartController.php`
+
+Rendered Inertia page:
+- `reports/charts`
+
+Purpose:
+- presents high-level financial and performance analytics for monthly and yearly views
+
+Expected page props:
+- `monthlyData`
+- `yearlyData`
+- `monthlyKpis`
+- `yearlyKpis`
+- `monthlyDistribution`
+- `yearlyDistribution`
+
+Important frontend state:
+- `view` with values:
+  - `monthly`
+  - `yearly`
+
+Important frontend hooks/utilities:
+- `usePage`
+- `useState`
+- `useMemo`
+
+Important page logic:
+- selects dataset and KPI block based on active view
+- attaches chart colors to distribution items
+- converts raw distribution values into percentages
+- extracts top five distribution items for bar chart display
+- determines KPI trend direction with `getTrend()`
+
+Important UI sections:
+- page heading
+- monthly/yearly tabs
+- KPI cards
+- revenue line chart
+- ADR/RevPAR/Occupancy cards
+- discount distribution chart
+- legend/list of distribution percentages
+
+Important components used:
+- `AppLayout`
+- `Card`
+- `Tabs`
+- `Tooltip`
+- Recharts `ResponsiveContainer`
+- Recharts `LineChart`
+- Recharts `BarChart`
+- Recharts `CartesianGrid`
+- Recharts `XAxis`
+- Recharts `YAxis`
+- Recharts `Tooltip`
+- Recharts `Line`
+- Recharts `Bar`
+- Recharts `Cell`
+
+Important data shown:
+- collected revenue
+- expected revenue
+- outstanding balance
+- cash collected
+- ADR
+- RevPAR
+- occupancy
+- monthly/yearly revenue trend
+- discount distribution percentages and counts
+
+Technical notes:
+- chart tooltip content is custom-rendered rather than default Recharts output
+- distribution percentages are computed client-side from server totals
+- UI includes KPI definition tooltips for business terms
+
+==================================================
+6. REPORTS HISTORY PAGE
+==================================================
+
+Route:
+- `/reports/history`
+
+Frontend file:
+- `resources/js/pages/reports/history.tsx`
+
+Backend file:
+- `app/Http/Controllers/HistoryController.php`
+
+Rendered Inertia page:
+- `reports/history`
+
+Purpose:
+- provides historical booking lookup with filters and printable SOA access
+
+Server-side data flow:
+- page expects:
+  - paginated `bookings`
+  - `filters`
+
+Important frontend state:
+- `search`
+- `activeTab`
+- initialization flags around date state
+
+Important frontend hooks/utilities:
+- `usePage`
+- Inertia `router`
+- `useDateRange`
+- `useState`
+- `useEffect`
+- `date-fns/format`
+
+Important page logic:
+- debounced route refresh on search/date/status changes
+- active tab filters are also sent to the server
+- local table rows are further derived from returned data
+- SOA print opens a new tab/window through `window.open()`
+
+Important UI sections:
+- page header row
+- search input
+- booking status tabs
+- history table
+- SOA action column
+- pagination footer
+
+Important components used:
+- `AppLayout`
+- `Table`
+- `Badge`
+- `Input`
+- `Tabs`
+
+Important data shown:
+- guest name
+- guest email
+- contact number
+- room number
+- room type
+- check-in/check-out dates and times
+- booking status
+- total amount
+- outstanding balance
+
+Technical notes:
+- this page consumes date range from global context, similar to dashboard/admin pages
+- print action is tied directly to `/bookings/{id}/print`
+- balance is computed in the view from `total_amount + booking_charges - payments`
+
+==================================================
+7. ADMIN OVERVIEW PAGE
+==================================================
+
+Route:
+- `/admin`
+
+Frontend file:
+- `resources/js/pages/AdminPage/Index.tsx`
+
+Backend file:
+- `app/Http/Controllers/Admin/OverviewController.php`
+
+Rendered Inertia page:
+- `AdminPage/Index`
+
+Purpose:
+- gives administrators visibility into users and frontdesk operational activity
+
+Expected page props:
+- `users`
+- `logs`
+- `auth`
+
+Important frontend state:
+- `search`
+- `filter`
+- `page`
+
+Important frontend hooks/utilities:
+- `usePage`
+- `router`
+- `useDateRange`
+- `useMemo`
+- `useState`
+- `useEffect`
+
+Important page logic:
+- recalculates date query params from shared range and reloads `/admin`
+- computes:
+  - `adminCount`
+  - `frontdeskCount`
+  - `totalUsers`
+- filters logs by:
+  - user/staff/guest/room keyword
+  - action type
+- paginates logs locally with `perPage = 10`
+
+Important UI sections:
+- welcome header
+- three user count cards
+- user management table
+- frontdesk activity logs table
+- search box
+- action filter tabs/buttons
+- pagination controls
+
+Important components used:
+- `AppLayout`
+- `Card`
+- `Table`
+- `Input`
+- `Badge`
+- `Button`
+
+Important data shown:
+- authenticated admin role/name
+- admin count
+- frontdesk count
+- total users
+- user IDs, names, emails, roles
+- log action type
+- guest name
+- room
+- activity date
+
+Technical notes:
+- log filtering is handled on the client side after receiving server props
+- page uses a custom button-strip filter instead of the shared Tabs component
+- activity labels/icons/colors are mapped through helper functions in the page file
+
+==================================================
+8. ADMIN USERS PAGE
+==================================================
+
+Route:
+- `/admin/users`
+
+Frontend file:
+- `resources/js/pages/AdminPage/User.tsx`
+
+Backend file:
+- `app/Http/Controllers/Admin/AdminUserController.php`
+
+Rendered Inertia page:
+- `AdminPage/User`
+
+Purpose:
+- manages admin/frontdesk accounts and user maintenance workflows
+
+Expected page props:
+- `users`
+- `filters`
+- `auth`
+
+Important frontend state:
+- `search`
+- `status`
+- dialog states:
+  - `createOpen`
+  - `passwordOpen`
+  - `editOpen`
+  - `resetOpen`
+  - `confirmOpen`
+  - `deleteOpen`
+- `selectedUser`
+- create form state
+- edit form state
+- reset password state
+- validation error state
+
+Important frontend hooks/utilities:
+- `usePage`
+- Inertia `router`
+- `useState`
+- `useEffect`
+- `toast`
+
+Important page logic:
+- debounced server-side filtering via `router.get('/admin/users', params)`
+- create dialog validates required fields before submit
+- edit dialog validates name/email/role before submit
+- reset password dialog submits patch request to password endpoint
+- delete dialog submits delete request
+
+Important UI sections:
+- search bar
+- active/inactive filter tabs
+- create user dialog
+- edit user dialog
+- reset password dialog
+- delete user dialog
+- users table
+
+Important components used:
+- `AppLayout`
+- `UserTable`
+- `CreateUserDialog`
+- `EditUserDialog`
+- `ResetPasswordDialog`
+- `DeleteUserDialog`
+- `Tabs`
+- `Input`
+
+Important server actions/endpoints tied to the page:
+- `POST /admin/users`
+- `PATCH /admin/users/{user}`
+- `PATCH /admin/users/{user}/password`
+- `PATCH /admin/users/{user}/status`
+- `DELETE /admin/users/{user}`
+
+Important data shown:
+- user name
+- email
+- role
+- status
+
+Technical notes:
+- status filtering is server-driven, not only local
+- current authenticated user ID is passed into `UserTable`
+- page maintains separate create/edit/reset form state rather than using one shared form object
+
+==================================================
+9. ADMIN HOTEL INFO PAGE
+==================================================
+
+Route:
+- `/admin/hotel-info`
+
+Frontend file:
+- `resources/js/pages/AdminPage/HotelInfo.tsx`
+
+Backend file:
+- `app/Http/Controllers/Admin/HotelInfoController.php`
+
+Rendered Inertia page:
+- `AdminPage/HotelInfo`
+
+Purpose:
+- manages hotel branding data and backup/restore operations
+
+Expected page props:
+- `hotel`
+
+Important frontend state:
+- `hotelName`
+- `logo`
+- `preview`
+- `restoreFile`
+
+Important frontend hooks/utilities:
+- `usePage`
+- Inertia `router`
+- `useState`
+- `useEffect`
+- `toast`
+
+Important page logic:
+- syncs local hotel name from incoming page props
+- creates `FormData` for hotel detail updates
+- creates `FormData` for restore upload
+- uses `router.post(..., { forceFormData: true })` for file submissions
+- uses `window.location.href` for backup download
+- reloads only `hotel` prop after successful save
+
+Important UI sections:
+- hotel details card
+- hotel name field
+- logo preview/upload area
+- backup panel
+- restore panel
+- save/cancel action row
+
+Important components used:
+- `AppLayout`
+- `Card`
+- `Input`
+- `Label`
+- `Button`
+
+Important server actions/endpoints tied to the page:
+- `POST /admin/hotel-info`
+- `GET /admin/backup/download`
+- `POST /admin/backup/restore`
+
+Important data shown:
+- hotel name
+- current logo
+- selected replacement logo preview
+- selected restore file
+
+Technical notes:
+- logo preview is generated with `URL.createObjectURL(file)`
+- save and restore actions are multipart form submissions
+- backup bypasses Inertia form flow and uses direct browser navigation
+
+==================================================
+10. QUICK PAGE LIST
+==================================================
+
+- `/dashboard`
+- `/bookings`
+- `/rooms`
+- `/rates`
+- `/reports/charts`
+- `/reports/history`
+- `/admin`
+- `/admin/users`
+- `/admin/hotel-info`

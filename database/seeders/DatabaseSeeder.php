@@ -19,131 +19,12 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        $bookingTypes = [
-            'Agoda',
-            'Airbnb',
-            'Booking.com',
-            'Complimentary (Event Package)',
-            'Facebook',
-            'Instagram',
-            'Phone Call',
-            'Walk-In',
-        ];
+        $this->call(InitialSetupSeeder::class);
 
-        foreach ($bookingTypes as $type) {
-            BookingType::create([
-                'name' => $type,
-                'is_active' => true,
-            ]);
-        }
+        $receptionist = User::query()->where('email', 'admin@gmail.com')->firstOrFail();
 
-        // Create rates
-        $rates = [
-            ['name' => 'Regular', 'value' => 0, 'type' => 'percentage'],
-            ['name' => 'Complimentary', 'value' => 100, 'type' => 'percentage'],
-            ['name' => 'Supplier Discount', 'value' => 10, 'type' => 'percentage'],
-            ['name' => 'Referral', 'value' => 5, 'type' => 'percentage'],
-            ['name' => 'Special Owners Discount', 'value' => 15, 'type' => 'percentage'],
-            ['name' => 'Owners Discount', 'value' => 10, 'type' => 'percentage'],
-            ['name' => 'Corporate and Government', 'value' => 12, 'type' => 'percentage'],
-            ['name' => 'Employee', 'value' => 10, 'type' => 'percentage'],
-        ];
-
-        foreach ($rates as $rate) {
-            Rate::create($rate);
-        }
-
-        // Create charges
-        $amenities = [
-            ['name' => 'Extra Pax', 'value' => 850.00, 'type' => 'amenity'],
-            ['name' => 'Laundry Bag', 'value' => 30.00, 'type' => 'amenity'],
-            ['name' => 'Towel', 'value' => 150.00, 'type' => 'amenity'],
-            ['name' => 'Pool Towel', 'value' => 80.00, 'type' => 'amenity'],
-            ['name' => 'Bathrobe', 'value' => 150.00, 'type' => 'amenity'],
-            ['name' => 'Slippers', 'value' => 30.00, 'type' => 'amenity'],
-            ['name' => 'Shampoo', 'value' => 10.00, 'type' => 'amenity'],
-            ['name' => 'Dental Kit', 'value' => 25.00, 'type' => 'amenity'],
-            ['name' => 'Soap', 'value' => 10.00, 'type' => 'amenity'],
-            ['name' => 'Late Checkout', 'value' => 0.00, 'type' => 'amenity'],
-        ];
-
-        $damages = [
-            ['name' => 'Canister', 'value' => 300.00, 'type' => 'damage'],
-            ['name' => 'Pool Towel Damage', 'value' => 250.00, 'type' => 'damage'],
-            ['name' => 'Towel Damage', 'value' => 500.00, 'type' => 'damage'],
-            ['name' => 'Key Chain', 'value' => 750.00, 'type' => 'damage'],
-            ['name' => 'Key', 'value' => 500.00, 'type' => 'damage'],
-            ['name' => 'Keycard Loss', 'value' => 1500.00, 'type' => 'damage'],
-            ['name' => 'Blanket/Stain', 'value' => 1500.00, 'type' => 'damage'],
-            ['name' => 'Pillow Case', 'value' => 300.00, 'type' => 'damage'],
-            ['name' => 'Linen/Stain', 'value' => 1500.00, 'type' => 'damage'],
-            ['name' => 'Plates', 'value' => 120.00, 'type' => 'damage'],
-            ['name' => 'Glass', 'value' => 150.00, 'type' => 'damage'],
-            ['name' => 'Mug', 'value' => 100.00, 'type' => 'damage'],
-        ];
-
-        foreach (array_merge($amenities, $damages) as $charge) {
-            Charge::create([
-                'name' => $charge['name'],
-                'value' => $charge['value'],
-                'type' => $charge['type'],
-                'is_active' => true,
-            ]);
-        }
-
-        // Create rooms
-        $rooms = [
-            // Standard rooms
-            ['room_number' => '203', 'room_type' => 'Standard', 'capacity' => 2, 'weekday_rate' => 2950.00, 'weekend_rate' => 3250.00],
-            ['room_number' => '204', 'room_type' => 'Standard', 'capacity' => 2, 'weekday_rate' => 2950.00, 'weekend_rate' => 3250.00],
-            ['room_number' => '205', 'room_type' => 'Standard', 'capacity' => 2, 'weekday_rate' => 2950.00, 'weekend_rate' => 3250.00],
-            ['room_number' => '206', 'room_type' => 'Standard', 'capacity' => 2, 'weekday_rate' => 2950.00, 'weekend_rate' => 3250.00],
-
-            // Suite rooms
-            ['room_number' => '201', 'room_type' => 'Suite', 'capacity' => 2, 'weekday_rate' => 3985.00, 'weekend_rate' => 4450.00],
-            ['room_number' => '202', 'room_type' => 'Suite', 'capacity' => 2, 'weekday_rate' => 3985.00, 'weekend_rate' => 4450.00],
-
-            // Quadro rooms
-            ['room_number' => '207', 'room_type' => 'Quadro', 'capacity' => 4, 'weekday_rate' => 5450.00, 'weekend_rate' => 6050.00],
-            ['room_number' => '208', 'room_type' => 'Quadro', 'capacity' => 4, 'weekday_rate' => 5450.00, 'weekend_rate' => 6050.00],
-
-            // Penthouse
-            ['room_number' => '300', 'room_type' => 'Penthouse', 'capacity' => 2, 'weekday_rate' => 6650.00, 'weekend_rate' => 7300.00],
-
-            // Family rooms
-            ['room_number' => '101-102', 'room_type' => 'Family', 'capacity' => 5, 'weekday_rate' => 5550.00, 'weekend_rate' => 6200.00],
-            ['room_number' => '103-104', 'room_type' => 'Family', 'capacity' => 5, 'weekday_rate' => 5550.00, 'weekend_rate' => 6200.00],
-
-            // Resthouse
-            ['room_number' => '105', 'room_type' => 'Resthouse', 'capacity' => 8, 'weekday_rate' => 12500.00, 'weekend_rate' => 13450.00],
-        ];
-
-        foreach ($rooms as $room) {
-            Room::create([
-                'room_number' => $room['room_number'],
-                'room_type' => $room['room_type'],
-                'capacity' => $room['capacity'],
-                'description' => "Beautiful {$room['room_type']} room with amazing views",
-                'price' => $room['weekday_rate'],
-                'weekday_rate' => $room['weekday_rate'],
-                'weekend_rate' => $room['weekend_rate'],
-                'status' => 'Available',
-                'is_active' => true,
-            ]);
-        }
-
-        // Create a receptionist user
-        $receptionist = User::create([
-            'name' => 'John Receptionist',
-            'email' => 'receptionist@hotel.com',
-            'password' => bcrypt('password'),
-        ]);
-
-        // Create clients
         $clients = Client::factory(20)->create();
 
-        // Create bookings with proper calculations
-        $bookings = [];
         $charges = Charge::all();
         $rates = Rate::all();
         $rooms = Room::all();
@@ -157,8 +38,6 @@ class DatabaseSeeder extends Seeder
 
             $checkIn = Carbon::now()->subDays(rand(1, 5))->addHours(rand(0, 23));
             $checkOut = (clone $checkIn)->addDays(rand(1, 10))->addHours(rand(0, 23));
-            $nights = $checkIn->diffInDays($checkOut);
-
             $pricing = app(RoomPricing::class)->quote($room, $rate, $checkIn, $checkOut);
 
             $booking = Booking::create([
@@ -182,7 +61,6 @@ class DatabaseSeeder extends Seeder
                 'updated_at' => Carbon::now(),
             ]);
 
-            // Add random charges to booking
             $numberOfCharges = rand(0, 3);
             $totalCharges = 0;
 
@@ -203,12 +81,10 @@ class DatabaseSeeder extends Seeder
                 $totalCharges += $chargeTotal;
             }
 
-            // Create payments
             $paymentStatus = $booking->payment_status;
             $totalWithCharges = $booking->total_amount + $totalCharges;
 
             if ($paymentStatus === 'paid') {
-                // Full payment
                 Payment::create([
                     'booking_id' => $booking->id,
                     'amount' => $totalWithCharges,
@@ -217,10 +93,8 @@ class DatabaseSeeder extends Seeder
                     'created_at' => Carbon::parse($booking->created_at)->addDays(rand(1, 5)),
                 ]);
             } elseif ($paymentStatus === 'partial') {
-                // Partial payment (50-70% of total)
                 $partialAmount = $totalWithCharges * (rand(50, 70) / 100);
 
-                // Downpayment
                 Payment::create([
                     'booking_id' => $booking->id,
                     'amount' => round($partialAmount, 2),
@@ -230,7 +104,6 @@ class DatabaseSeeder extends Seeder
                 ]);
             }
 
-            // For checked_out bookings, add final payment
             if ($booking->status === 'checked_out' && $paymentStatus === 'partial') {
                 $totalPaid = Payment::where('booking_id', $booking->id)->sum('amount');
                 $remainingBalance = $totalWithCharges - $totalPaid;
@@ -247,19 +120,16 @@ class DatabaseSeeder extends Seeder
             }
         }
 
-        // Update room statuses based on current bookings
         $this->updateRoomStatuses();
     }
 
-    private function updateRoomStatuses()
+    private function updateRoomStatuses(): void
     {
         $now = Carbon::now();
 
-        // Get all rooms
         $rooms = Room::all();
 
         foreach ($rooms as $room) {
-            // Check if room has active booking
             $activeBooking = Booking::where('room_id', $room->id)
                 ->where('status', '!=', 'cancelled')
                 ->where('status', '!=', 'checked_out')
@@ -270,7 +140,6 @@ class DatabaseSeeder extends Seeder
             if ($activeBooking) {
                 $room->status = 'Occupied';
             } else {
-                // Check for future bookings
                 $futureBooking = Booking::where('room_id', $room->id)
                     ->where('status', 'confirmed')
                     ->where('check_in', '>', $now)

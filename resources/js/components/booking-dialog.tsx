@@ -458,11 +458,11 @@ export default function BookingFormDialog({
 
 			if (!selectedRoomId) return;
 
-			const isStillAvailable = roomOptions.some((r) => r.value === selectedRoomId && !r.disabled);
-			if (!isStillAvailable && !isEditMode) {
-				setSelectedRoomId('');
-				setData('room_id', '');
-			}
+			// const isStillAvailable = roomOptions.some((r) => r.value === selectedRoomId && !r.disabled);
+			// if (!isStillAvailable && !isEditMode) {
+			// 	setSelectedRoomId('');
+			// 	setData('room_id', '');
+			// }
 		}
 	}, [dateRange, checkInTime, checkOutTime, selectedRoomId, selectedRateId, customDiscount, customDiscountType, rooms, rates, setData]);
 
@@ -538,15 +538,15 @@ export default function BookingFormDialog({
 		...(!isEditMode ? [{ value: 'custom', label: 'Custom Discount' }] : []),
 	];
 
-	const paymentMethodOptions = ['Cash', 'GCash', 'Credit Card', 'Bank Transfer'].map((method) => ({
+	const paymentMethodOptions = ['Cash', 'GCash', 'Credit Card', 'Bank Transfer', 'Check'].map((method) => ({
 		value: method,
 		label: method,
 	}));
 
 	const resetStayDetails = () => {
 		setDateRange({ from: undefined, to: undefined });
-		setCheckInTime('08:00');
-		setCheckOutTime('17:00');
+		setCheckInTime('14:00');
+		setCheckOutTime('12:00');
 		setSelectedRoomId('');
 		setSelectedRateId('');
 		setGuestCount('1');
@@ -810,7 +810,7 @@ export default function BookingFormDialog({
 																})
 															}
 															numberOfMonths={2}
-															disabled={disabledDates}
+															// disabled={disabledDates}
 														/>
 														<FieldSeparator className='-mb-3' />
 														<FieldGroup className='grid grid-cols-3 gap-4 p-4'>

@@ -30,18 +30,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-        // Rooms
-        Route::get('/rooms', [AccommodationController::class, 'index'])->name('rooms.index');
-        Route::post('/rooms', [AccommodationController::class, 'store']);
-        Route::patch('/rooms/{room}', [AccommodationController::class, 'update'])->name('rooms.update');
-        Route::delete('/rooms/{room}', [AccommodationController::class, 'destroy'])->name('rooms.destroy');
-        Route::patch('/rooms/{room}/status', [AccommodationController::class, 'updateStatus'])->name('rooms.updateStatus');
-        Route::post('/rooms/{room}/check-in', [AccommodationController::class, 'checkIn']);
-        Route::post('/rooms/{room}/check-out', [AccommodationController::class, 'checkOut']);
-        Route::post('/rooms/{room}/cancel-booking', [AccommodationController::class, 'cancelBooking']);
-        Route::post('/rooms/{room}/mark-paid', [AccommodationController::class, 'markPaid']);
-        Route::post('/rooms/{room}/confirm-cleaning', [AccommodationController::class, 'confirmCleaning']);
-
         // Reports
         Route::prefix('reports')->group(function () {
             Route::get('/charts', [ChartController::class, 'index'])->name('reports.charts');
@@ -79,9 +67,21 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     Route::middleware(AdminMiddleware::class)->group(function () {
+        
+        // Rooms
+        Route::get('/rooms', [AccommodationController::class, 'index'])->name('rooms.index');
+        Route::post('/rooms', [AccommodationController::class, 'store']);
+        Route::patch('/rooms/{room}', [AccommodationController::class, 'update'])->name('rooms.update');
+        Route::delete('/rooms/{room}', [AccommodationController::class, 'destroy'])->name('rooms.destroy');
+        Route::patch('/rooms/{room}/status', [AccommodationController::class, 'updateStatus'])->name('rooms.updateStatus');
+        Route::post('/rooms/{room}/check-in', [AccommodationController::class, 'checkIn']);
+        Route::post('/rooms/{room}/check-out', [AccommodationController::class, 'checkOut']);
+        Route::post('/rooms/{room}/cancel-booking', [AccommodationController::class, 'cancelBooking']);
+        Route::post('/rooms/{room}/mark-paid', [AccommodationController::class, 'markPaid']);
+        Route::post('/rooms/{room}/confirm-cleaning', [AccommodationController::class, 'confirmCleaning']);
+
         Route::get('/admin', [OverviewController::class, 'index'])
             ->name('admin.index');
-
 
         // users management
         Route::get('/admin/users', [AdminUserController::class, 'index'])
