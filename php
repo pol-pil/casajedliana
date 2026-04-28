@@ -1,35 +1,49 @@
+C:\php84>php.exe -m
+PHP Warning:  PHP Startup: Unable to load dynamic library 'curl' (tried: C:\php\ext\curl (The specified module could not be found), C:\php\ext\php_curl.dll (The specified module could not be found)) in Unknown on line 0
 
+Warning: PHP Startup: Unable to load dynamic library 'curl' (tried: C:\php\ext\curl (The specified module could not be found), C:\php\ext\php_curl.dll (The specified module could not be found)) in Unknown on line 0
+PHP Warning:  PHP Startup: Unable to load dynamic library 'fileinfo' (tried: C:\php\ext\fileinfo (The specified module could not be found), C:\php\ext\php_fileinfo.dll (The specified module could not be found)) in Unknown on line 0
 
-C:\Users\JEDLIAN\Desktop\casajedliana>php.exe artisan serve
-PHP Fatal error:  Uncaught RuntimeException: Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.4.0". You are running 8.1.25. in C:\Users\JEDLIAN\Desktop\casajedliana\vendor\composer\platform_check.php:22
-Stack trace:
-#0 C:\Users\JEDLIAN\Desktop\casajedliana\vendor\composer\autoload_real.php(25): require()
-#1 C:\Users\JEDLIAN\Desktop\casajedliana\vendor\autoload.php(22): ComposerAutoloaderInit3c79e040a3570288a4004f205416801a::getLoader()
-#2 C:\Users\JEDLIAN\Desktop\casajedliana\artisan(10): require('C:\\Users\\JEDLIA...')
-#3 {main}
-  thrown in C:\Users\JEDLIAN\Desktop\casajedliana\vendor\composer\platform_check.php on line 22
+Warning: PHP Startup: Unable to load dynamic library 'fileinfo' (tried: C:\php\ext\fileinfo (The specified module could not be found), C:\php\ext\php_fileinfo.dll (The specified module could not be found)) in Unknown on line 0
+PHP Warning:  PHP Startup: Unable to load dynamic library 'gd' (tried: C:\php\ext\gd (The specified module could not be found), C:\php\ext\php_gd.dll (The specified module could not be found)) in Unknown on line 0
 
-Fatal error: Uncaught RuntimeException: Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.4.0". You are running 8.1.25. in C:\Users\JEDLIAN\Desktop\casajedliana\vendor\composer\platform_check.php:22
-Stack trace:
-#0 C:\Users\JEDLIAN\Desktop\casajedliana\vendor\composer\autoload_real.php(25): require()
-#1 C:\Users\JEDLIAN\Desktop\casajedliana\vendor\autoload.php(22): ComposerAutoloaderInit3c79e040a3570288a4004f205416801a::getLoader()
-#2 C:\Users\JEDLIAN\Desktop\casajedliana\artisan(10): require('C:\\Users\\JEDLIA...')
-#3 {main}
-  thrown in C:\Users\JEDLIAN\Desktop\casajedliana\vendor\composer\platform_check.php on line 22
+Warning: PHP Startup: Unable to load dynamic library 'gd' (tried: C:\php\ext\gd (The specified module could not be found), C:\php\ext\php_gd.dll (The specified module could not be found)) in Unknown on line 0
+PHP Warning:  PHP Startup: Unable to load dynamic library 'mbstring' (tried: C:\php\ext\mbstring (The specified module could not be found), C:\php\ext\php_mbstring.dll (The specified module could not be found)) in Unknown on line 0
 
-C:\Users\JEDLIAN\Desktop\casajedliana>C:\php\php.exe -v
-'C:\php\php.exe' is not recognized as an internal or external command,
-operable program or batch file.
+Warning: PHP Startup: Unable to load dynamic library 'mbstring' (tried: C:\php\ext\mbstring (The specified module could not be found), C:\php\ext\php_mbstring.dll (The specified module could not be found)) in Unknown on line 0
+PHP Warning:  PHP Startup: Unable to load dynamic library 'pdo_sqlite' (tried: C:\php\ext\pdo_sqlite (The specified module could not be found), C:\php\ext\php_pdo_sqlite.dll (The specified module could not be found)) in Unknown on line 0
 
+Warning: PHP Startup: Unable to load dynamic library 'pdo_sqlite' (tried: C:\php\ext\pdo_sqlite (The specified module could not be found), C:\php\ext\php_pdo_sqlite.dll (The specified module could not be found)) in Unknown on line 0
+PHP Warning:  PHP Startup: Unable to load dynamic library 'sqlite3' (tried: C:\php\ext\sqlite3 (The specified module could not be found), C:\php\ext\php_sqlite3.dll (The specified module could not be found)) in Unknown on line 0
 
-C:\Users\JEDLIAN\Desktop\casajedliana>C:\php82\php.exe artisan serve
+Warning: PHP Startup: Unable to load dynamic library 'sqlite3' (tried: C:\php\ext\sqlite3 (The specified module could not be found), C:\php\ext\php_sqlite3.dll (The specified module could not be found)) in Unknown on line 0
+[PHP Modules]
+bcmath
+calendar
+Core
+ctype
+date
+dom
+filter
+hash
+iconv
+json
+libxml
+mysqlnd
+pcre
+PDO
+Phar
+random
+readline
+Reflection
+session
+SimpleXML
+SPL
+standard
+tokenizer
+xml
+xmlreader
+xmlwriter
+zlib
 
-Fatal error: Uncaught RuntimeException: Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.4.0". You are running 8.2.30. in C:\Users\JEDLIAN\Desktop\casajedliana\vendor\composer\platform_check.php:22
-Stack trace:
-#0 C:\Users\JEDLIAN\Desktop\casajedliana\vendor\composer\autoload_real.php(25): require()
-#1 C:\Users\JEDLIAN\Desktop\casajedliana\vendor\autoload.php(22): ComposerAutoloaderInit3c79e040a3570288a4004f205416801a::getLoader()
-#2 C:\Users\JEDLIAN\Desktop\casajedliana\artisan(10): require('C:\\Users\\JEDLIA...')
-#3 {main}
-  thrown in C:\Users\JEDLIAN\Desktop\casajedliana\vendor\composer\platform_check.php on line 22
-
-C:\Users\JEDLIAN\Desktop\casajedliana>
+[Zend Modules]
