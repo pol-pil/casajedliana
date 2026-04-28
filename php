@@ -16,3 +16,7 @@ Stack trace:
 #2 C:\Users\JEDLIAN\Desktop\casajedliana\artisan(10): require('C:\\Users\\JEDLIA...')
 #3 {main}
   thrown in C:\Users\JEDLIAN\Desktop\casajedliana\vendor\composer\platform_check.php on line 22
+
+C:\Users\JEDLIAN\Desktop\casajedliana>C:\php\php.exe -v
+'C:\php\php.exe' is not recognized as an internal or external command,
+operable program or batch file.
