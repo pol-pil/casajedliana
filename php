@@ -1,76 +1,23 @@
-C:\php84>php.exe -m
-PHP Warning:  PHP Startup: Unable to load dynamic library 'curl' (tried: C:\php\ext\curl (The specified module could not be found), C:\php\ext\php_curl.dll (The specified module could not be found)) in Unknown on line 0
+C:\Users\JEDLIAN\Desktop\casajedliana>npm run dev
 
-Warning: PHP Startup: Unable to load dynamic library 'curl' (tried: C:\php\ext\curl (The specified module could not be found), C:\php\ext\php_curl.dll (The specified module could not be found)) in Unknown on line 0
-PHP Warning:  PHP Startup: Unable to load dynamic library 'fileinfo' (tried: C:\php\ext\fileinfo (The specified module could not be found), C:\php\ext\php_fileinfo.dll (The specified module could not be found)) in Unknown on line 0
+> dev
+> vite
 
-Warning: PHP Startup: Unable to load dynamic library 'fileinfo' (tried: C:\php\ext\fileinfo (The specified module could not be found), C:\php\ext\php_fileinfo.dll (The specified module could not be found)) in Unknown on line 0
-PHP Warning:  PHP Startup: Unable to load dynamic library 'gd' (tried: C:\php\ext\gd (The specified module could not be found), C:\php\ext\php_gd.dll (The specified module could not be found)) in Unknown on line 0
+error when starting dev server:
+Error: Error generating types: Error: Command failed: php artisan wayfinder:generate --with-form
+PHP Fatal error:  Uncaught RuntimeException: Composer detected issues in your platform: Your Composer dependencies require a PHP version ">= 8.4.0". You are running 8.1.25. in C:\Users\JEDLIAN\Desktop\casajedliana\vendor\composer\platform_check.php:22
+Stack trace:
+#0 C:\Users\JEDLIAN\Desktop\casajedliana\vendor\composer\autoload_real.php(25): require()
+#1 C:\Users\JEDLIAN\Desktop\casajedliana\vendor\autoload.php(22): ComposerAutoloaderInit3c79e040a3570288a4004f205416801a::getLoader()
+#2 C:\Users\JEDLIAN\Desktop\casajedliana\artisan(10): require('C:\\Users\\JEDLIA...')
+#3 {main}
+  thrown in C:\Users\JEDLIAN\Desktop\casajedliana\vendor\composer\platform_check.php on line 22
 
-Warning: PHP Startup: Unable to load dynamic library 'gd' (tried: C:\php\ext\gd (The specified module could not be found), C:\php\ext\php_gd.dll (The specified module could not be found)) in Unknown on line 0
-PHP Warning:  PHP Startup: Unable to load dynamic library 'mbstring' (tried: C:\php\ext\mbstring (The specified module could not be found), C:\php\ext\php_mbstring.dll (The specified module could not be found)) in Unknown on line 0
-
-Warning: PHP Startup: Unable to load dynamic library 'mbstring' (tried: C:\php\ext\mbstring (The specified module could not be found), C:\php\ext\php_mbstring.dll (The specified module could not be found)) in Unknown on line 0
-PHP Warning:  PHP Startup: Unable to load dynamic library 'pdo_sqlite' (tried: C:\php\ext\pdo_sqlite (The specified module could not be found), C:\php\ext\php_pdo_sqlite.dll (The specified module could not be found)) in Unknown on line 0
-
-Warning: PHP Startup: Unable to load dynamic library 'pdo_sqlite' (tried: C:\php\ext\pdo_sqlite (The specified module could not be found), C:\php\ext\php_pdo_sqlite.dll (The specified module could not be found)) in Unknown on line 0
-PHP Warning:  PHP Startup: Unable to load dynamic library 'sqlite3' (tried: C:\php\ext\sqlite3 (The specified module could not be found), C:\php\ext\php_sqlite3.dll (The specified module could not be found)) in Unknown on line 0
-
-Warning: PHP Startup: Unable to load dynamic library 'sqlite3' (tried: C:\php\ext\sqlite3 (The specified module could not be found), C:\php\ext\php_sqlite3.dll (The specified module could not be found)) in Unknown on line 0
-[PHP Modules]
-bcmath
-calendar
-Core
-ctype
-date
-dom
-filter
-hash
-iconv
-json
-libxml
-mysqlnd
-pcre
-PDO
-Phar
-random
-readline
-Reflection
-session
-SimpleXML
-SPL
-standard
-tokenizer
-xml
-xmlreader
-xmlwriter
-zlib
-
-[Zend Modules]
-
-
-
-
-C:\php84>php.exe --ini
-PHP Warning:  PHP Startup: Unable to load dynamic library 'curl' (tried: C:\php\ext\curl (The specified module could not be found), C:\php\ext\php_curl.dll (The specified module could not be found)) in Unknown on line 0
-
-Warning: PHP Startup: Unable to load dynamic library 'curl' (tried: C:\php\ext\curl (The specified module could not be found), C:\php\ext\php_curl.dll (The specified module could not be found)) in Unknown on line 0
-PHP Warning:  PHP Startup: Unable to load dynamic library 'fileinfo' (tried: C:\php\ext\fileinfo (The specified module could not be found), C:\php\ext\php_fileinfo.dll (The specified module could not be found)) in Unknown on line 0
-
-Warning: PHP Startup: Unable to load dynamic library 'fileinfo' (tried: C:\php\ext\fileinfo (The specified module could not be found), C:\php\ext\php_fileinfo.dll (The specified module could not be found)) in Unknown on line 0
-PHP Warning:  PHP Startup: Unable to load dynamic library 'gd' (tried: C:\php\ext\gd (The specified module could not be found), C:\php\ext\php_gd.dll (The specified module could not be found)) in Unknown on line 0
-
-Warning: PHP Startup: Unable to load dynamic library 'gd' (tried: C:\php\ext\gd (The specified module could not be found), C:\php\ext\php_gd.dll (The specified module could not be found)) in Unknown on line 0
-PHP Warning:  PHP Startup: Unable to load dynamic library 'mbstring' (tried: C:\php\ext\mbstring (The specified module could not be found), C:\php\ext\php_mbstring.dll (The specified module could not be found)) in Unknown on line 0
-
-Warning: PHP Startup: Unable to load dynamic library 'mbstring' (tried: C:\php\ext\mbstring (The specified module could not be found), C:\php\ext\php_mbstring.dll (The specified module could not be found)) in Unknown on line 0
-PHP Warning:  PHP Startup: Unable to load dynamic library 'pdo_sqlite' (tried: C:\php\ext\pdo_sqlite (The specified module could not be found), C:\php\ext\php_pdo_sqlite.dll (The specified module could not be found)) in Unknown on line 0
-
-Warning: PHP Startup: Unable to load dynamic library 'pdo_sqlite' (tried: C:\php\ext\pdo_sqlite (The specified module could not be found), C:\php\ext\php_pdo_sqlite.dll (The specified module could not be found)) in Unknown on line 0
-PHP Warning:  PHP Startup: Unable to load dynamic library 'sqlite3' (tried: C:\php\ext\sqlite3 (The specified module could not be found), C:\php\ext\php_sqlite3.dll (The specified module could not be found)) in Unknown on line 0
-
-Warning: PHP Startup: Unable to load dynamic library 'sqlite3' (tried: C:\php\ext\sqlite3 (The specified module could not be found), C:\php\ext\php_sqlite3.dll (The specified module could not be found)) in Unknown on line 0
-Configuration File (php.ini) Path:
-Loaded Configuration File:         C:\php84\php.ini
-Scan for additional .ini files in: (none)
-Additional .ini files parsed:      (none)
+    at PluginContext._formatLog (file:///C:/Users/JEDLIAN/Desktop/casajedliana/node_modules/vite/dist/node/chunks/config.js:28999:43)
+    at PluginContext.error (file:///C:/Users/JEDLIAN/Desktop/casajedliana/node_modules/vite/dist/node/chunks/config.js:28996:14)
+    at runCommand (file:///C:/Users/JEDLIAN/Desktop/casajedliana/node_modules/@laravel/vite-plugin-wayfinder/dist/index.mjs:2101:15)
+    at async Promise.all (index 2)
+    at async EnvironmentPluginContainer.hookParallel (file:///C:/Users/JEDLIAN/Desktop/casajedliana/node_modules/vite/dist/node/chunks/config.js:28661:3)
+    at async EnvironmentPluginContainer.buildStart (file:///C:/Users/JEDLIAN/Desktop/casajedliana/node_modules/vite/dist/node/chunks/config.js:28671:3)
+    at async file:///C:/Users/JEDLIAN/Desktop/casajedliana/node_modules/vite/dist/node/chunks/config.js:25633:4
+    at async httpServer.listen (file:///C:/Users/JEDLIAN/Desktop/casajedliana/node_modules/vite/dist/node/chunks/config.js:25644:5)
