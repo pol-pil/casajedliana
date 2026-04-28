@@ -21,7 +21,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 type Status = 'Available' | 'Occupied' | 'Reserved' | 'Maintenance';
 
-type Category = 'Standard' | 'Suite' | 'Quadro' | 'Family' | 'Penthouse' | 'Rest House';
+type Category = 'Standard' | 'Suite' | 'Quadro' | 'Family' | 'Penthouse' | 'Rest House'| 'Pavilion'| 'Gazebo'| 'Cabana'| 'Editha'| 'Eliana'| 'Ediane';
 
 const statusColor = (status: Status) => {
 	switch (status) {

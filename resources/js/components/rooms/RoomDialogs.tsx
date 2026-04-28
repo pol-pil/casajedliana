@@ -119,20 +119,30 @@ export default function RoomDialogs(props: any) {
 						</Button>
 
 						<Button
-							variant='destructive'
-							onClick={() => {
-								if (!selectedRoom) return
-								router.delete(`/rooms/${selectedRoom.id}`, {
-									onSuccess: () => {
-										toast.success(`Room deleted`)
-										setDeleteRoomOpen(false)
-										refreshRooms()
-									}
-								})
-							}}
-						>
-							Delete
-						</Button>
+                            variant='destructive'
+                            onClick={() => {
+                                if (!selectedRoom) return;
+
+                                router.delete(`/rooms/${selectedRoom.id}`, {
+                                    onSuccess: () => {
+                                        toast.success(`Room ${selectedRoom.roomNumber} deleted`);
+                                        setDeleteRoomOpen(false);
+                                        refreshRooms();
+                                    },
+                                    onError: (errors) => {
+                                        // This displays the specific error from the backend
+                                        const errorMsg = errors.delete || "An error occurred while deleting.";
+                                        toast.error(errorMsg);
+                                    },
+                                    onFinish: () => {
+                                        // Optional: ensure the dialog closes even on error if preferred
+                                        // setDeleteRoomOpen(false);
+                                    }
+                                });
+                            }}
+                        >
+                            Delete
+                        </Button>
 					</div>
 				</DialogContent>
 			</Dialog>
