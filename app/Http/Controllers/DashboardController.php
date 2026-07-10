@@ -1,0 +1,98 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Booking;
+use App\Models\Room;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Inertia\Inertia;
+
+class DashboardController extends Controller
+{
+    public function index(Request $request)
+    {
+        $start = $request->get('start')
+            ? Carbon::parse($request->get('start'))->toDateString()
+            : Carbon::today()->toDateString();
+
+        $end = $request->get('end')
+            ? Carbon::parse($request->get('end'))->toDateString()
+            : Carbon::today()->addDay()->toDateString();
+
+        $rooms = Room::select(
+            'id',
+            'room_number',
+            'room_type',
+            'capacity',
+            'price',
+            'description',
+            'status'
+        )
+            ->withCount([
+                // Count RESERVED-type bookings
+                'bookings as reserved_count' => function ($query) use ($start, $end) {
+                    $query->whereDate('check_in', '<=', $end)
+                        ->whereDate('check_out', '>', $start)
+                        ->whereIn('status', ['pencil', 'confirmed', 'reserved']);
+                },
+
+                // Count OCCUPIED bookings
+                'bookings as occupied_count' => function ($query) use ($start, $end) {
+                    $query->whereDate('check_in', '<=', $end)
+                        ->whereDate('check_out', '>', $start)
+                        ->where('status', 'checked_in');
+                }
+            ])
+            ->orderBy('room_number', 'asc')
+            ->get();
+
+        foreach ($rooms as $room) {
+
+            if (strtolower($room->status) === 'maintenance') {
+                continue;
+            }
+
+            if ($room->occupied_count > 0) {
+                $room->status = 'Occupied';
+            } elseif ($room->reserved_count > 0) {
+                $room->status = 'Reserved';
+            } else {
+                $room->status = 'Available';
+            }
+        }
+
+        $bookings = Booking::with(['client', 'room', 'payments', 'bookingCharges'])
+            ->whereDate('check_in', '<=', $end)
+            ->whereDate('check_out', '>', $start)
+            ->whereNotIn('status', ['cancelled', 'checked_out', 'no_show'])
+            ->get();
+
+        $checkIns = Booking::with(['client', 'room', 'payments', 'bookingCharges'])
+            ->whereBetween('check_in', [$start, $end])
+            ->get();
+
+        $checkOuts = Booking::with(['client', 'room', 'payments', 'bookingCharges'])
+            ->whereBetween('check_out', [$start, $end])
+            ->get();
+
+        $computePaymentStatus = function ($booking) {
+            $booking->refreshPaymentStatus();
+
+            return $booking;
+        };
+
+        $bookings = $bookings->map($computePaymentStatus);
+        $checkIns = $checkIns->map($computePaymentStatus);
+        $checkOuts = $checkOuts->map($computePaymentStatus);
+
+        return Inertia::render('Dashboard/Index', [
+            'startDate' => $start,
+            'endDate' => $end,
+            'rooms' => $rooms,
+            'bookings' => $bookings,
+            'checkIns' => $checkIns,
+            'checkOuts' => $checkOuts,
+        ]);
+    }
+}

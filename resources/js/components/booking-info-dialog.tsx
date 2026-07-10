@@ -1,0 +1,560 @@
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader } from '@/components/ui/dialog';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { cn } from '@/lib/utils';
+import { router } from '@inertiajs/react';
+import {
+    CheckCircleIcon,
+    XCircleIcon,
+    ClockIcon,
+    EyeIcon,
+    TrashIcon,
+    CircleUserRound,
+    Phone,
+    AtSign,
+    MapPin,
+    EyeOff,
+    AlertCircle,
+    Plus,
+} from 'lucide-react';
+import { toast } from 'sonner';
+import SoaPdf from '@/components/soa-pdf';
+import AddChargeDialog from '@/components/add-charge-dialog';
+import AddPaymentDialog from '@/components/add-payment-dialog';
+import { useState } from 'react';
+import { Avatar, AvatarBadge, AvatarFallback } from './ui/avatar';
+
+type Booking = {
+    id: number;
+    created_at: string;
+    client: {
+        id: number;
+        first_name: string;
+        last_name: string;
+        email?: string;
+        contact_number: string;
+        address: string;
+        company: string;
+    };
+    room: {
+        id: number;
+        room_number: string;
+        room_type: string;
+        weekday_rate?: number;
+        weekend_rate?: number;
+    };
+    rate: {
+        id: number;
+        name: string;
+    };
+    guest_count: string;
+    booking_type: {
+        id: number;
+        name: string;
+    };
+    purpose: string;
+    check_in: string;
+    check_out: string;
+    status: string;
+    total_amount: number;
+    pricing_details?: {
+        base_amount: number;
+        discount_amount: number;
+        total_amount: number;
+        nights: number;
+        weekday_nights: number;
+        weekend_nights: number;
+        pricing_breakdown: Array<{
+            date: string;
+            day_name: string;
+            day_type: 'weekday' | 'weekend';
+            amount: number;
+        }>;
+    };
+    remarks: string;
+    balance: number;
+    payments: Array<{
+        id: number;
+        amount: number;
+        payment_type: string;
+        payment_method: string;
+        created_at: string;
+    }>;
+    booking_charges?: Array<{
+        id: number;
+        charge: {
+            id: number;
+            name: string;
+            value: number;
+            type: 'amenity' | 'damage';
+        };
+        quantity: number;
+        value: number;
+        total: number;
+    }>;
+};
+
+const statusConfig = {
+    confirmed: {
+        label: 'Confirmed',
+        variant: 'default' as const,
+        icon: CheckCircleIcon,
+        color: 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-400',
+    },
+    pencil: {
+        label: 'Pencil Booked',
+        variant: 'secondary' as const,
+        icon: ClockIcon,
+        color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-950 dark:text-yellow-400',
+    },
+    checked_in: {
+        label: 'Checked In',
+        variant: 'default' as const,
+        icon: CheckCircleIcon,
+        color: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300',
+    },
+    checked_out: {
+        label: 'Checked Out',
+        variant: 'outline' as const,
+        icon: CheckCircleIcon,
+        color: 'bg-gray-100 text-gray-800 dark:bg-gray-950 dark:text-gray-300',
+    },
+    cancelled: {
+        label: 'Cancelled',
+        variant: 'destructive' as const,
+        icon: XCircleIcon,
+        color: 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300',
+    },
+    no_show: {
+        label: 'No Show',
+        variant: 'default' as const,
+        icon: EyeOff,
+        color: 'bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-300',
+    },
+};
+
+interface BookingInfoDialogProps {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    selectedBooking: Booking | null;
+    onEdit: (booking: Booking) => void;
+    showEditButton?: boolean;
+}
+
+export default function BookingInfoDialog({
+    open,
+    onOpenChange,
+    selectedBooking,
+    onEdit,
+    showEditButton = true,
+}: BookingInfoDialogProps) {
+    const [isAddBookingChargeDialogOpen, setIsAddBookingChargeDialogOpen] = useState(false);
+    const [isAddPaymentDialogOpen, setIsAddPaymentDialogOpen] = useState(false);
+    const [selectedPayment, setSelectedPayment] = useState<Booking['payments'][number] | null>(null);
+
+    const formatDate = (dateString: string) =>
+        new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+    const formatTime = (dateString: string) =>
+        new Date(dateString).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+
+    const formatPaymentLabel = (value: string) =>
+        value
+            .split('_')
+            .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+            .join(' ');
+
+    const StatusBadge = ({ status }: { status: keyof typeof statusConfig }) => {
+        const config = statusConfig[status] ?? {
+            label: status,
+            variant: 'secondary' as const,
+            icon: AlertCircle,
+            color: 'bg-gray-100 text-gray-800',
+        };
+        const Icon = config.icon;
+        return (
+            <Badge variant={config.variant} className={cn('flex items-center gap-1', config.color)}>
+                <Icon className='h-3 w-3' />
+                {config.label}
+            </Badge>
+        );
+    };
+
+    const allowedActions: Record<string, string[]> = {
+        pencil: ['cancelled', 'confirmed'],
+        confirmed: ['checked_in', 'cancelled', 'no_show'],
+        checked_in: ['checked_out'],
+        checked_out: [],
+        no_show: ['checked_in'],
+        cancelled: [],
+    };
+
+    const can = (action: string) => !allowedActions[selectedBooking?.status ?? '']?.includes(action);
+
+    const updateStatus = (status: string) => {
+        if (!selectedBooking?.id) return;
+        router.patch(
+            `/bookings/${selectedBooking.id}/status`,
+            { status },
+            {
+                preserveScroll: true,
+                onSuccess: () => toast.success(`Booking ${status.replace('_', ' ')} successfully`),
+                onError: () => toast.error('Failed to update booking status'),
+            },
+        );
+    };
+
+    const breakdown = selectedBooking?.pricing_details?.pricing_breakdown ?? [];
+
+    const summary = breakdown.reduce(
+        (acc, night) => {
+            if (night.day_type === 'weekday') acc.weekday++;
+            if (night.day_type === 'weekend') acc.weekend++;
+            return acc;
+        },
+        { weekday: 0, weekend: 0 },
+    );
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className='backdrop-blur-xs lg:min-w-200 dark:bg-primary-foreground/40'>
+                <div className='lg:flex'>
+                    {/* Left Column */}
+                    <div className='mr-4 flex-4 space-y-4 px-4 pr-8 lg:border-r-1'>
+                        <div>
+                            <DialogHeader className='flex flex-row justify-between font-semibold'>
+                                <span>Booking Info</span>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant='ghost' className='h-full rounded-full p-1'>
+                                            <StatusBadge status={selectedBooking?.status as keyof typeof statusConfig} />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent>
+                                        <DropdownMenuItem
+                                            className='focus:text-blue-500'
+                                            onClick={() => updateStatus('confirmed')}
+                                            disabled={can('confirmed')}
+                                        >
+                                            <CheckCircleIcon className='mr-2 h-4 w-4' /> Confirmed
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            className='focus:text-blue-500'
+                                            onClick={() => updateStatus('checked_in')}
+                                            disabled={can('checked_in')}
+                                        >
+                                            <CheckCircleIcon className='mr-2 h-4 w-4' /> Check In
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            className='focus:text-red-700'
+                                            onClick={() => updateStatus('checked_out')}
+                                            disabled={can('checked_out')}
+                                        >
+                                            <EyeIcon className='mr-2 h-4 w-4' /> Check Out
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            className='focus:text-orange-600'
+                                            onClick={() => updateStatus('no_show')}
+                                            disabled={can('no_show')}
+                                        >
+                                            <EyeOff className='mr-2 h-4 w-4' /> No Show
+                                        </DropdownMenuItem>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem
+                                            className='text-destructive focus:bg-red-200'
+                                            onClick={() => updateStatus('cancelled')}
+                                            disabled={can('cancelled')}
+                                        >
+                                            <TrashIcon className='mr-2 h-4 w-4' /> Cancel Booking
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </DialogHeader>
+                            <DialogDescription className='space-y-1 py-2'>
+                                <div className='flex justify-between'>
+                                    <span>Booking ID</span>
+                                    <span>BK-{selectedBooking?.id}</span>
+                                </div>
+                                <div className='flex justify-between'>
+                                    <span>Booking Date</span>
+                                    <span>{selectedBooking && formatDate(selectedBooking.created_at)}</span>
+                                </div>
+                                <div className='flex justify-between'>
+                                    <span>Booking Time</span>
+                                    <span>{selectedBooking && formatTime(selectedBooking.created_at)}</span>
+                                </div>
+                                <div className='flex justify-between'>
+                                    <span className='min-w-35'>Booking Type</span>
+                                    <span className='text-right'>{selectedBooking?.booking_type.name}</span>
+                                </div>
+                                <div className='flex justify-between'>
+                                    <span>Purpose of Booking</span>
+                                    <span>{selectedBooking?.purpose}</span>
+                                </div>
+                            </DialogDescription>
+                        </div>
+                        <div>
+                            <DialogHeader className='text-left font-semibold'>Room Details</DialogHeader>
+                            <DialogDescription className='space-y-1 py-2'>
+                                <div className='flex justify-between'>
+                                    <span>Room Type</span>
+                                    <span>{selectedBooking?.room.room_type}</span>
+                                </div>
+                                <div className='flex justify-between'>
+                                    <span>Room Number</span>
+                                    <span>{selectedBooking?.room.room_number}</span>
+                                </div>
+                                <div className='flex justify-between'>
+                                    <span>Number of Guests</span>
+                                    <span>{selectedBooking?.guest_count}</span>
+                                </div>
+                                <div className='flex justify-between'>
+                                    <span>Weekday Rate</span>
+                                    <span>₱ {Number(selectedBooking?.room.weekday_rate ?? 0).toFixed(2)}</span>
+                                </div>
+                                <div className='flex justify-between'>
+                                    <span>Weekend Rate</span>
+                                    <span>₱ {Number(selectedBooking?.room.weekend_rate ?? 0).toFixed(2)}</span>
+                                </div>
+                            </DialogDescription>
+                        </div>
+                        <div>
+                            <DialogHeader className='text-left font-semibold'>Check-In / Check-Out</DialogHeader>
+                            <DialogDescription className='space-y-1 py-2'>
+                                <div className='flex justify-between'>
+                                    <span>Check-In Date</span>
+                                    <span>{selectedBooking && formatDate(selectedBooking.check_in)}</span>
+                                </div>
+                                <div className='flex justify-between'>
+                                    <span>Check-In Time</span>
+                                    <span>{selectedBooking && formatTime(selectedBooking.check_in)}</span>
+                                </div>
+                                <div className='flex justify-between'>
+                                    <span>Check-Out Date</span>
+                                    <span>{selectedBooking && formatDate(selectedBooking.check_out)}</span>
+                                </div>
+                                <div className='flex justify-between'>
+                                    <span>Check-Out Time</span>
+                                    <span>{selectedBooking && formatTime(selectedBooking.check_out)}</span>
+                                </div>
+                            </DialogDescription>
+                        </div>
+                        <div>
+                            <DialogHeader className='text-left font-semibold'>Special Request</DialogHeader>
+                            <DialogDescription className='py-2'>{selectedBooking?.remarks}</DialogDescription>
+                        </div>
+                    </div>
+
+                    {/* Right Column */}
+                    <div className='flex flex-5 flex-col px-4'>
+                        <DialogHeader className='text-left font-semibold'>Guest Profile</DialogHeader>
+                        <div className='flex items-center p-2'>
+                            <Avatar className='mr-4 size-12 overflow-visible'>
+                                <AvatarFallback>
+                                    {selectedBooking?.client.first_name?.[0]}
+                                    {selectedBooking?.client.last_name?.[0]}
+                                </AvatarFallback>
+                                {/* <AvatarBadge className='p-2'>
+                                    <span className='text-[8px] font-semibold'>{selectedBooking?.client.id}</span>
+                                </AvatarBadge> */}
+                            </Avatar>
+                            <div>
+                                <DialogHeader className='font-semibold'>
+                                    {selectedBooking?.client.first_name} {selectedBooking?.client.last_name}
+                                </DialogHeader>
+                                <DialogDescription>CID-{selectedBooking?.client.id}</DialogDescription>
+                            </div>
+                        </div>
+                        <div className='space-y-1 px-3 py-2'>
+                            <DialogDescription className='flex items-center'>
+                                <Phone className='mr-2 size-4' />
+                                {selectedBooking?.client.contact_number}
+                            </DialogDescription>
+                            <DialogDescription className='flex items-center'>
+                                <AtSign className='mr-2 size-4' />
+                                {selectedBooking?.client.email}
+                            </DialogDescription>
+                            <DialogDescription className='flex'>
+                                <MapPin className='mr-2 size-5' />
+                                {selectedBooking?.client.address}
+                            </DialogDescription>
+                        </div>
+                        <Separator className='my-2' />
+
+                        <AddChargeDialog
+                            open={isAddBookingChargeDialogOpen}
+                            onOpenChange={setIsAddBookingChargeDialogOpen}
+                            bookingId={selectedBooking?.id || null}
+                        />
+                        <AddPaymentDialog
+                            open={isAddPaymentDialogOpen}
+                            onOpenChange={setIsAddPaymentDialogOpen}
+                            bookingId={selectedBooking?.id || null}
+                        />
+
+                        <div className='mt-auto pt-4 pb-8'>
+                            <div className='flex items-center justify-between'>
+                                <DialogHeader className='font-semibold'>Bill</DialogHeader>
+                                <div className='flex flex-row gap-2'>
+                                    <Button
+                                        variant='outline'
+                                        className='h-6 items-center text-xs'
+                                        size='sm'
+                                        onClick={() => setIsAddBookingChargeDialogOpen(true)}
+                                    >
+                                        <Plus className='size-3' /> Charge
+                                    </Button>
+                                    <Button
+                                        variant='outline'
+                                        className='h-6 items-center text-xs'
+                                        size='sm'
+                                        onClick={() => setIsAddPaymentDialogOpen(true)}
+                                    >
+                                        <Plus className='size-3' /> Payment
+                                    </Button>
+                                </div>
+                            </div>
+                            <DialogDescription className='space-y-1 pt-4 pb-2'>
+                                <div className='flex justify-between text-primary-foreground dark:text-primary'>
+                                    <span className='items-center'>
+                                        Room {selectedBooking?.room?.room_number}
+                                        <span className='pl-1 text-xs'>
+                                            ({summary.weekday > 0 && `${summary.weekday} Weekday`}
+                                            {summary.weekday > 0 && summary.weekend > 0 && ' / '}
+                                            {summary.weekend > 0 && `${summary.weekend} Weekend`})
+                                        </span>
+                                    </span>
+                                    <span>
+                                        ₱{' '}
+                                        {Number(
+                                            selectedBooking?.pricing_details?.base_amount ?? selectedBooking?.total_amount ?? 0,
+                                        ).toFixed(2)}
+                                    </span>
+                                </div>
+                                <div className='flex justify-between'>
+                                    <span>
+                                        Discount<span className='pl-1 text-xs'>({selectedBooking?.rate?.name || 'N/A'})</span>
+                                    </span>
+                                    <span>-₱ {Number(selectedBooking?.pricing_details?.discount_amount ?? 0).toFixed(2)}</span>
+                                </div>
+                                {(selectedBooking?.booking_charges ?? [])
+                                    .filter((bc) => bc.charge?.type === 'amenity')
+                                    .map((amenity) => (
+                                        <div key={amenity.id} className='flex justify-between'>
+                                            <span>
+                                                {amenity.charge?.name} {amenity.quantity > 1 ? `x${amenity.quantity}` : ''}
+                                            </span>
+                                            <span>{amenity.total}</span>
+                                        </div>
+                                    ))}
+                                {(selectedBooking?.booking_charges ?? [])
+                                    .filter((bc) => bc.charge?.type === 'damage')
+                                    .map((damage) => (
+                                        <div key={damage.id} className='flex justify-between'>
+                                            <span>
+                                                {damage.charge?.name} {damage.quantity > 1 ? `x${damage.quantity}` : ''}
+                                            </span>
+                                            <span>{damage.total}</span>
+                                        </div>
+                                    ))}
+                                <Separator className='my-2' />
+                                <div className='flex justify-between font-bold text-primary-foreground dark:text-primary'>
+                                    <span>Sub Total</span>
+                                    <span>
+                                        {(
+                                            Number(selectedBooking?.total_amount ?? 0) +
+                                            (selectedBooking?.booking_charges ?? []).reduce((sum, c) => sum + Number(c.total ?? 0), 0)
+                                        ).toFixed(2)}
+                                    </span>
+                                </div>
+                                {selectedBooking?.payments?.map((payment) => (
+                                    <button
+                                        key={payment.id}
+                                        type='button'
+                                        className='flex w-full justify-between rounded-md text-left transition hover:bg-muted/60'
+                                        onClick={() => setSelectedPayment(payment)}
+                                    >
+                                        <span>{formatPaymentLabel(payment.payment_type)}</span>
+                                        <span>-{payment.amount}</span>
+                                    </button>
+                                ))}
+                                <Separator className='my-2' />
+                                <div className='flex justify-between font-bold text-primary-foreground dark:text-primary'>
+                                    <span>Balance</span>
+                                    <span>
+                                        ₱{' '}
+                                        {(
+                                            Number(selectedBooking?.total_amount ?? 0) +
+                                            (selectedBooking?.booking_charges ?? []).reduce((sum, c) => sum + Number(c.total ?? 0), 0) -
+                                            (selectedBooking?.payments ?? []).reduce((sum, p) => sum + Number(p.amount ?? 0), 0)
+                                        ).toFixed(2)}
+                                    </span>
+                                </div>
+                            </DialogDescription>
+                        </div>
+                    </div>
+                </div>
+
+                <DialogFooter className='-mt-8'>
+                    {showEditButton && (
+                        <DialogClose asChild>
+                            <Button type='button' variant='outline' onClick={() => selectedBooking && onEdit(selectedBooking)}>
+                                Edit
+                            </Button>
+                        </DialogClose>
+                    )}
+                    {selectedBooking?.id !== undefined && <SoaPdf booking_id={selectedBooking.id} />}
+                </DialogFooter>
+            </DialogContent>
+
+            <Dialog open={selectedPayment !== null} onOpenChange={(isOpen) => !isOpen && setSelectedPayment(null)}>
+                <DialogContent className='max-h-[90vh] min-w-[90vw] overflow-y-auto lg:min-w-md dark:bg-primary-foreground/80 backdrop-blur-xs'>
+                    <div className='space-y-4'>
+                        <DialogHeader>
+                            <span>Payment Info</span>
+                        </DialogHeader>
+                        <DialogDescription className='space-y-2'>
+                            <div className='flex justify-between gap-4'>
+                                <span>Reference No.</span>
+                                <span>PID-{selectedPayment?.id}</span>
+                            </div>
+                            <div className='flex justify-between gap-4'>
+                                <span>Amount</span>
+                                <span>₱ {Number(selectedPayment?.amount ?? 0).toFixed(2)}</span>
+                            </div>
+                            <div className='flex justify-between gap-4'>
+                                <span>Payment Method</span>
+                                <span>{selectedPayment ? formatPaymentLabel(selectedPayment.payment_method) : ''}</span>
+                            </div>
+                            <div className='flex justify-between gap-4'>
+                                <span>Payment Type</span>
+                                <span>{selectedPayment ? formatPaymentLabel(selectedPayment.payment_type) : ''}</span>
+                            </div>
+                            <div className='flex justify-between gap-4'>
+                                <span>Payment Date</span>
+                                <span>
+                                    {selectedPayment?.created_at
+                                        ? `${formatDate(selectedPayment.created_at)} ${formatTime(selectedPayment.created_at)}`
+                                        : ''}
+                                </span>
+                            </div>
+                        </DialogDescription>
+                        <DialogFooter>
+                            <Button type='button' variant='outline' onClick={() => setSelectedPayment(null)}>
+                                Close
+                            </Button>
+                        </DialogFooter>
+                    </div>
+                </DialogContent>
+            </Dialog>
+        </Dialog>
+    );
+}

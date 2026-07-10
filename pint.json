@@ -1,3 +1,11 @@
 {
-    "preset": "laravel"
+    "preset": "laravel",
+    "rules": {
+        "method_argument_space": false,
+        "array_indentation": false,
+        "array_syntax": {
+            "syntax": "short"
+        },
+        "no_extra_blank_lines": true
+    }
 }

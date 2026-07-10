@@ -1,0 +1,345 @@
+import { Head, router, usePage } from '@inertiajs/react';
+import AppLayout from '@/layouts/app-layout';
+import type { BreadcrumbItem } from '@/types';
+import { Badge } from '@/components/ui/badge';
+import { Table, TableHead, TableHeader, TableRow, TableBody, TableCell } from '@/components/ui/table';
+import { cn } from '@/lib/utils';
+import { CheckCircleIcon, XCircleIcon, ClockIcon, AlertCircle, EyeOff, MailIcon, PhoneIcon, Printer } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { useState, useEffect } from 'react';
+import { useDateRange } from '@/contexts/date-range-context';
+import { format } from 'date-fns';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
+const breadcrumbs: BreadcrumbItem[] = [
+	{ title: 'Reports', href: '/reports/history' },
+	{ title: 'History', href: '/reports/history' },
+];
+
+type Booking = {
+	id: number;
+	created_at: string;
+	client?: {
+		first_name: string;
+		last_name: string;
+		email?: string;
+		contact_number: string;
+	};
+	room?: {
+		room_number: string;
+		room_type: string;
+	};
+	check_in: string;
+	check_out: string;
+	status: string;
+	total_amount: number;
+	payments?: Array<{
+		id: number;
+		amount: number;
+		payment_type: string;
+		payment_method: string;
+		created_at: string;
+	}>;
+	booking_charges?: any[];
+};
+
+type PageProps = {
+	bookings: {
+		data: Booking[];
+		links: any[];
+		current_page: number;
+		last_page: number;
+	};
+	filters: {
+		search?: string;
+		start?: string;
+		end?: string;
+	};
+};
+
+const statusConfig = {
+	confirmed: {
+		label: 'Confirmed',
+		icon: CheckCircleIcon,
+		color: 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400',
+	},
+	pencil: {
+		label: 'Pencil',
+		icon: ClockIcon,
+		color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-400',
+	},
+	checked_in: {
+		label: 'Checked In',
+		icon: CheckCircleIcon,
+		color: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400',
+	},
+	checked_out: {
+		label: 'Checked Out',
+		icon: CheckCircleIcon,
+		color: 'bg-gray-100 text-gray-700 dark:bg-gray-950 dark:text-gray-400',
+	},
+	cancelled: {
+		label: 'Cancelled',
+		icon: XCircleIcon,
+		color: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400',
+	},
+	no_show: {
+		label: 'No Show',
+		icon: EyeOff,
+		color: 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-400',
+	},
+};
+
+const StatusBadge = ({ status }: { status: keyof typeof statusConfig }) => {
+	const config = statusConfig[status] ?? {
+		label: status,
+		icon: AlertCircle,
+		color: 'bg-gray-100 text-gray-700',
+	};
+
+	const Icon = config.icon;
+
+	return (
+		<Badge className={cn('flex items-center gap-1', config.color)}>
+			<Icon className='h-3 w-3' />
+			{config.label}
+		</Badge>
+	);
+};
+
+export default function History() {
+	const { bookings, filters } = usePage<PageProps>().props;
+	const { range, setRange } = useDateRange();
+	const [search, setSearch] = useState(filters.search || '');
+	const [activeTab, setActiveTab] = useState<'all' | 'pencil' | 'confirmed' | 'checked_in'>('all');
+	const [hasInitialized, setHasInitialized] = useState(false);
+
+	const formatDate = (date: string) =>
+		new Date(date).toLocaleDateString('en-US', {
+			month: 'short',
+			day: 'numeric',
+			year: 'numeric',
+		});
+
+	const formatTime = (date: string) =>
+		new Date(date).toLocaleTimeString('en-US', {
+			hour: '2-digit',
+			minute: '2-digit',
+		});
+
+	const handlePrintSOA = (id: number) => {
+		window.open(`/bookings/${id}/print`, '_blank');
+	};
+
+	useEffect(() => {
+		const delay = setTimeout(() => {
+			router.get(
+				'/reports/history',
+				{
+					search,
+					status: activeTab,
+					start: range?.from ? format(range.from, 'yyyy-MM-dd') : undefined,
+					end: range?.to ? format(range.to, 'yyyy-MM-dd') : undefined,
+				},
+				{ preserveState: true, replace: true },
+			);
+		}, 400);
+
+		return () => clearTimeout(delay);
+	}, [search, range, activeTab]);
+
+	const tabs = [
+		{ value: 'all', label: 'All' },
+		{ value: 'pencil', label: 'Pencil' },
+		{ value: 'confirmed', label: 'Confirmed' },
+		{ value: 'checked_in', label: 'Checked In' },
+		{ value: 'checked_out', label: 'Checked Out' },
+		{ value: 'no_show', label: 'No Show' },
+		{ value: 'cancelled', label: 'Cancelled' },
+	];
+
+	const filteredBookings = activeTab === 'all' ? bookings.data : bookings.data.filter((b) => b.status === activeTab);
+
+	return (
+		<AppLayout breadcrumbs={breadcrumbs} showDatePicker>
+			<Head title='History' />
+
+			<div className='p-6'>
+				<div className='rounded-lg border'>
+					<div className='flex flex-row items-center gap-8 border-b p-4 justify-between'>
+						<div className='flex flex-row items-center gap-8'>
+							<h2 className='text-lg font-semibold'>Booking History</h2>
+							<div className='flex justify-between'>
+								<Input
+									placeholder='Search guest...'
+									value={search}
+									onChange={(e) => setSearch(e.target.value)}
+									className='w-64'
+								/>
+							</div>
+						</div>
+						<Tabs
+							value={activeTab}
+							onValueChange={(value) => {
+								setActiveTab(value as any);
+
+								router.get(
+									'/reports/history',
+									{
+										status: value,
+										search,
+										start: range?.from ? format(range.from, 'yyyy-MM-dd') : undefined,
+										end: range?.to ? format(range.to, 'yyyy-MM-dd') : undefined,
+									},
+									{ preserveState: true, replace: true },
+								);
+							}}
+						>
+							<TabsList>
+								{tabs.map((tab) => {
+									return (
+										<TabsTrigger className='px-4' key={tab.value} value={tab.value}>
+											{tab.label}
+										</TabsTrigger>
+									);
+								})}
+							</TabsList>
+						</Tabs>
+					</div>
+
+					<div className='overflow-auto px-2'>
+						<Table>
+							<TableHeader>
+								<TableRow>
+									<TableHead>Guest</TableHead>
+									<TableHead>Contact</TableHead>
+									<TableHead>Room</TableHead>
+									<TableHead>Check-in</TableHead>
+									<TableHead>Check-out</TableHead>
+									<TableHead>Status</TableHead>
+									<TableHead className='text-right'>Amount</TableHead>
+									<TableHead className='text-right'>SOA</TableHead>
+								</TableRow>
+							</TableHeader>
+
+							<TableBody>
+								{bookings.data.length === 0 && (
+									<TableRow>
+										<TableCell colSpan={8} className='py-6 text-center'>
+											No history records found
+										</TableCell>
+									</TableRow>
+								)}
+
+								{filteredBookings.map((booking) => {
+									const total =
+										Number(booking.total_amount ?? 0) +
+										(booking.booking_charges ?? []).reduce((sum, c) => sum + Number(c.total ?? 0), 0);
+
+									const paid = (booking.payments ?? []).reduce((sum, p) => sum + Number(p.amount ?? 0), 0);
+
+									return (
+										<TableRow key={booking.id}>
+											<TableCell>
+												<div>
+													<div className='font-medium'>
+														{booking.client?.first_name ?? '—'} {booking.client?.last_name ?? ''}
+													</div>
+													{booking.client?.email && (
+														<div className='flex items-center gap-1 text-sm text-muted-foreground'>
+															<MailIcon className='h-3 w-3' />
+															{booking.client.email}
+														</div>
+													)}
+												</div>
+											</TableCell>
+
+											<TableCell>
+												<div className='flex gap-1'>
+													<PhoneIcon className='h-3 w-3' />
+													{booking.client?.contact_number ?? '—'}
+												</div>
+											</TableCell>
+
+											<TableCell>
+												<div>
+													<div className='font-medium'>{booking.room?.room_number ?? '—'}</div>
+													<div className='text-sm text-muted-foreground'>{booking.room?.room_type ?? ''}</div>
+												</div>
+											</TableCell>
+
+											<TableCell>
+												<div>
+													<div className='font-medium'>{formatDate(booking.check_in)}</div>
+													<div className='text-sm text-muted-foreground'>{formatTime(booking.check_in)}</div>
+												</div>
+											</TableCell>
+
+											<TableCell>
+												<div>
+													<div className='font-medium'>{formatDate(booking.check_out)}</div>
+													<div className='text-sm text-muted-foreground'>{formatTime(booking.check_out)}</div>
+												</div>
+											</TableCell>
+
+											<TableCell>
+												<StatusBadge status={booking.status as any} />
+											</TableCell>
+
+											<TableCell className='text-right'>
+												<div className='font-medium'>₱ {total.toFixed(2)}</div>
+												<div className='text-sm text-muted-foreground'>Balance: ₱ {(total - paid).toFixed(2)}</div>
+											</TableCell>
+
+											<TableCell className='text-center'>
+												<div className='flex justify-center'>
+													<div
+														className='group flex h-8 w-8 cursor-pointer items-center justify-center rounded-md transition hover:bg-muted'
+														onClick={() => handlePrintSOA(booking.id)}
+													>
+														<Printer className='h-4 w-4 text-muted-foreground transition group-hover:text-foreground' />
+													</div>
+												</div>
+											</TableCell>
+										</TableRow>
+									);
+								})}
+							</TableBody>
+						</Table>
+					</div>
+
+					{/* Pagination */}
+					{bookings.links && bookings.links.length > 3 && (
+						<div className='flex items-center justify-between border-t px-4 py-4'>
+							<div className='text-sm text-muted-foreground'>
+								Page {bookings.current_page} of {bookings.last_page}
+							</div>
+
+							<div className='flex gap-2'>
+								<button
+									className='rounded border px-3 py-1 text-sm'
+									onClick={() => {
+										const prev = bookings.links.find((l) => l.label.includes('Previous'));
+										if (prev?.url) router.get(prev.url, {}, { preserveState: true });
+									}}
+								>
+									Previous
+								</button>
+
+								<button
+									className='rounded border px-3 py-1 text-sm'
+									onClick={() => {
+										const next = bookings.links.find((l) => l.label.includes('Next'));
+										if (next?.url) router.get(next.url, {}, { preserveState: true });
+									}}
+								>
+									Next
+								</button>
+							</div>
+						</div>
+					)}
+				</div>
+			</div>
+		</AppLayout>
+	);
+}

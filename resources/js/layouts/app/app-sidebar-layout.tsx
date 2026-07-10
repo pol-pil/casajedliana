@@ -4,15 +4,16 @@ import { AppSidebar } from '@/components/app-sidebar';
 import { AppSidebarHeader } from '@/components/app-sidebar-header';
 import type { AppLayoutProps } from '@/types';
 
-export default function AppSidebarLayout({
-    children,
+export default function AppSidebarLayout({ 
+    children, 
     breadcrumbs = [],
-}: AppLayoutProps) {
+    showDatePicker = false,
+}: AppLayoutProps & { showDatePicker?: boolean }) {
     return (
-        <AppShell variant="sidebar">
+        <AppShell variant='sidebar'>
             <AppSidebar />
-            <AppContent variant="sidebar" className="overflow-x-hidden">
-                <AppSidebarHeader breadcrumbs={breadcrumbs} />
+            <AppContent variant='sidebar' className='overflow-x-hidden'>
+                <AppSidebarHeader breadcrumbs={breadcrumbs} showDatePicker={showDatePicker} />
                 {children}
             </AppContent>
         </AppShell>

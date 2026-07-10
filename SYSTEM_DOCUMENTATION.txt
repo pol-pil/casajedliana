@@ -1,0 +1,521 @@
+CASA JEDLIANA SYSTEM DOCUMENTATION
+Generated from the current Laravel + Inertia codebase inventory
+
+1. SYSTEM SUMMARY
+
+Casa Jedliana is a hotel/front desk management system built with:
+- Laravel 12 backend
+- Inertia.js v2
+- React 19 + TypeScript frontend
+- Tailwind CSS v4 UI styling
+- Fortify authentication
+- Wayfinder-generated frontend route/actions helpers
+- Pest testing
+- DOMPDF for Statement of Account printing
+
+Primary business domains found in the codebase:
+- rooms/accommodations
+- bookings and guest records
+- rates, charges, and booking types
+- payments and balances
+- operational dashboard
+- reports and booking history
+- admin user management
+- hotel branding / backup / restore
+- account settings and authentication
+
+Core backend models:
+- User
+- Room
+- Booking
+- Client
+- Rate
+- Charge
+- BookingType
+- BookingCharge
+- Payment
+- ActivityLog
+- HotelSetting
+- RoomCleaningLog
+
+2. MAIN ROUTE AREAS
+
+Public:
+- `/` -> Welcome page
+
+Authenticated + verified frontdesk/admin area:
+- `/dashboard`
+- `/bookings`
+- `/rates`
+- `/reports/charts`
+- `/reports/history`
+
+Authenticated admin-only area:
+- `/admin`
+- `/rooms`
+- `/admin/users`
+- `/admin/hotel-info`
+- `/admin/backup/download`
+- `/admin/backup/restore`
+
+Authenticated account settings:
+- `/settings/profile`
+- `/settings/password`
+- `/settings/appearance`
+- `/settings/two-factor`
+
+Authentication pages:
+- login
+- register
+- forgot password
+- reset password
+- confirm password
+- verify email
+- two-factor challenge
+
+3. SHARED LAYOUT AND NAVIGATION COMPONENTS
+
+App shell and layout:
+- `resources/js/layouts/app-layout.tsx`
+- `resources/js/layouts/app/app-sidebar-layout.tsx`
+- `resources/js/components/app-sidebar.tsx`
+- `resources/js/components/app-header.tsx`
+- `resources/js/components/breadcrumbs.tsx`
+
+Important app shell behavior:
+- sidebar-based navigation
+- breadcrumb support
+- user menu / account access
+- date picker support on pages that pass `showDatePicker`
+- admin menu visibility controlled by authenticated user role
+
+Sidebar navigation groups:
+- Dashboard
+- Bookings
+- Configurations
+- Reports
+  - Charts
+  - History
+- Admin
+  - Overview
+  - Rooms
+  - Users
+  - Hotel Info
+
+Settings layout:
+- `resources/js/layouts/settings/layout.tsx`
+- sub-navigation for Profile, Password, Two-Factor Auth, Appearance
+
+4. PAGE INVENTORY AND IMPORTANT COMPONENTS
+
+4.1 Public / Entry
+
+Welcome Page
+- File: `resources/js/pages/welcome.tsx`
+- Route: `/`
+- Purpose: landing page and auth entry point
+- Important components/elements:
+  - login link
+  - dashboard link for authenticated users
+  - branded hero/illustration panel
+  - starter marketing/instructional content
+
+4.2 Operations
+
+Dashboard
+- File: `resources/js/pages/Dashboard/Index.tsx`
+- Route: `/dashboard`
+- Purpose: frontdesk operational snapshot for selected date range
+- Backend source: `DashboardController@index`
+- Important data shown:
+  - room availability summary
+  - check-ins
+  - check-outs
+  - unavailable vs available room counts
+  - arrivals/departures table
+- Important components/elements:
+  - summary cards
+  - hotel/event room scope toggle
+  - room status filter tabs
+  - room availability grid
+  - quick action card
+  - guest search input
+  - arrival/departure table
+  - date-range context integration
+
+Bookings
+- File: `resources/js/pages/Bookings/Index.tsx`
+- Route: `/bookings`
+- Purpose: booking calendar, booking creation/editing, recent reservations, balances
+- Backend source: `BookingsController@index`
+- Important data shown:
+  - booking timeline/calendar by room
+  - booking stats
+  - guest/contact info
+  - booking statuses
+  - room assignment
+  - payment balance and booking charges
+- Important components/elements:
+  - `ResourceTimeline`
+  - `BookingFormDialog`
+  - `BookingInfoDialog`
+  - stats cards
+  - booking search
+  - status tabs
+  - bookings table
+  - pagination controls
+  - floating "New Booking" action
+- Important related backend actions:
+  - create booking
+  - update booking
+  - update booking status
+  - print SOA
+  - automatic room status sync
+  - custom discount rate creation
+
+Rooms / Accommodations
+- File: `resources/js/pages/Accommodations/Index.tsx`
+- Route: `/rooms`
+- Purpose: room inventory and room lifecycle management
+- Backend source: `AccommodationController@index`
+- Important data shown:
+  - grouped room cards by room category
+  - room number, category, capacity, rates, description
+  - live room status for selected dates
+- Important components/elements:
+  - `RoomHeader`
+  - `RoomFilters`
+  - `RoomCard`
+  - `RoomDialogs`
+  - add room dialog
+  - edit room dialog
+  - delete room dialog
+  - search and category/status filters
+  - date-range refresh logic
+- Important related backend actions:
+  - create room
+  - update room
+  - delete room
+  - update room operational status
+  - maintenance protection when room has active booking
+
+Configurations / Rates
+- File: `resources/js/pages/Rates/Index.tsx`
+- Route: `/rates`
+- Purpose: manage commercial rules used in bookings
+- Backend source: `RatesController@index`
+- Important sections/components:
+  - `RatesChart`
+  - `DiscountChart`
+  - `RatesSection`
+  - `ChargesSection`
+  - `BookingTypesSection`
+- Managed entities:
+  - rates/discounts
+  - charges
+  - booking types
+- Important related backend actions:
+  - create/update/delete rate
+  - create/update/delete charge
+  - create/update/delete booking type
+  - chart aggregation based on optional date range
+
+4.3 Reports
+
+Reports - Charts
+- File: `resources/js/pages/reports/charts.tsx`
+- Route: `/reports/charts`
+- Purpose: financial and performance analytics
+- Important data shown:
+  - monthly/yearly revenue trend
+  - collected revenue
+  - expected revenue
+  - outstanding balance
+  - cash collected
+  - ADR
+  - RevPAR
+  - occupancy
+  - discount distribution
+- Important components/elements:
+  - KPI cards
+  - monthly/yearly tabs
+  - Recharts line chart
+  - Recharts horizontal bar chart
+  - tooltips with KPI explanations
+
+Reports - History
+- File: `resources/js/pages/reports/history.tsx`
+- Route: `/reports/history`
+- Purpose: searchable booking archive with SOA printing
+- Important data shown:
+  - guest and contact data
+  - room and stay dates
+  - booking status
+  - total amount and balance
+- Important components/elements:
+  - search input
+  - status tabs
+  - booking history table
+  - SOA print action
+  - pagination
+  - date-range filter integration
+
+4.4 Admin
+
+Admin Overview
+- File: `resources/js/pages/AdminPage/Index.tsx`
+- Route: `/admin`
+- Purpose: administrator overview of users and frontdesk activity
+- Important data shown:
+  - admin count
+  - frontdesk count
+  - total user count
+  - user list
+  - frontdesk activity logs
+- Important components/elements:
+  - stat cards
+  - user management table
+  - searchable/filterable activity log table
+  - action filter tabs
+  - local pagination
+  - date-range driven refresh
+
+Admin Users
+- File: `resources/js/pages/AdminPage/User.tsx`
+- Route: `/admin/users`
+- Purpose: full user management
+- Important components/elements:
+  - `UserTable`
+  - `CreateUserDialog`
+  - `EditUserDialog`
+  - `ResetPasswordDialog`
+  - `DeleteUserDialog`
+  - search input
+  - active/inactive tabs
+- Important related backend actions:
+  - create user
+  - edit user
+  - reset password
+  - update status
+  - delete user
+
+Admin Hotel Info
+- File: `resources/js/pages/AdminPage/HotelInfo.tsx`
+- Route: `/admin/hotel-info`
+- Purpose: hotel branding and system maintenance utilities
+- Important components/elements:
+  - hotel name form
+  - logo upload with preview
+  - backup download action
+  - restore upload action
+  - save changes action
+
+4.5 Account Settings
+
+Profile Settings
+- File: `resources/js/pages/settings/profile.tsx`
+- Route: `/settings/profile`
+- Important components/elements:
+  - profile form via Wayfinder action
+  - name field
+  - email field
+  - email verification resend link
+  - `DeleteUser`
+
+Password Settings
+- File: `resources/js/pages/settings/password.tsx`
+- Route: `/settings/password`
+- Important components/elements:
+  - current password field
+  - new password field
+  - confirmation field
+  - validation/error focus handling
+
+Appearance Settings
+- File: `resources/js/pages/settings/appearance.tsx`
+- Route: `/settings/appearance`
+- Important components/elements:
+  - `AppearanceTabs`
+  - theme/appearance preferences
+
+Two-Factor Authentication
+- File: `resources/js/pages/settings/two-factor.tsx`
+- Route: `/settings/two-factor`
+- Important components/elements:
+  - enable/disable 2FA actions
+  - `TwoFactorSetupModal`
+  - `TwoFactorRecoveryCodes`
+  - QR/manual setup flow
+  - status badge
+
+4.6 Authentication Pages
+
+Authentication-related pages present in the codebase:
+- `resources/js/pages/auth/login.tsx`
+- `resources/js/pages/auth/register.tsx`
+- `resources/js/pages/auth/forgot-password.tsx`
+- `resources/js/pages/auth/reset-password.tsx`
+- `resources/js/pages/auth/confirm-password.tsx`
+- `resources/js/pages/auth/two-factor-challenge.tsx`
+- `resources/js/pages/auth/verify-email.tsx`
+
+These pages support:
+- sign in
+- registration
+- password reset
+- password confirmation
+- email verification
+- two-factor challenge completion
+
+5. HIGH-IMPORTANCE FEATURE COMPONENTS
+
+Booking feature components:
+- `booking-dialog.tsx`
+- `booking-info-dialog.tsx`
+- `add-payment-dialog.tsx`
+- `add-charge-dialog.tsx`
+- `soa-pdf.tsx`
+- `resource-timeline.tsx`
+
+Rates/configuration components:
+- `rates-chart.tsx`
+- `discount-chart.tsx`
+- `rates-section.tsx`
+- `rates-section-dialog.tsx`
+- `charge-section.tsx`
+- `charge-section-dialog.tsx`
+- `booking-types-section.tsx`
+- `booking-types-section-dialog.tsx`
+
+Room management components:
+- `components/rooms/RoomHeader.tsx`
+- `components/rooms/RoomFilters.tsx`
+- `components/rooms/RoomCard.tsx`
+- `components/rooms/RoomDialogs.tsx`
+- `components/rooms/RoomFormFields.tsx`
+
+Admin user components:
+- `components/users/UserTable.tsx`
+- `components/users/UserActionsMenu.tsx`
+- `components/users/UserFormFields.tsx`
+- `components/users/CreateUserDialog.tsx`
+- `components/users/EditUserDialog.tsx`
+- `components/users/ResetPasswordDialog.tsx`
+- `components/users/DeleteUserDialog.tsx`
+
+Settings/security components:
+- `delete-user.tsx`
+- `two-factor-setup-modal.tsx`
+- `two-factor-recovery-codes.tsx`
+- `appearance-tabs.tsx`
+
+Shared shell/common components:
+- `app-sidebar.tsx`
+- `app-header.tsx`
+- `nav-main.tsx`
+- `nav-user.tsx`
+- `nav-footer.tsx`
+- `breadcrumbs.tsx`
+- `heading.tsx`
+- `alert-error.tsx`
+- `input-error.tsx`
+
+UI primitive directory:
+- `resources/js/components/ui/*`
+- includes buttons, cards, tables, tabs, dialogs, sidebar, badges, tooltip, select, inputs, skeletons, sheets, dropdowns, charts, avatar, and related primitives
+
+6. IMPORTANT BACKEND CONTROLLERS
+
+Core business controllers:
+- `DashboardController`
+- `AccommodationController`
+- `BookingsController`
+- `RatesController`
+- `PaymentsController`
+- `BookingChargesController`
+- `ChartController`
+- `HistoryController`
+
+Admin controllers:
+- `Admin/OverviewController`
+- `Admin/AdminUserController`
+- `Admin/HotelInfoController`
+
+Settings controllers:
+- `Settings/ProfileController`
+- `Settings/PasswordController`
+- `Settings/TwoFactorAuthenticationController`
+
+Important backend behaviors observed:
+- room availability computed from booking overlap dates
+- room status syncing based on booking lifecycle
+- booking totals and balances include extra charges and payments
+- custom discount rates can be created during booking flow
+- activity logs are created for booking lifecycle actions
+- SOA PDF generation is available per booking
+- hotel backup and restore endpoints exist
+
+7. GLOBAL FRONTEND SUPPORTING STRUCTURE
+
+Hooks:
+- `use-appearance`
+- `use-clipboard`
+- `use-current-url`
+- `use-initials`
+- `use-mobile-navigation`
+- `use-mobile`
+- `use-two-factor-auth`
+
+Context:
+- `date-range-context.tsx`
+
+Types:
+- auth, navigation, room, shared UI types
+
+Generated route/action helpers:
+- `resources/js/actions/**`
+- `resources/js/routes/**`
+- `resources/js/wayfinder/index.ts`
+
+8. WHAT THE SYSTEM MAINLY DOES
+
+In practical terms, this system supports:
+- front desk room availability monitoring
+- reservation creation and editing
+- check-in/check-out workflow tracking
+- guest/client data storage
+- room catalog management
+- configurable discount and charge rules
+- booking-type management
+- payment recording and balance tracking
+- financial and occupancy reporting
+- printable statement of account output
+- admin user administration
+- hotel profile/logo maintenance
+- backup and restore operations
+- user profile, password, appearance, and 2FA settings
+
+9. KNOWN STRUCTURAL NOTES
+
+- The app uses Inertia pages instead of Blade views for most user-facing screens.
+- Sidebar navigation is role-sensitive and reveals admin pages only for admin users.
+- Date range selection influences dashboard, room, admin, and report pages.
+- Booking and room status logic is deeply connected.
+- Rates, charges, and booking types act as reusable configuration data for booking operations.
+
+10. QUICK PAGE INDEX
+
+- `/` -> Welcome
+- `/dashboard` -> Operational dashboard
+- `/rooms` -> Room/accommodation management
+- `/bookings` -> Booking calendar + reservation table
+- `/rates` -> Rates, charges, booking types
+- `/reports/charts` -> Analytics dashboard
+- `/reports/history` -> Booking history + SOA print
+- `/admin` -> Admin overview + logs
+- `/admin/users` -> User management
+- `/admin/hotel-info` -> Hotel details + backup/restore
+- `/settings/profile` -> Profile settings
+- `/settings/password` -> Password settings
+- `/settings/appearance` -> Appearance settings
+- `/settings/two-factor` -> Two-factor authentication settings
