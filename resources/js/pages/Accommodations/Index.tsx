@@ -163,7 +163,7 @@ export default function Index() {
 	}
 
 	const roomFeatures = [
-		'WiFi',
+		'WiFi',8
 		'Air Conditioning',
 		'TV',
 		'Hot Shower',
